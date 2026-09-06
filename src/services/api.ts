@@ -1,0 +1,154 @@
+// API Client bridging Frontend to Backend (Phase 1)
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  return `http://${host}:5000/api/v1`;
+};
+
+const getHealthUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '') + '/api/health';
+  }
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  return `http://${host}:5000/api/health`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+export const api = {
+  // Health
+  checkHealth: async () => {
+    try {
+      const res = await fetch(getHealthUrl());
+      return await res.json();
+    } catch {
+      return { status: 'offline', mode: 'demo_fallback' };
+    }
+  },
+
+  // Auth
+  sendOtp: async (phone: string) => {
+    const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    return await res.json();
+  },
+
+  verifyOtp: async (phone: string, otp: string, name?: string, gender?: string) => {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp, name, gender }),
+    });
+    return await res.json();
+  },
+
+  // Worker Directory
+  getWorkerDirectory: async (filters?: any) => {
+    const query = new URLSearchParams(filters || {}).toString();
+    const res = await fetch(`${API_BASE_URL}/workers/directory?${query}`);
+    return await res.json();
+  },
+
+  inviteWorker: async (workerId: string, jobId: string, employerName: string) => {
+    const res = await fetch(`${API_BASE_URL}/workers/invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workerId, jobId, employerName }),
+    });
+    return await res.json();
+  },
+
+  // Jobs
+  getJobs: async () => {
+    const res = await fetch(`${API_BASE_URL}/jobs`);
+    return await res.json();
+  },
+
+  postJob: async (jobData: any) => {
+    const res = await fetch(`${API_BASE_URL}/jobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jobData),
+    });
+    return await res.json();
+  },
+
+  applyForJob: async (jobId: string, workerId: string) => {
+    const res = await fetch(`${API_BASE_URL}/jobs/${jobId}/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workerId }),
+    });
+    return await res.json();
+  },
+
+  confirmWorker: async (jobId: string, workerId: string) => {
+    const res = await fetch(`${API_BASE_URL}/jobs/${jobId}/confirm-worker`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workerId }),
+    });
+    return await res.json();
+  },
+
+  // Attendance
+  getAttendance: async (jobId: string) => {
+    const res = await fetch(`${API_BASE_URL}/attendance/${jobId}`);
+    return await res.json();
+  },
+
+  checkInAttendance: async (jobId: string, workerId: string, qrToken?: string, lat?: number, lng?: number) => {
+    const res = await fetch(`${API_BASE_URL}/attendance/check-in`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, workerId, qrToken, lat, lng }),
+    });
+    return await res.json();
+  },
+
+  checkOutAttendance: async (jobId: string, workerId: string) => {
+    const res = await fetch(`${API_BASE_URL}/attendance/check-out`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, workerId }),
+    });
+    return await res.json();
+  },
+
+  // Protected Payments
+  authorizePayment: async (paymentData: any) => {
+    const res = await fetch(`${API_BASE_URL}/payments/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData),
+    });
+    return await res.json();
+  },
+
+  releasePayment: async (paymentId: string, utrNumber?: string) => {
+    const res = await fetch(`${API_BASE_URL}/payments/${paymentId}/release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ utrNumber }),
+    });
+    return await res.json();
+  },
+
+  disputePayment: async (paymentId: string, reason: string, details?: string, reportedBy?: string) => {
+    const res = await fetch(`${API_BASE_URL}/payments/${paymentId}/dispute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, details, reportedBy }),
+    });
+    return await res.json();
+  },
+
+  // Admin
+  getAdminOverview: async () => {
+    const res = await fetch(`${API_BASE_URL}/admin/overview`);
+    return await res.json();
+  },
+};
