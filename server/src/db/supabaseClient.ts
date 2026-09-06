@@ -6,4 +6,13 @@ dotenv.config();
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://demo-placeholder.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'demo-anon-key';
 
+export const isSupabaseConfigured = (): boolean => {
+  return (
+    !!process.env.SUPABASE_URL &&
+    !process.env.SUPABASE_URL.includes('demo-placeholder') &&
+    !!process.env.SUPABASE_ANON_KEY &&
+    process.env.SUPABASE_ANON_KEY !== 'demo-anon-key'
+  );
+};
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

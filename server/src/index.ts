@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { isSupabaseConfigured } from './db/supabaseClient';
 
 dotenv.config();
 
@@ -237,12 +238,16 @@ const db: ServerStore = {
 // 1. SYSTEM HEALTH & MODE CHECK
 // ============================================================================
 app.get('/api/health', (req: Request, res: Response) => {
+  const isCloudDb = isSupabaseConfigured();
   res.json({
     status: 'online',
     platform: 'WORK MOJO API Backend',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
-    database: 'PostgreSQL / Supabase Ready (Active Dual-Store)',
+    database: isCloudDb
+      ? 'PostgreSQL / Supabase (Live Connected)'
+      : 'PostgreSQL / Supabase Ready (Active Dual-Store)',
+    supabaseConnected: isCloudDb,
   });
 });
 
