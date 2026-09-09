@@ -26,59 +26,131 @@ export interface AiChatResponse {
   };
 }
 
-// 1. External AI Call: Google Gemini
-async function callGemini(apiKey: string, req: AiChatRequest): Promise<string | null> {
+// 1. External AI Call: Google Gemini (Primary Production Provider)
+function buildGeminiSystemPrompt(req: AiChatRequest): string {
   const lang = req.language || 'en';
   const role = req.role || 'worker';
-  const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-  
-  const systemPrompt = `You are Mojo, the official AI assistant of WorkMojo — India's premier commission-free gig platform connecting daily-wage workers and local employers.
-You must respond strictly in the user's selected language: ${
-    lang === 'te' ? 'Telugu (తెలుగు script)' :
-    lang === 'hi' ? 'Hindi (हिन्दी Devanagari script)' :
-    lang === 'ta' ? 'Tamil (தமிழ் script)' : 'English'
-  }.
-The user is a ${role}.
-Keep responses helpful, friendly, empathetic, concise (2-4 sentences max), and directly relevant to jobs, wages, payments (100% direct retain, UPI or Cash), safety (SOS), and QR attendance.`;
+  const ctx = req.context || {};
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const languageDirective =
+    lang === 'te'
+      ? 'CRITICAL LANGUAGE DIRECTIVE: You MUST reply entirely in Telugu (తెలుగు లిపి). Do NOT reply in English or Latin alphabet, except for universal technical acronyms like UPI, QR, OTP, WorkMojo.'
+      : lang === 'hi'
+      ? 'CRITICAL LANGUAGE DIRECTIVE: You MUST reply entirely in Hindi Devanagari script (हिन्दी देवनागरी लिपि). Do NOT reply in Latin/Roman script (Hinglish), except for terms like UPI, QR, OTP, WorkMojo.'
+      : lang === 'ta'
+      ? 'CRITICAL LANGUAGE DIRECTIVE: You MUST reply entirely in Tamil (தமிழ் எழுத்துரு). Do NOT reply in English or Latin script, except for universal terms like UPI, QR, OTP, WorkMojo.'
+      : 'Reply in clear, professional, warm, and helpful English.';
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-      {
+  const contextPoints: string[] = [];
+  if (ctx.activeScreen) {
+    contextPoints.push(`Current Active App Screen: "${ctx.activeScreen}"`);
+  }
+  if (ctx.skills && Array.isArray(ctx.skills) && ctx.skills.length > 0) {
+    contextPoints.push(`User Stated Skills: ${ctx.skills.join(', ')}`);
+  }
+  if (ctx.location) {
+    contextPoints.push(`User Stated Location: ${ctx.location}`);
+  }
+
+  return `You are Mojo, the official AI Employment & Platform Assistant for "WorkMojo" — India's premier commission-free daily-wage and gig work platform.
+
+CORE WORKMOJO KNOWLEDGE & POLICIES:
+1. 100% Zero Commission: WorkMojo never takes cuts from worker wages. Daily-wage earners retain 100% of their earnings.
+2. Fair Daily Wage Baselines: Typical market daily wages in India range between ₹700 to ₹1200+ depending on skill level, trade, hours, and location.
+3. Dual Role Ecosystem:
+   - Workers: Browse nearby jobs, filter by wage or trade, apply with 1 tap, track live shifts, verify attendance with QR check-in/out, receive instant payouts via UPI or cash, and rate employers.
+   - Employers / Customers: Post job listings in 60 seconds across 35+ categories, review matched applicants with match scores, confirm workers, verify worker attendance via QR, authorize protected escrow payments, and release wages seamlessly upon completion.
+4. Attendance & Wage Protection: Geofenced QR-code scan for check-in and check-out eliminates attendance and wage disputes. Payments are held in protected escrow and released upon shift confirmation.
+5. Safety & Security: Includes a 1-tap Emergency SOS feature with live location sharing for worker safety.
+6. Supported Trades (35+ Categories): Construction, Masonry, Loading/Unloading, Logistics & Delivery, Driver, Housekeeping & Cleaning, Painting, Plumbing, Electrical, Carpentry, Security Guard, Event Catering, Gardening, Warehouse Support, etc.
+
+USER INTERACTION CONTEXT:
+- The user is currently in "${role === 'customer' ? 'Employer/Customer' : 'Worker'}" mode.
+${contextPoints.length > 0 ? contextPoints.map(p => `- ${p}`).join('\n') : '- General user session.'}
+
+LANGUAGE REQUIREMENT:
+${languageDirective}
+
+COMMUNICATION STYLE:
+- Tone: Helpful, empathetic, encouraging, practical, and culturally respectful of India's hardworking blue-collar and gig workforce.
+- Length: Keep responses concise and easy to read (2 to 4 sentences maximum).
+- Action-Oriented: Directly answer questions regarding jobs, wage rates, applications, attendance, payment methods, safety, or profile settings.
+- Do not make false promises of guaranteed employment. Encourage exploring active postings on WorkMojo.`;
+}
+
+// Sanitizes URLs and strings to ensure API keys are NEVER printed in server logs or error traces
+function sanitizeApiKey(text: string): string {
+  return String(text).replace(/key=[^&\s"'`]+/gi, 'key=[REDACTED]');
+}
+
+async function callGemini(apiKey: string, req: AiChatRequest): Promise<string | null> {
+  const userModel = process.env.GEMINI_MODEL;
+  const systemPrompt = buildGeminiSystemPrompt(req);
+
+  // Model fallback candidates in priority order
+  const modelsToTry = Array.from(
+    new Set([userModel, 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'].filter(Boolean) as string[])
+  );
+
+  for (const model of modelsToTry) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s bounded timeout
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [
             {
               role: 'user',
-              parts: [{ text: `${systemPrompt}\n\nUser Question: ${req.message}` }],
+              parts: [
+                {
+                  text: `${systemPrompt}\n\nUser Question:\n"${req.message}"`,
+                },
+              ],
             },
           ],
           generationConfig: {
-            maxOutputTokens: 250,
+            maxOutputTokens: 300,
             temperature: 0.7,
+            topP: 0.95,
           },
         }),
         signal: controller.signal,
-      }
-    );
-    clearTimeout(timeoutId);
+      });
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      console.warn(`[Gemini API] Request failed with status ${response.status}`);
+      if (response.status === 404) {
+        // If the model name is unavailable in the key's region, attempt the next model
+        console.warn(`[Gemini API] Model ${model} returned 404, attempting fallback model...`);
+        continue;
+      }
+
+      if (!response.ok) {
+        console.warn(`[Gemini API] Request failed with HTTP status ${response.status}`);
+        return null;
+      }
+
+      const data: any = await response.json();
+      const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (candidateText && candidateText.trim()) {
+        return candidateText.trim();
+      }
+      return null;
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.warn(`[Gemini API] Request timed out (10s) on model ${model}`);
+      } else {
+        console.warn('[Gemini API] Error calling Gemini:', sanitizeApiKey(err?.message || String(err)));
+      }
       return null;
     }
-
-    const data: any = await response.json();
-    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return candidateText ? candidateText.trim() : null;
-  } catch (err: any) {
-    console.warn('[Gemini API] Error calling Gemini:', err?.message || err);
-    return null;
   }
+
+  return null;
 }
 
 // 2. External AI Call: OpenAI
@@ -583,11 +655,13 @@ export async function processAiChat(req: AiChatRequest): Promise<AiChatResponse>
     const geminiReply = await callGemini(geminiKey.trim(), req);
     if (geminiReply) {
       console.log(`[Mojo AI] Query answered via Google Gemini (${language})`);
+      const domainQuick = generateDomainResponse(req);
       return {
         success: true,
         reply: geminiReply,
         language,
         provider: 'gemini',
+        action: domainQuick.action,
       };
     }
   }
@@ -598,11 +672,13 @@ export async function processAiChat(req: AiChatRequest): Promise<AiChatResponse>
     const openAiReply = await callOpenAI(openAiKey.trim(), req);
     if (openAiReply) {
       console.log(`[Mojo AI] Query answered via OpenAI (${language})`);
+      const domainQuick = generateDomainResponse(req);
       return {
         success: true,
         reply: openAiReply,
         language,
         provider: 'openai',
+        action: domainQuick.action,
       };
     }
   }
