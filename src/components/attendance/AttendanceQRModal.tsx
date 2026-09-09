@@ -55,32 +55,34 @@ export const AttendanceQRModal: React.FC<AttendanceQRModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-slate-100 shadow-2xl space-y-4 text-center">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2 text-amber-400 font-extrabold text-sm">
-            <QrCode size={18} />
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 max-w-sm w-full text-[#111827] shadow-2xl space-y-4 text-center animate-in fade-in zoom-in-95">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+          <div className="flex items-center gap-2 text-[#2563EB] font-bold text-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB]">
+              <QrCode size={18} />
+            </div>
             <span>Attendance Check-In</span>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1 bg-slate-800 rounded-lg"
+            className="text-[#64748B] hover:text-[#111827] text-xs font-semibold px-2.5 py-1 bg-[#F7F9FC] border border-[#E2E8F0] rounded-lg transition-colors"
           >
             Close
           </button>
         </div>
 
         <div>
-          <h3 className="font-extrabold text-base text-white">{job.title}</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Worker: <strong className="text-amber-300">{worker.name}</strong>
+          <h3 className="font-bold text-base text-[#111827]">{job.title}</h3>
+          <p className="text-xs text-[#64748B] mt-0.5">
+            Worker: <strong className="text-[#2563EB]">{worker.name}</strong>
           </p>
         </div>
 
         {/* QR Code SVG Display (Employer shows, Worker scans) */}
-        <div className="bg-white p-4 rounded-2xl mx-auto w-56 h-56 flex flex-col items-center justify-center shadow-inner relative border-4 border-amber-400">
+        <div className="bg-[#F7F9FC] p-4 rounded-2xl mx-auto w-56 h-56 flex flex-col items-center justify-center shadow-inner relative border-2 border-[#DBEAFE]">
           {/* Real programmatic SVG QR code representation */}
-          <svg viewBox="0 0 100 100" className="w-full h-full text-slate-950">
+          <svg viewBox="0 0 100 100" className="w-full h-full text-[#111827]">
             {/* Outer alignment marks */}
             <rect x="10" y="10" width="25" height="25" fill="currentColor" rx="4" />
             <rect x="15" y="15" width="15" height="15" fill="white" rx="2" />
@@ -109,29 +111,29 @@ export const AttendanceQRModal: React.FC<AttendanceQRModalProps> = ({
             <rect x="75" y="68" width="12" height="12" fill="currentColor" />
           </svg>
 
-          <span className="text-[10px] font-mono font-bold text-slate-800 mt-1">
+          <span className="text-[10px] font-mono font-bold text-[#2563EB] mt-1 bg-[#EFF6FF] px-2 py-0.5 rounded-md border border-[#DBEAFE]">
             {simulatedCode}
           </span>
         </div>
 
         {/* GPS Verification Status */}
         {gpsStatus === 'verifying' && (
-          <div className="text-xs text-amber-300 font-semibold flex items-center justify-center gap-1.5 animate-pulse">
+          <div className="text-xs text-[#2563EB] font-semibold flex items-center justify-center gap-1.5 animate-pulse bg-[#EFF6FF] p-2 rounded-xl border border-[#DBEAFE]">
             <Clock size={13} />
             <span>Checking Workplace GPS Proximity...</span>
           </div>
         )}
 
         {gpsStatus === 'granted' && (
-          <div className="text-xs text-emerald-400 font-semibold flex items-center justify-center gap-1.5">
+          <div className="text-xs text-emerald-700 font-semibold flex items-center justify-center gap-1.5 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
             <CheckCircle2 size={13} />
             <span>Device GPS Verified at Workplace ✓</span>
           </div>
         )}
 
         {gpsStatus === 'unavailable' && (
-          <div className="text-xs text-amber-400/90 font-medium flex items-center justify-center gap-1.5 bg-amber-500/10 p-2 rounded-xl border border-amber-500/30">
-            <AlertCircle size={14} className="shrink-0" />
+          <div className="text-xs text-amber-700 font-medium flex items-center justify-center gap-1.5 bg-amber-50 p-2 rounded-xl border border-amber-200">
+            <AlertCircle size={14} className="shrink-0 text-amber-600" />
             <span>Location verification unavailable (Proceeding with QR check-in)</span>
           </div>
         )}
@@ -140,7 +142,7 @@ export const AttendanceQRModal: React.FC<AttendanceQRModalProps> = ({
         <button
           onClick={handleScanCheckIn}
           disabled={isScanning}
-          className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+          className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3 rounded-2xl shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
         >
           {isScanning ? (
             <span>Verifying Check-In...</span>

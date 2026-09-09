@@ -41,6 +41,7 @@ export interface Translations {
   navJobs: string;
   navMyJobs: string;
   navApplicants: string;
+  navPayments: string;
   navAlerts: string;
   navProfile: string;
 
@@ -94,6 +95,84 @@ export interface Translations {
   panVerification: string;
   livePhotoTitle: string;
   kycVerifiedTitle: string;
+
+  // Payments
+  paymentsTitle: string;
+  totalEarnings: string;
+  inEscrow: string;
+  availableBalance: string;
+  preferredPayoutMethod: string;
+  onlineInstantPayout: string;
+  offlineCashSettlement: string;
+  transactionHistory: string;
+  noTransactions: string;
+  directWageRetained: string;
+  commissionFreeNotice: string;
+  payoutUpiNotice: string;
+  payoutCashNotice: string;
+  statusPaid: string;
+  statusPending: string;
+  statusProcessing: string;
+  statusDisputed: string;
+
+  // Customer / Employer
+  employerDashboard: string;
+  postNewJobBtn: string;
+  findWorkersBtn: string;
+  activePostings: string;
+  noActivePostings: string;
+  acceptAndHire: string;
+  candidateHired: string;
+  manageJob: string;
+  viewApplicants: string;
+
+  // Post Job Wizard
+  stepBasicInfo: string;
+  stepLocation: string;
+  stepWageTiming: string;
+  stepReview: string;
+  jobTitleLabel: string;
+  jobCategoryLabel: string;
+  jobDescriptionLabel: string;
+  workplaceLocationLabel: string;
+  landmarkLabel: string;
+  wagePerShiftLabel: string;
+  shiftTimingLabel: string;
+  workersNeededCountLabel: string;
+  postJobNowBtn: string;
+  postingJobProgress: string;
+  jobPostedSuccessMsg: string;
+
+  // Job Details
+  aboutTheWork: string;
+  workplaceLocation: string;
+  transparentAiMatch: string;
+  timingLabel: string;
+  distanceLabel: string;
+  requiredLabel: string;
+  exactAddressUnlocked: string;
+  cancelSlotBtn: string;
+  joinWaitingListBtn: string;
+
+  // Profile & Settings
+  personalProfile: string;
+  workAndSkills: string;
+  identityAndKyc: string;
+  switchRoleAction: string;
+  gigsDoneCount: string;
+  postedCount: string;
+  experienceCount: string;
+  helpSupport: string;
+  logoutBtn: string;
+
+  // AI & Common
+  clearChat: string;
+  retryAction: string;
+  cancelAction: string;
+  confirmAction: string;
+  backAction: string;
+  nextAction: string;
+  closeAction: string;
 }
 
 export const translations: Record<SupportedLanguage, Translations> = {
@@ -137,6 +216,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     navJobs: 'Jobs',
     navMyJobs: 'My Gigs',
     navApplicants: 'Applicants',
+    navPayments: 'Payments',
     navAlerts: 'Alerts',
     navProfile: 'Profile',
 
@@ -186,13 +266,91 @@ export const translations: Record<SupportedLanguage, Translations> = {
     panVerification: 'PAN Card Verification',
     livePhotoTitle: 'Live Photo Face Capture',
     kycVerifiedTitle: 'KYC Verified ✓',
+
+    // Payments
+    paymentsTitle: 'Earnings & Payouts',
+    totalEarnings: 'Total Earnings',
+    inEscrow: 'In Escrow',
+    availableBalance: 'Available Balance',
+    preferredPayoutMethod: 'Preferred Payout Method',
+    onlineInstantPayout: 'Online Instant Payout (UPI / Bank)',
+    offlineCashSettlement: 'Offline Direct Cash Settlement',
+    transactionHistory: 'Transaction History',
+    noTransactions: 'No transactions recorded yet',
+    directWageRetained: '100% Retained Direct Wage',
+    commissionFreeNotice: 'Zero Commission: 100% of your earned wage goes directly to you.',
+    payoutUpiNotice: 'Direct deposit to your linked bank account or UPI ID on shift completion.',
+    payoutCashNotice: 'Collect exact cash payment directly from the employer with verified digital receipt.',
+    statusPaid: 'PAID',
+    statusPending: 'PENDING',
+    statusProcessing: 'PROCESSING',
+    statusDisputed: 'DISPUTED',
+
+    // Customer / Employer
+    employerDashboard: 'Employer Dashboard',
+    postNewJobBtn: 'Post a New Job',
+    findWorkersBtn: 'Find Workers',
+    activePostings: 'Active Postings',
+    noActivePostings: 'No active job postings yet',
+    acceptAndHire: 'Accept & Hire',
+    candidateHired: 'Candidate Hired ✓',
+    manageJob: 'Manage Posting',
+    viewApplicants: 'View Applicants',
+
+    // Post Job Wizard
+    stepBasicInfo: 'Job Details',
+    stepLocation: 'Location',
+    stepWageTiming: 'Wage & Shift',
+    stepReview: 'Review & Post',
+    jobTitleLabel: 'Job Title',
+    jobCategoryLabel: 'Select Category',
+    jobDescriptionLabel: 'Description & Requirements',
+    workplaceLocationLabel: 'Workplace Address',
+    landmarkLabel: 'Nearby Landmark',
+    wagePerShiftLabel: 'Wage per Worker (₹)',
+    shiftTimingLabel: 'Shift Start Time',
+    workersNeededCountLabel: 'Workers Required',
+    postJobNowBtn: 'Post Job Now',
+    postingJobProgress: 'Publishing Job...',
+    jobPostedSuccessMsg: 'Job Posted Successfully!',
+
+    // Job Details
+    aboutTheWork: 'About the Work',
+    workplaceLocation: 'Workplace Location',
+    transparentAiMatch: 'Transparent AI Match',
+    timingLabel: 'Timing',
+    distanceLabel: 'Distance',
+    requiredLabel: 'Required',
+    exactAddressUnlocked: 'Exact address unlocked upon confirmation',
+    cancelSlotBtn: 'Cancel My Slot',
+    joinWaitingListBtn: 'Job Filled — Join Waiting List',
+
+    // Profile & Settings
+    personalProfile: 'Personal Profile',
+    workAndSkills: 'Work & Skills',
+    identityAndKyc: 'Identity & KYC',
+    switchRoleAction: 'Switch to',
+    gigsDoneCount: 'Gigs Done',
+    postedCount: 'Posted',
+    experienceCount: 'Experience',
+    helpSupport: 'Help & Support',
+    logoutBtn: 'Log Out',
+
+    // AI & Common
+    clearChat: 'Clear Chat',
+    retryAction: 'Retry',
+    cancelAction: 'Cancel',
+    confirmAction: 'Confirm',
+    backAction: 'Back',
+    nextAction: 'Next',
+    closeAction: 'Close',
   },
 
   te: {
     appName: 'వర్క్ మోజో',
     tagline: 'పనిని కనుగొనండి. కార్మికులను పొందండి.',
-    workerMode: 'కార్మికుల మోడ్',
-    customerMode: 'కస్టమర్ మోడ్',
+    workerMode: 'వర్కర్ మోడ్',
+    customerMode: 'యజమాని మోడ్',
     available: 'పని కోసం సిద్ధంగా ఉన్నారు',
     busy: 'పనిలో ఉన్నారు',
     away: 'అందుబాటులో లేరు',
@@ -204,7 +362,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     ongoing: 'పని కొనసాగుతోంది',
     finished: 'పని పూర్తయింది ✓',
     cancelled: 'రద్దు చేయబడింది',
-    postJob: 'కొత్త పనిని నమోదు చేయండి (కార్మికులను పొందండి)',
+    postJob: 'కొత్త పనిని పోస్ట్ చేయండి',
     workersNeeded: 'కార్మికులు అవసరం',
     matchScore: 'సరిపోలిక',
     reliable: 'విశ్వసనీయత',
@@ -228,6 +386,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     navJobs: 'పనులు',
     navMyJobs: 'నా పనులు',
     navApplicants: 'దరఖాస్తుదారులు',
+    navPayments: 'చెల్లింపులు',
     navAlerts: 'నోటిఫికేషన్లు',
     navProfile: 'ప్రొఫైల్',
 
@@ -277,13 +436,91 @@ export const translations: Record<SupportedLanguage, Translations> = {
     panVerification: 'పాన్ కార్డ్ ధృవీకరణ',
     livePhotoTitle: 'లైవ్ ఫోటో ఫేస్ క్యాప్చర్',
     kycVerifiedTitle: 'KYC ధృవీకరించబడింది ✓',
+
+    // Payments
+    paymentsTitle: 'ఆదాయాలు & చెల్లింపులు',
+    totalEarnings: 'మొత్తం సంపాదన',
+    inEscrow: 'ఎస్క్రోలో ఉన్న మొత్తం',
+    availableBalance: 'అందుబాటులో ఉన్న బ్యాలెన్స్',
+    preferredPayoutMethod: 'చెల్లింపు పద్ధతి ఎంపిక',
+    onlineInstantPayout: 'ఆన్‌లైన్ చెల్లింపు (యూపీఐ / బ్యాంక్ బదిలీ)',
+    offlineCashSettlement: 'ఆఫ్‌లైన్ నగదు చెల్లింపు (నేరుగా నగదు)',
+    transactionHistory: 'లావాదేవీల చరిత్ర',
+    noTransactions: 'ఇంకా లావాదేవీలు ఏవీ నమోదు కాలేదు',
+    directWageRetained: '100% మీ సంపాదన మీదే',
+    commissionFreeNotice: 'సున్నా కమీషన్: మీరు సంపాదించిన మొత్తం మీకే చేరుతుంది.',
+    payoutUpiNotice: 'షిఫ్ట్ ముగిసిన తర్వాత మీ బ్యాంక్ లేదా యూపీఐకి తక్షణ డిపాజిట్.',
+    payoutCashNotice: 'డిజిటల్ రసీదుతో యజమాని నుండి నేరుగా నగదు పొందండి.',
+    statusPaid: 'పూర్తయింది',
+    statusPending: 'పెండింగ్',
+    statusProcessing: 'ప్రాసెసింగ్',
+    statusDisputed: 'వివాదం',
+
+    // Customer / Employer
+    employerDashboard: 'యజమాని డ్యాష్‌బోర్డ్',
+    postNewJobBtn: 'కొత్త పనిని పోస్ట్ చేయండి',
+    findWorkersBtn: 'కార్మికులను వెతకండి',
+    activePostings: 'యాక్టివ్ పోస్టింగ్‌లు',
+    noActivePostings: 'ఇంకా ఏ పనులూ పోస్ట్ చేయలేదు',
+    acceptAndHire: 'అంగీకరించి నియమించండి',
+    candidateHired: 'వర్కర్ కన్ఫర్మ్ అయ్యారు ✓',
+    manageJob: 'పని నిర్వహణ',
+    viewApplicants: 'దరఖాస్తుదారులను చూడండి',
+
+    // Post Job Wizard
+    stepBasicInfo: 'పని వివరాలు',
+    stepLocation: 'పని స్థలం',
+    stepWageTiming: 'వేతనం & సమయం',
+    stepReview: 'సమీక్షించి పోస్ట్ చేయండి',
+    jobTitleLabel: 'పని శీర్షిక',
+    jobCategoryLabel: 'వర్గం ఎంచుకోండి',
+    jobDescriptionLabel: 'వివరణ & అవసరాలు',
+    workplaceLocationLabel: 'ఖచ్చితమైన చిరునామా',
+    landmarkLabel: 'సమీప ల్యాండ్‌మార్క్',
+    wagePerShiftLabel: 'వర్కర్‌కి వేతనం (₹)',
+    shiftTimingLabel: 'ప్రారంభ సమయం',
+    workersNeededCountLabel: 'అవసరమైన వర్కర్ల సంఖ్య',
+    postJobNowBtn: 'ఇప్పుడే పనిని పోస్ట్ చేయండి',
+    postingJobProgress: 'ప్రచురిస్తోంది...',
+    jobPostedSuccessMsg: 'పని విజయవంతంగా పోస్ట్ చేయబడింది!',
+
+    // Job Details
+    aboutTheWork: 'పని గురించి',
+    workplaceLocation: 'పని స్థలం',
+    transparentAiMatch: 'పారదర్శక AI మ్యాచ్',
+    timingLabel: 'సమయం',
+    distanceLabel: 'దూరం',
+    requiredLabel: 'అవసరం',
+    exactAddressUnlocked: 'నిర్ధారించిన తర్వాత చిరునామా అన్‌లాక్ అవుతుంది',
+    cancelSlotBtn: 'నా స్లాట్‌ను రద్దు చేయండి',
+    joinWaitingListBtn: 'స్లాట్లు నిండాయి — వెయిటింగ్ లిస్ట్',
+
+    // Profile & Settings
+    personalProfile: 'వ్యక్తిగత ప్రొఫైల్',
+    workAndSkills: 'పని & నైపుణ్యాలు',
+    identityAndKyc: 'గుర్తింపు & KYC',
+    switchRoleAction: 'మార్చండి',
+    gigsDoneCount: 'పూర్తయిన పనులు',
+    postedCount: 'పోస్ట్ చేసినవి',
+    experienceCount: 'అనుభవం',
+    helpSupport: 'సహాయం & మద్దతు',
+    logoutBtn: 'లాగ్ అవుట్',
+
+    // AI & Common
+    clearChat: 'చాట్ క్లియర్ చేయండి',
+    retryAction: 'మళ్ళీ ప్రయత్నించండి',
+    cancelAction: 'రద్దు చేయండి',
+    confirmAction: 'నిర్ధారించండి',
+    backAction: 'వెనుకకు',
+    nextAction: 'తరువాత',
+    closeAction: 'మూసివేయండి',
   },
 
   hi: {
     appName: 'वर्क मोजो',
     tagline: 'काम खोजें। कामगार पाएं। काम पूरा करें।',
     workerMode: 'कामगार मोड',
-    customerMode: 'ग्राहक मोड',
+    customerMode: 'नियोक्ता मोड',
     available: 'काम के लिए उपलब्ध',
     busy: 'काम में व्यस्त',
     away: 'अनुपलब्ध',
@@ -295,7 +532,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     ongoing: 'काम प्रगति पर है',
     finished: 'काम पूरा हुआ ✓',
     cancelled: 'रद्द किया गया',
-    postJob: 'नया काम पोस्ट करें (कामगार खोजें)',
+    postJob: 'नया काम पोस्ट करें',
     workersNeeded: 'कामगारों की आवश्यकता',
     matchScore: 'मैच',
     reliable: 'विश्वसनीय',
@@ -319,6 +556,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     navJobs: 'काम',
     navMyJobs: 'मेरे काम',
     navApplicants: 'आवेदक',
+    navPayments: 'भुगतान',
     navAlerts: 'अलर्ट्स',
     navProfile: 'प्रोफ़ाइल',
 
@@ -368,13 +606,91 @@ export const translations: Record<SupportedLanguage, Translations> = {
     panVerification: 'पैन कार्ड सत्यापन',
     livePhotoTitle: 'लाइव फोटो चेहरा सत्यापन',
     kycVerifiedTitle: 'KYC सत्यापित ✓',
+
+    // Payments
+    paymentsTitle: 'कमाई एवं भुगतान',
+    totalEarnings: 'कुल कमाई',
+    inEscrow: 'एस्क्रो में सुरक्षित राशि',
+    availableBalance: 'उपलब्ध शेष राशि',
+    preferredPayoutMethod: 'भुगतान का पसंदीदा तरीका',
+    onlineInstantPayout: 'ऑनलाइन भुगतान (यूपीआई / बैंक खाता)',
+    offlineCashSettlement: 'ऑफलाइन नकद भुगतान (सीधे नकद)',
+    transactionHistory: 'लेन-देन इतिहास',
+    noTransactions: 'अभी कोई लेन-देन दर्ज नहीं है',
+    directWageRetained: '100% प्रत्यक्ष मजदूरी आपकी',
+    commissionFreeNotice: 'शून्य कमीशन: आपकी कमाई का 100% सीधे आपको मिलता है।',
+    payoutUpiNotice: 'शिफ्ट समाप्त होते ही सीधे आपके बैंक या यूपीआई में भुगतान।',
+    payoutCashNotice: 'डिजिटल रसीद के साथ नियोक्ता से सीधे नकद प्राप्त करें।',
+    statusPaid: 'भुगतान हुआ',
+    statusPending: 'लंबित',
+    statusProcessing: 'प्रक्रियाधीन',
+    statusDisputed: 'विवादित',
+
+    // Customer / Employer
+    employerDashboard: 'नियोक्ता डैशबोर्ड',
+    postNewJobBtn: 'नया काम पोस्ट करें',
+    findWorkersBtn: 'कामगार खोजें',
+    activePostings: 'सक्रिय पोस्टिंग',
+    noActivePostings: 'अभी कोई सक्रिय पोस्टिंग नहीं है',
+    acceptAndHire: 'स्वीकार करें और काम दें',
+    candidateHired: 'कामगार नियुक्त हुआ ✓',
+    manageJob: 'काम प्रबंधन',
+    viewApplicants: 'आवेदक देखें',
+
+    // Post Job Wizard
+    stepBasicInfo: 'काम का विवरण',
+    stepLocation: 'कार्यस्थल',
+    stepWageTiming: 'वेतन एवं समय',
+    stepReview: 'समीक्षा करें और पोस्ट करें',
+    jobTitleLabel: 'काम का शीर्षक',
+    jobCategoryLabel: 'श्रेणी चुनें',
+    jobDescriptionLabel: 'विवरण एवं आवश्यकताएं',
+    workplaceLocationLabel: 'कार्यस्थल का पता',
+    landmarkLabel: 'निकटतम लैंडमार्क',
+    wagePerShiftLabel: 'प्रति कामगार वेतन (₹)',
+    shiftTimingLabel: 'प्रारंभ समय',
+    workersNeededCountLabel: 'आवश्यक कामगार संख्या',
+    postJobNowBtn: 'अभी काम पोस्ट करें',
+    postingJobProgress: 'प्रकाशित हो रहा है...',
+    jobPostedSuccessMsg: 'काम सफलतापूर्वक पोस्ट किया गया!',
+
+    // Job Details
+    aboutTheWork: 'काम के बारे में',
+    workplaceLocation: 'कार्यस्थल का स्थान',
+    transparentAiMatch: 'पारदर्शी AI मैच',
+    timingLabel: 'समय',
+    distanceLabel: 'दूरी',
+    requiredLabel: 'आवश्यकता',
+    exactAddressUnlocked: 'काम पक्का होने पर सटीक पता दिखेगा',
+    cancelSlotBtn: 'मेरा स्लॉट रद्द करें',
+    joinWaitingListBtn: 'स्लॉट भर गया — वेटिंग लिस्ट',
+
+    // Profile & Settings
+    personalProfile: 'व्यक्तिगत प्रोफ़ाइल',
+    workAndSkills: 'काम और कौशल',
+    identityAndKyc: 'पहचान और KYC',
+    switchRoleAction: 'बदलें',
+    gigsDoneCount: 'पूरे किए काम',
+    postedCount: 'पोस्ट किए गए',
+    experienceCount: 'अनुभव',
+    helpSupport: 'सहायता एवं संपर्क',
+    logoutBtn: 'लॉग आउट',
+
+    // AI & Common
+    clearChat: 'चैट साफ़ करें',
+    retryAction: 'पुन: प्रयास करें',
+    cancelAction: 'रद्द करें',
+    confirmAction: 'पुष्टि करें',
+    backAction: 'पीछे',
+    nextAction: 'आगे',
+    closeAction: 'बंद करें',
   },
 
   ta: {
     appName: 'ஒர்க் மோஜோ',
     tagline: 'வேலை தேடுங்கள். பணியாளர்களை பெறுங்கள்.',
-    workerMode: 'பணியாளர் பயன்முறை',
-    customerMode: 'வாடிக்கையாளர் பயன்முறை',
+    workerMode: 'தொழிலாளி பயன்முறை',
+    customerMode: 'முதலாளி பயன்முறை',
     available: 'வேலைக்கு தயார்',
     busy: 'வேலையில் உள்ளார்',
     away: 'இல்லை',
@@ -386,7 +702,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     ongoing: 'வேலை நடைபெறுகிறது',
     finished: 'வேலை முடிந்தது ✓',
     cancelled: 'ரத்து செய்யப்பட்டது',
-    postJob: 'புதிய வேலை பதிவு செய்க (பணியாளர்களை பெறுக)',
+    postJob: 'புதிய வேலை பதிவு செய்க',
     workersNeeded: 'பணியாளர்கள் தேவை',
     matchScore: 'பொருத்தம்',
     reliable: 'நம்பகமான',
@@ -410,6 +726,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     navJobs: 'வேலைகள்',
     navMyJobs: 'என் வேலைகள்',
     navApplicants: 'விண்ணப்பதாரர்கள்',
+    navPayments: 'பணம்',
     navAlerts: 'அறிவிப்புகள்',
     navProfile: 'சுயவிவரம்',
 
@@ -459,5 +776,83 @@ export const translations: Record<SupportedLanguage, Translations> = {
     panVerification: 'பான் அட்டை சரிபார்ப்பு',
     livePhotoTitle: 'நேரலை புகைப்பட சரிபார்ப்பு',
     kycVerifiedTitle: 'KYC சரிபார்க்கப்பட்டது ✓',
+
+    // Payments
+    paymentsTitle: 'வருமானம் & கட்டணங்கள்',
+    totalEarnings: 'மொத்த வருமானம்',
+    inEscrow: 'எஸ்க்ரோவில் உள்ள தொகை',
+    availableBalance: 'கிடைக்கும் இருப்பு',
+    preferredPayoutMethod: 'கட்டண முறை தேர்வு',
+    onlineInstantPayout: 'ஆன்லைன் கட்டணம் (யுபிஐ / வங்கி)',
+    offlineCashSettlement: 'நேரடி ரொக்கப் பணம் (ரொக்கம்)',
+    transactionHistory: 'பரிவர்த்தனை வரலாறு',
+    noTransactions: 'இன்னும் பரிவர்த்தனைகள் எதுவும் இல்லை',
+    directWageRetained: '100% நேரடி ஊதியம் உங்களுக்கே',
+    commissionFreeNotice: 'கமிஷன் இல்லை: நீங்கள் ஈட்டிய முழுத் தொகையும் உங்களுக்கே கிடைக்கும்.',
+    payoutUpiNotice: 'வேலை முடிந்ததும் உங்கள் வங்கி அல்லது யுபிஐ கணக்கில் உடனடி வரவு.',
+    payoutCashNotice: 'டிஜிட்டல் ரசீதுடன் முதலாளியிடமிருந்து நேரடியாக ரொக்கமாகப் பெறவும்.',
+    statusPaid: 'செலுத்தப்பட்டது',
+    statusPending: 'நிலுவையில்',
+    statusProcessing: 'செயல்பாட்டில்',
+    statusDisputed: 'சர்ச்சை',
+
+    // Customer / Employer
+    employerDashboard: 'முதலாளி டாஷ்போர்டு',
+    postNewJobBtn: 'புதிய வேலை பதிவு செய்க',
+    findWorkersBtn: 'தொழிலாளர்களைத் தேடுக',
+    activePostings: 'செயலில் உள்ள பதிவுகள்',
+    noActivePostings: 'இன்னும் எந்த வேலை பதிவும் இல்லை',
+    acceptAndHire: 'ஏற்றுக்கொண்டு பணியமர்த்துக',
+    candidateHired: 'தொழிலாளி உறுதியாக்கப்பட்டார் ✓',
+    manageJob: 'வேலை மேலாண்மை',
+    viewApplicants: 'விண்ணப்பதாரர்களைப் பார்க்க',
+
+    // Post Job Wizard
+    stepBasicInfo: 'வேலை விவரங்கள்',
+    stepLocation: 'பணி இடம்',
+    stepWageTiming: 'ஊதியம் & நேரம்',
+    stepReview: 'மதிப்பாய்வு செய்து பதிவு செய்க',
+    jobTitleLabel: 'வேலை தலைப்பு',
+    jobCategoryLabel: 'பிரிவை தேர்வு செய்யவும்',
+    jobDescriptionLabel: 'விளக்கம் & தேவைகள்',
+    workplaceLocationLabel: 'சரியான முகவரி',
+    landmarkLabel: 'அருகிலுள்ள அடையாளம்',
+    wagePerShiftLabel: 'தொழிலாளிக்கான ஊதியம் (₹)',
+    shiftTimingLabel: 'தொடங்கும் நேரம்',
+    workersNeededCountLabel: 'தேவைப்படும் தொழிலாளர்கள்',
+    postJobNowBtn: 'இப்போது பதிவு செய்யவும்',
+    postingJobProgress: 'பதிவிடப்படுகிறது...',
+    jobPostedSuccessMsg: 'வேலை வெற்றிகரமாக பதிவு செய்யப்பட்டது!',
+
+    // Job Details
+    aboutTheWork: 'வேலை பற்றி',
+    workplaceLocation: 'பணி இடம்',
+    transparentAiMatch: 'வெளிப்படையான AI பொருத்தம்',
+    timingLabel: 'நேரம்',
+    distanceLabel: 'தூரம்',
+    requiredLabel: 'தேவை',
+    exactAddressUnlocked: 'உறுதிசெய்த பின்னர் முகவரி திறக்கப்படும்',
+    cancelSlotBtn: 'என் இடத்தை ரத்து செய்',
+    joinWaitingListBtn: 'இடங்கள் நிரம்பின — காத்திருப்பு பட்டியல்',
+
+    // Profile & Settings
+    personalProfile: 'சுயவிவரம்',
+    workAndSkills: 'வேலை & திறன்கள்',
+    identityAndKyc: 'அடையாளம் & KYC',
+    switchRoleAction: 'மாற்றுக',
+    gigsDoneCount: 'முடித்த வேலைகள்',
+    postedCount: 'பதிவிட்டவை',
+    experienceCount: 'அனுபவம்',
+    helpSupport: 'உதவி & ஆதரவு',
+    logoutBtn: 'வெளியேறு',
+
+    // AI & Common
+    clearChat: 'அரட்டையை அழிக்க',
+    retryAction: 'மீண்டும் முயற்சிக்கவும்',
+    cancelAction: 'ரத்து செய்',
+    confirmAction: 'உறுதிப்படுத்து',
+    backAction: 'பின்னால்',
+    nextAction: 'அடுத்து',
+    closeAction: 'மூடுக',
   },
 };

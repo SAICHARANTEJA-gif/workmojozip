@@ -84,24 +84,24 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl font-black text-[#111827] tracking-tight">
             Find Workers (Directory)
           </h1>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-xs text-[#64748B] font-medium">
             Search verified local talent and invite directly to jobs
           </p>
         </div>
         <button
           onClick={onBack}
-          className="text-xs font-bold bg-slate-200 text-slate-800 px-3 py-1.5 rounded-xl hover:bg-slate-300"
+          className="text-xs font-bold bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] px-3 py-1.5 rounded-xl hover:bg-[#DBEAFE] transition-colors"
         >
           Back
         </button>
       </div>
 
       {/* Search Input */}
-      <div className="flex items-center bg-white rounded-2xl border border-slate-200 shadow-xs p-1.5 focus-within:border-amber-400">
-        <div className="p-2 text-slate-400">
+      <div className="flex items-center bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-1.5 focus-within:border-[#2563EB] transition-colors">
+        <div className="p-2 text-[#2563EB]">
           <Search size={18} />
         </div>
         <input
@@ -109,10 +109,10 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search by worker name, masonry, cleaning, loading..."
-          className="flex-1 text-sm bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-medium"
+          className="flex-1 text-sm bg-transparent border-none outline-none text-[#111827] placeholder-[#64748B] font-medium"
         />
         {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="p-2 text-slate-400">
+          <button onClick={() => setSearchQuery('')} className="p-2 text-[#64748B] hover:text-[#111827]">
             <X size={16} />
           </button>
         )}
@@ -126,8 +126,8 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
             onClick={() => setSelectedCategory(cat)}
             className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
               selectedCategory === cat
-                ? 'bg-amber-500 text-slate-950 shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                ? 'bg-[#2563EB] text-white shadow-xs'
+                : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F7F9FC]'
             }`}
           >
             {cat}
@@ -136,13 +136,13 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
       </div>
 
       {/* Secondary Filter Bar */}
-      <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+      <div className="flex items-center justify-between text-xs text-[#64748B] bg-[#F7F9FC] p-2.5 rounded-2xl border border-[#E2E8F0]">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">Rating:</span>
+          <span className="font-semibold text-[#111827]">Rating:</span>
           <select
             value={minRating}
             onChange={e => setMinRating(Number(e.target.value))}
-            className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 font-bold outline-none"
+            className="bg-white border border-[#E2E8F0] rounded-lg px-2 py-0.5 font-bold outline-none text-[#111827]"
           >
             <option value={0}>Any Rating</option>
             <option value={4.5}>4.5★ & Above</option>
@@ -151,11 +151,11 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
         </div>
 
         <div className="flex items-center gap-1">
-          <span className="font-semibold">Status:</span>
+          <span className="font-semibold text-[#111827]">Status:</span>
           <select
             value={availabilityFilter}
             onChange={e => setAvailabilityFilter(e.target.value)}
-            className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 font-bold outline-none"
+            className="bg-white border border-[#E2E8F0] rounded-lg px-2 py-0.5 font-bold outline-none text-[#111827]"
           >
             <option value="All">All</option>
             <option value="Available">Available</option>
@@ -163,7 +163,7 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
           </select>
         </div>
 
-        <span className="font-extrabold text-amber-600">
+        <span className="font-bold text-[#2563EB]">
           {filteredWorkers.length} found
         </span>
       </div>
@@ -173,7 +173,7 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
         {filteredWorkers.map(w => (
           <div
             key={w.id}
-            className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-3"
+            className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm hover:shadow-md transition-all space-y-3"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -181,10 +181,10 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
                   <img
                     src={w.profilePhoto}
                     alt={w.name}
-                    className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shadow-inner"
+                    className="w-14 h-14 rounded-2xl object-cover border border-[#E2E8F0] shadow-inner"
                   />
                   {w.kycStatus === 'verified' && (
-                    <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm border border-white">
+                    <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm border-2 border-white">
                       <CheckCircle2 size={12} />
                     </span>
                   )}
@@ -192,17 +192,17 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
 
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="font-black text-slate-900 text-base leading-tight">
+                    <h3 className="font-bold text-[#111827] text-base leading-tight">
                       {w.name}
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                    <span className="flex items-center gap-0.5 bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
+                  <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1">
+                    <span className="flex items-center gap-0.5 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
                       <Star size={11} className="fill-amber-400 text-amber-400" />
                       {w.rating}★
                     </span>
-                    <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                    <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
                       {w.reliabilityScore}% Reliable
                     </span>
                   </div>
@@ -211,10 +211,10 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
 
               {/* Status Pill */}
               <span
-                className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
                   w.availability === 'Available'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                    : 'bg-slate-100 text-slate-600 border-slate-300'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-[#F7F9FC] text-[#64748B] border-[#E2E8F0]'
                 }`}
               >
                 {w.availability}
@@ -226,28 +226,28 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
               {w.skills.map((skill, i) => (
                 <span
                   key={i}
-                  className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2 py-0.5 rounded-lg"
+                  className="bg-[#F7F9FC] text-[#111827] border border-[#E2E8F0] text-[11px] font-medium px-2 py-0.5 rounded-lg"
                 >
                   {skill}
                 </span>
               ))}
-              <span className="bg-amber-50 text-amber-900 text-[11px] font-semibold px-2 py-0.5 rounded-lg border border-amber-200">
+              <span className="bg-[#EFF6FF] text-[#2563EB] text-[11px] font-semibold px-2 py-0.5 rounded-lg border border-[#DBEAFE]">
                 {w.experience || '3+ years exp'}
               </span>
             </div>
 
             {/* Location & Wage & Invite Button */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
               <div className="text-xs">
-                <span className="text-slate-400 font-medium">Expected: </span>
-                <span className="font-extrabold text-slate-900">
+                <span className="text-[#64748B] font-medium">Expected: </span>
+                <span className="font-bold text-[#2563EB]">
                   ₹{w.preferredWage || 700} / shift
                 </span>
               </div>
 
               <button
                 onClick={() => setInvitingWorker(w)}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black px-4 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
               >
                 <UserPlus size={14} />
                 <span>Invite to Job</span>
@@ -259,48 +259,50 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
 
       {/* Invite Modal */}
       {invitingWorker && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-slate-100 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-1.5 text-amber-400 font-bold text-sm">
-                <UserPlus size={16} />
-                <span>Direct Job Invitation</span>
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 max-w-sm w-full text-[#111827] shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB]">
+                  <UserPlus size={16} />
+                </div>
+                <span className="font-bold text-sm text-[#111827]">Direct Job Invitation</span>
               </div>
               <button
                 onClick={() => setInvitingWorker(null)}
-                className="text-slate-400 hover:text-white"
+                className="p-1.5 text-[#64748B] hover:text-[#111827] hover:bg-[#F7F9FC] rounded-xl transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex items-center gap-3 bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+            <div className="flex items-center gap-3 bg-[#F7F9FC] p-3 rounded-2xl border border-[#E2E8F0]">
               <img
                 src={invitingWorker.profilePhoto}
                 alt={invitingWorker.name}
-                className="w-12 h-12 rounded-xl object-cover"
+                className="w-12 h-12 rounded-xl object-cover border border-[#E2E8F0]"
               />
               <div>
-                <h4 className="font-extrabold text-sm text-white">{invitingWorker.name}</h4>
-                <p className="text-xs text-slate-400">
+                <h4 className="font-bold text-sm text-[#111827]">{invitingWorker.name}</h4>
+                <p className="text-xs text-[#64748B]">
                   {invitingWorker.rating}★ Rating • {invitingWorker.reliabilityScore}% Reliability
                 </p>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">
+              <label className="text-xs font-bold text-[#111827]">
                 Select Your Open Job to Invite:
               </label>
               {postedJobs.length === 0 ? (
-                <div className="text-xs text-rose-400 bg-rose-500/10 p-3 rounded-xl border border-rose-500/30">
+                <div className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-200">
                   You don't have any active open jobs. Please post a job first.
                 </div>
               ) : (
                 <select
                   value={selectedJobId}
                   onChange={e => setSelectedJobId(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs font-bold outline-none focus:border-amber-400"
+                  className="w-full bg-[#F7F9FC] border border-[#E2E8F0] rounded-xl p-2.5 text-[#111827] text-xs font-bold outline-none focus:border-[#2563EB]"
                 >
                   {postedJobs.map(job => (
                     <option key={job.id} value={job.id}>
@@ -312,7 +314,7 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
             </div>
 
             {inviteSuccessMsg && (
-              <div className="text-xs text-emerald-400 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/30 text-center font-bold flex items-center justify-center gap-1.5">
+              <div className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-center font-bold flex items-center justify-center gap-1.5">
                 <CheckCircle2 size={14} />
                 <span>{inviteSuccessMsg}</span>
               </div>
@@ -321,7 +323,7 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
             <button
               onClick={handleSendInvite}
               disabled={postedJobs.length === 0}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl shadow-md flex items-center justify-center gap-1.5 text-xs transition-all active:scale-98 disabled:opacity-40"
+              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-1.5 text-xs transition-all active:scale-98 disabled:opacity-40"
             >
               <Send size={14} />
               <span>Send Direct Invitation</span>

@@ -32,37 +32,39 @@ export const JobAlertsModal: React.FC<JobAlertsProps> = ({ isOpen, onClose }) =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in">
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 text-slate-900 animate-in slide-in-from-bottom duration-200">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in">
+      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-[#E2E8F0] text-[#111827] animate-in slide-in-from-bottom duration-200">
+        <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <Bell size={18} className="text-amber-600" />
-            <h3 className="font-extrabold text-base text-slate-900">Custom Job Alerts</h3>
+            <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB]">
+              <Bell size={16} />
+            </div>
+            <h3 className="font-black text-base text-[#111827]">Custom Job Alerts</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200"
+            className="p-1.5 text-[#64748B] hover:text-[#111827] rounded-full hover:bg-[#F1F5F9] transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="p-4 space-y-4 text-sm overflow-y-auto">
-          <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-xs text-amber-950 flex items-center gap-2">
-            <Sparkles size={16} className="text-amber-600 shrink-0" />
+          <div className="bg-[#EFF6FF] p-3.5 rounded-2xl border border-[#DBEAFE] text-xs text-[#2563EB] flex items-center gap-2 font-medium">
+            <Sparkles size={16} className="text-[#2563EB] shrink-0" />
             <span>
               Get instant notifications whenever high-paying gigs match your exact criteria.
             </span>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
               Alert Category
             </label>
             <select
               value={selectedCat}
               onChange={e => setSelectedCat(e.target.value as WorkCategory)}
-              className="w-full p-2.5 rounded-xl border border-slate-300 font-semibold text-slate-800 bg-white"
+              className="w-full p-2.5 rounded-xl border border-[#E2E8F0] font-bold text-[#111827] bg-[#F7F9FC] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#EFF6FF]"
             >
               <option value="Delivery">Delivery</option>
               <option value="Loading/Unloading">Loading/Unloading</option>
@@ -75,8 +77,8 @@ export const JobAlertsModal: React.FC<JobAlertsProps> = ({ isOpen, onClose }) =>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Minimum Wage: ₹{minPay}+
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+              Minimum Wage: <span className="text-[#2563EB]">₹{minPay}+</span>
             </label>
             <input
               type="range"
@@ -85,21 +87,23 @@ export const JobAlertsModal: React.FC<JobAlertsProps> = ({ isOpen, onClose }) =>
               step="50"
               value={minPay}
               onChange={e => setMinPay(Number(e.target.value))}
-              className="w-full accent-amber-500"
+              className="w-full accent-[#2563EB] h-2 bg-slate-200 rounded-lg cursor-pointer"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Within Distance: {alertDistance} km
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+              Within Distance: <span className="text-[#2563EB]">{alertDistance} km</span>
             </label>
             <div className="flex gap-2">
               {[2, 5, 8, 12].map(d => (
                 <button
                   key={d}
                   onClick={() => setAlertDistance(d)}
-                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold ${
-                    alertDistance === d ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                    alertDistance === d
+                      ? 'bg-[#2563EB] text-white shadow-xs'
+                      : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0]'
                   }`}
                 >
                   {d} km
@@ -108,21 +112,21 @@ export const JobAlertsModal: React.FC<JobAlertsProps> = ({ isOpen, onClose }) =>
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-bold text-slate-800 pt-2 cursor-pointer">
+          <label className="flex items-center gap-2 text-xs font-bold text-[#111827] pt-2 cursor-pointer">
             <input
               type="checkbox"
               checked={instantAlerts}
               onChange={e => setInstantAlerts(e.target.checked)}
-              className="w-4 h-4 text-amber-500 rounded"
+              className="w-4 h-4 text-[#2563EB] accent-[#2563EB] rounded"
             />
             <span>Enable in-app sound & push alerts</span>
           </label>
         </div>
 
-        <div className="p-4 border-t border-slate-200 bg-white">
+        <div className="p-4 border-t border-[#E2E8F0] bg-white">
           <button
             onClick={handleSimulateAlert}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 rounded-2xl shadow-md transition-all active:scale-98 text-sm flex items-center justify-center gap-1.5"
+            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 text-sm flex items-center justify-center gap-1.5"
           >
             <Bell size={15} />
             <span>Save & Test Job Alert</span>

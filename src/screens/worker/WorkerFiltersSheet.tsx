@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../../store/AppContext';
 import { WorkCategory, WorkTimePreference, JobUrgency } from '../../types';
+import { getCategoryLabel } from '../../config/categories';
 import { X, Check, RotateCcw, Filter, Sparkles } from 'lucide-react';
 
 interface FilterSheetProps {
@@ -14,7 +15,7 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
   onClose,
   totalFilteredCount,
 }) => {
-  const { filters, setFilters, resetFilters, user } = useApp();
+  const { filters, setFilters, resetFilters, user, t, language } = useApp();
 
   if (!isOpen) return null;
 
@@ -63,26 +64,28 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in">
       <div className="w-full max-w-lg bg-white rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border-t border-slate-200 animate-in slide-in-from-bottom duration-200 text-slate-900">
         {/* Header */}
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <Filter size={18} className="text-amber-600" />
-            <h3 className="font-extrabold text-base text-slate-900">Filter Jobs</h3>
-            <span className="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
-              {totalFilteredCount} matches
+            <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB]">
+              <Filter size={16} />
+            </div>
+            <h3 className="font-bold text-base text-[#111827]">{t.filterTitle}</h3>
+            <span className="text-xs bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold px-2.5 py-0.5 rounded-full">
+              {totalFilteredCount} {t.navJobs}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={resetFilters}
-              className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 font-semibold p-1"
+              className="text-xs text-[#64748B] hover:text-[#111827] flex items-center gap-1 font-semibold p-1"
             >
               <RotateCcw size={12} />
-              <span>Clear</span>
+              <span>{t.clearFilters}</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200 transition-colors"
+              className="p-1.5 text-[#64748B] hover:text-[#111827] rounded-full hover:bg-[#F7F9FC] transition-colors"
             >
               <X size={20} />
             </button>
@@ -90,10 +93,10 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
         </div>
 
         {/* Scrollable Filters Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
+        <div className="flex-1 overflow-y-auto p-4 space-y-5 text-sm bg-[#F7F9FC]">
           {/* 1. Distance Radius */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
               Maximum Distance
             </label>
             <div className="flex flex-wrap gap-2">
@@ -103,8 +106,8 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
                   onClick={() => setFilters(prev => ({ ...prev, maxDistance: d }))}
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all ${
                     filters.maxDistance === d
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-[#2563EB] text-white shadow-sm'
+                      : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#EFF6FF]'
                   }`}
                 >
                   Within {d} km
@@ -115,7 +118,7 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
 
           {/* 2. Minimum Wage (₹) */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
               Minimum Daily Wage
             </label>
             <div className="flex flex-wrap gap-2">
@@ -125,8 +128,8 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
                   onClick={() => setFilters(prev => ({ ...prev, minWage: w }))}
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all ${
                     filters.minWage === w
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-[#2563EB] text-white shadow-sm'
+                      : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#EFF6FF]'
                   }`}
                 >
                   {w === 0 ? 'Any Wage' : `₹${w}+`}
@@ -137,8 +140,8 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
 
           {/* 3. Work Category */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Work Category
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+              {t.workCategories}
             </label>
             <div className="flex flex-wrap gap-1.5">
               {categories.map(cat => {
@@ -149,12 +152,12 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
                     onClick={() => toggleCategory(cat)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
                       isSelected
-                        ? 'bg-slate-900 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-[#2563EB] text-white shadow-sm'
+                        : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#EFF6FF]'
                     }`}
                   >
-                    {isSelected && <Check size={12} className="text-amber-400" />}
-                    <span>{cat}</span>
+                    {isSelected && <Check size={12} className="text-white" />}
+                    <span>{getCategoryLabel(cat, language)}</span>
                   </button>
                 );
               })}
@@ -163,7 +166,7 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
 
           {/* 4. Time of Day */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
               Time of Day
             </label>
             <div className="flex flex-wrap gap-2">
@@ -173,8 +176,8 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
                   onClick={() => setFilters(prev => ({ ...prev, timeSlot: t }))}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     filters.timeSlot === t
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-[#2563EB] text-white shadow-sm'
+                      : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#EFF6FF]'
                   }`}
                 >
                   {t}
@@ -185,7 +188,7 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
 
           {/* 5. Urgency */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
               Urgency / Start Date
             </label>
             <div className="flex flex-wrap gap-2">
@@ -195,8 +198,8 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
                   onClick={() => setFilters(prev => ({ ...prev, urgency: u }))}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     filters.urgency === u
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-[#2563EB] text-white shadow-sm'
+                      : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#EFF6FF]'
                   }`}
                 >
                   {u}
@@ -206,42 +209,42 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
           </div>
 
           {/* 6. Customer Trust & Skill Matching */}
-          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
-            <div className="text-xs font-bold text-slate-800">Trust & AI Matching</div>
+          <div className="p-3 bg-white rounded-2xl border border-[#E2E8F0] space-y-2.5">
+            <div className="text-xs font-bold text-[#111827]">Trust & AI Matching</div>
 
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs font-semibold text-[#111827] cursor-pointer">
               <input
                 type="checkbox"
                 checked={filters.kycOnly}
                 onChange={e => setFilters(prev => ({ ...prev, kycOnly: e.target.checked }))}
-                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
               />
               <span>Only KYC Verified Customers</span>
             </label>
 
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs font-semibold text-[#111827] cursor-pointer">
               <input
                 type="checkbox"
                 checked={filters.minRating >= 4.5}
                 onChange={e =>
                   setFilters(prev => ({ ...prev, minRating: e.target.checked ? 4.5 : 0 }))
                 }
-                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
               />
               <span>High Customer Rating (4.5+ ★)</span>
             </label>
 
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs font-semibold text-[#111827] cursor-pointer">
               <input
                 type="checkbox"
                 checked={filters.skillMatchOnly}
                 onChange={e =>
                   setFilters(prev => ({ ...prev, skillMatchOnly: e.target.checked }))
                 }
-                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
               />
               <span className="flex items-center gap-1">
-                <Sparkles size={12} className="text-amber-600" />
+                <Sparkles size={12} className="text-[#2563EB]" />
                 <span>Only Jobs Matching My Registered Skills</span>
               </span>
             </label>
@@ -249,12 +252,12 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
         </div>
 
         {/* Footer Apply CTA */}
-        <div className="p-4 border-t border-slate-200 bg-white">
+        <div className="p-4 border-t border-[#E2E8F0] bg-white">
           <button
             onClick={onClose}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 rounded-2xl shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 text-sm"
+            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3 rounded-2xl shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 text-sm"
           >
-            <span>Show {totalFilteredCount} Jobs</span>
+            <span>{t.applyFilters} ({totalFilteredCount})</span>
           </button>
         </div>
       </div>

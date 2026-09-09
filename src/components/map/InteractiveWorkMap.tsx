@@ -194,13 +194,13 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
     >
       {/* Top Floating Control Deck */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-2 pointer-events-auto">
-        <div className="bg-slate-900/90 backdrop-blur-md text-slate-100 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-700 shadow-md flex items-center gap-1.5">
-          <Compass size={14} className="text-amber-400" />
+        <div className="bg-white/95 backdrop-blur-md text-[#111827] text-xs font-semibold px-3 py-1.5 rounded-full border border-[#E2E8F0] shadow-md flex items-center gap-1.5">
+          <Compass size={14} className="text-[#2563EB]" />
           <span>Bengaluru Urban Grid</span>
         </div>
 
         {isLiveTracking && (
-          <div className="bg-emerald-500 text-slate-950 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse">
+          <div className="bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse">
             <Radio size={12} />
             <span>GPS TRACKING LIVE</span>
           </div>
@@ -211,7 +211,7 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
       <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5 pointer-events-auto">
         <button
           onClick={() => setZoomLevel(z => Math.min(1.8, Number((z + 0.15).toFixed(2))))}
-          className="p-2.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-md transition-all active:scale-95"
+          className="p-2.5 bg-white/95 hover:bg-[#F7F9FC] text-[#111827] rounded-xl border border-[#E2E8F0] shadow-md transition-all active:scale-95"
           title="Zoom In"
         >
           <ZoomIn size={16} />
@@ -219,7 +219,7 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
 
         <button
           onClick={() => setZoomLevel(z => Math.max(0.7, Number((z - 0.15).toFixed(2))))}
-          className="p-2.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-md transition-all active:scale-95"
+          className="p-2.5 bg-white/95 hover:bg-[#F7F9FC] text-[#111827] rounded-xl border border-[#E2E8F0] shadow-md transition-all active:scale-95"
           title="Zoom Out"
         >
           <ZoomOut size={16} />
@@ -227,7 +227,7 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
 
         <button
           onClick={handleRecenter}
-          className="p-2.5 bg-slate-900/90 hover:bg-amber-500 hover:text-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-md transition-all active:scale-95"
+          className="p-2.5 bg-white/95 hover:bg-[#EFF6FF] hover:text-[#2563EB] text-[#111827] rounded-xl border border-[#E2E8F0] shadow-md transition-all active:scale-95"
           title="Recenter on My Location"
         >
           <Crosshair size={16} />
@@ -237,8 +237,8 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
           onClick={() => setMapLayer(l => (l === 'standard' ? 'high_wage' : 'standard'))}
           className={`p-2.5 rounded-xl border shadow-md transition-all active:scale-95 ${
             mapLayer === 'high_wage'
-              ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
-              : 'bg-slate-900/90 text-slate-200 border-slate-700'
+              ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
+              : 'bg-white/95 text-[#111827] border-[#E2E8F0]'
           }`}
           title="Filter High Wage (₹800+)"
         >
@@ -437,47 +437,47 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
       {activePinJob && (
         <div
           onClick={e => e.stopPropagation()}
-          className="absolute bottom-3 left-3 right-3 z-30 bg-slate-900/95 backdrop-blur-md rounded-2xl p-3.5 border border-slate-700/80 shadow-2xl space-y-2.5 animate-in slide-in-from-bottom-2"
+          className="absolute bottom-3 left-3 right-3 z-30 bg-white/95 backdrop-blur-md rounded-2xl p-3.5 border border-[#E2E8F0] shadow-2xl space-y-2.5 animate-in slide-in-from-bottom-2"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <img
                 src={activePinJob.image}
                 alt={activePinJob.title}
-                className="w-12 h-12 rounded-xl object-cover border border-slate-700 shrink-0"
+                className="w-12 h-12 rounded-xl object-cover border border-[#E2E8F0] shrink-0"
               />
               <div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold bg-slate-800 text-amber-300 px-2 py-0.5 rounded-md border border-slate-700">
+                  <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] px-2 py-0.5 rounded-md border border-[#DBEAFE]">
                     {activePinJob.category}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-semibold">
+                  <span className="text-[10px] text-[#64748B] font-semibold">
                     {activePinJob.approximateDistanceKm} km away
                   </span>
                 </div>
-                <h4 className="text-sm font-extrabold text-white line-clamp-1 mt-0.5">
+                <h4 className="text-sm font-bold text-[#111827] line-clamp-1 mt-0.5">
                   {activePinJob.title}
                 </h4>
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <MapPin size={11} className="text-amber-400" />
+                <div className="flex items-center gap-1 text-[11px] text-[#64748B]">
+                  <MapPin size={11} className="text-[#2563EB]" />
                   <span className="truncate">{activePinJob.approximateArea}</span>
                 </div>
               </div>
             </div>
 
             <div className="text-right shrink-0">
-              <div className="text-base font-black text-amber-400">
+              <div className="text-base font-black text-[#2563EB]">
                 ₹{activePinJob.wage}
               </div>
-              <div className="text-[10px] text-slate-400 font-semibold">per shift</div>
+              <div className="text-[10px] text-[#64748B] font-semibold">per shift</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 border-t border-slate-800">
+          <div className="flex items-center gap-2 pt-1 border-t border-[#E2E8F0]">
             {/* Open in Google Maps */}
             <button
               onClick={() => handleOpenGoogleMaps(activePinJob)}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+              className="px-3 py-2 bg-[#F7F9FC] hover:bg-[#EFF6FF] text-[#64748B] hover:text-[#2563EB] border border-[#E2E8F0] rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
               title="Open location in Google Maps"
             >
               <ExternalLink size={13} />
@@ -487,7 +487,7 @@ export const InteractiveWorkMap: React.FC<MapProps> = ({
             {/* View Details & Apply */}
             <button
               onClick={() => onSelectJob(activePinJob)}
-              className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-98"
+              className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-98"
             >
               <span>View Details & Apply</span>
               <ArrowRight size={14} />

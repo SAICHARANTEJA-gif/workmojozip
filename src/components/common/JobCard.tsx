@@ -2,6 +2,8 @@ import React from 'react';
 import { Job } from '../../types';
 import { useApp } from '../../store/AppContext';
 import { calculateMatchScore } from '../../services/matchingService';
+import { getCategoryLabel } from '../../config/categories';
+import { UserAvatar } from './UserAvatar';
 import {
   Clock,
   MapPin,
@@ -27,7 +29,7 @@ export const JobCard: React.FC<JobCardProps> = ({
   onApply,
   compact = false,
 }) => {
-  const { user, savedJobIds, toggleSaveJob, activeRole, t } = useApp();
+  const { user, savedJobIds, toggleSaveJob, activeRole, t, theme, language } = useApp();
   const isSaved = savedJobIds.includes(job.id);
   const matchResult = calculateMatchScore(user, job);
   const isConfirmed = job.confirmedWorkerIds.includes(user.id);
@@ -37,21 +39,23 @@ export const JobCard: React.FC<JobCardProps> = ({
   const isFull = job.workersConfirmed >= job.workersRequired || job.status === 'Filled';
 
   return (
-    <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-200/90 hover:shadow-md hover:border-amber-400/80 transition-all text-slate-900 relative group overflow-hidden">
+    <div
+      className="rounded-3xl p-4 transition-all relative group overflow-hidden bg-white border border-[#E2E8F0] hover:border-[#2563EB]/60 hover:shadow-md text-[#111827] shadow-xs"
+    >
       {/* Top Bar: Category Pill, Match Score, Save Button */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="bg-slate-100 text-slate-800 text-[11px] font-bold px-2.5 py-0.8 rounded-full border border-slate-200">
-            {job.category}
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+            {getCategoryLabel(job.category, language)}
           </span>
           {activeRole === 'worker' && (
-            <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Sparkles size={11} className="text-amber-600" />
+            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 border bg-[#FFFBEB] text-[#92400E] border-[#FDE68A] shadow-2xs">
+              <Sparkles size={11} className="text-[#F5A900]" />
               <span>{matchResult.score}% {t.matchScore}</span>
             </span>
           )}
           {job.recurring && job.recurring !== 'none' && (
-            <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8] border border-[#DBEAFE]">
               Recurring ({job.recurring})
             </span>
           )}
@@ -65,7 +69,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           className={`p-2 rounded-full transition-all ${
             isSaved
               ? 'text-rose-500 bg-rose-50 hover:bg-rose-100'
-              : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'
+              : 'text-[#64748B] hover:text-rose-500 hover:bg-[#EFF6FF]'
           }`}
           title={isSaved ? 'Unsave Job' : t.save}
         >
@@ -78,39 +82,44 @@ export const JobCard: React.FC<JobCardProps> = ({
         <img
           src={job.image}
           alt={job.title}
-          className="w-20 h-20 rounded-2xl object-cover shrink-0 border border-slate-200 shadow-inner"
+          className="w-20 h-20 rounded-2xl object-cover shrink-0 border border-[#E2E8F0] shadow-inner"
         />
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-extrabold text-base text-slate-900 tracking-tight leading-snug line-clamp-1 group-hover:text-amber-700 transition-colors">
+          <h3 className="font-extrabold text-base tracking-tight leading-snug line-clamp-1 transition-colors text-[#111827] group-hover:text-[#2563EB]">
             {job.title}
           </h3>
 
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-lg font-black text-amber-600">₹{job.wage}</span>
-            <span className="text-xs font-semibold text-slate-500">/ {t.perShift}</span>
+          {/* Yellow Wage Highlight */}
+          <div className="inline-flex items-baseline gap-1 mt-1 px-2 py-0.5 rounded-lg bg-[#FFFBEB] border border-[#FDE68A]">
+            <span className="text-base font-black text-[#111827]">
+              ₹{job.wage}
+            </span>
+            <span className="text-[10px] font-bold text-[#92400E]">
+              / {t.perShift}
+            </span>
           </div>
 
-          <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-relaxed">
+          <p className="text-xs line-clamp-2 mt-1 leading-relaxed text-[#64748B]">
             {job.description}
           </p>
         </div>
       </div>
 
-      {/* Job Meta Chips: Time, Distance, Workers Required */}
-      <div className="grid grid-cols-3 gap-2 my-3 p-2.5 bg-slate-50 rounded-2xl border border-slate-100 text-[11px] font-semibold text-slate-700">
-        <div className="flex items-center gap-1">
-          <Clock size={13} className="text-slate-500 shrink-0" />
+      {/* Job Meta Chips: Time, Distance, Workers Required with distinctive blue icons */}
+      <div className="grid grid-cols-3 gap-2 my-3 p-2.5 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-[11px] font-semibold text-[#111827] transition-colors">
+        <div className="flex items-center gap-1.5">
+          <Clock size={13} className="shrink-0 text-[#2563EB]" />
           <span className="truncate">{job.startTime} ({job.duration})</span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <MapPin size={13} className="text-slate-500 shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <MapPin size={13} className="shrink-0 text-[#2563EB]" />
           <span className="truncate">{job.approximateDistanceKm} km</span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Users size={13} className="text-slate-500 shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <Users size={13} className="shrink-0 text-[#2563EB]" />
           <span className="truncate">
             {job.workersConfirmed}/{job.workersRequired} Filled
           </span>
@@ -118,33 +127,34 @@ export const JobCard: React.FC<JobCardProps> = ({
       </div>
 
       {/* Approximate Location (Privacy Shielding reminder) */}
-      <div className="text-[11px] text-slate-500 flex items-center gap-1 mb-3">
-        <span className="font-semibold text-slate-700">Area:</span>
+      <div className="text-[11px] flex items-center gap-1 mb-3 text-[#64748B]">
+        <span className="font-semibold text-[#111827]">Area:</span>
         <span className="truncate">{job.approximateArea}</span>
       </div>
 
       {/* Customer Trust Card */}
-      <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
+      <div className="flex items-center justify-between pt-2.5 border-t border-[#E2E8F0]">
         <div className="flex items-center gap-2">
-          <img
+          <UserAvatar
             src={job.customerPhoto}
-            alt={job.customerName}
-            className="w-7 h-7 rounded-full object-cover border border-slate-200"
+            name={job.customerName}
+            role="customer"
+            size="sm"
           />
           <div>
             <div className="flex items-center gap-1">
-              <span className="text-xs font-bold text-slate-800 line-clamp-1">
+              <span className="text-xs font-bold line-clamp-1 text-[#111827]">
                 {job.customerName}
               </span>
               {job.customerKyc && (
                 <span title="KYC Verified Customer">
-                  <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                  <ShieldCheck size={13} className="text-[#16A34A] shrink-0" />
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-slate-500">
-              <Star size={10} className="fill-amber-400 text-amber-400" />
-              <span className="font-bold text-slate-700">{job.customerRating}</span>
+            <div className="flex items-center gap-1 text-[10px] text-[#64748B]">
+              <Star size={10} className="fill-[#F59E0B] text-[#F59E0B]" />
+              <span className="font-bold text-[#111827]">{job.customerRating}</span>
               <span>• Customer</span>
             </div>
           </div>
@@ -155,7 +165,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           {isConfirmed ? (
             <button
               onClick={() => onViewDetails && onViewDetails(job)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.8 rounded-xl flex items-center gap-1 shadow-sm transition-all"
+              className="bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1 shadow-xs transition-all"
             >
               <CheckCircle2 size={13} />
               <span>{t.confirmed}</span>
@@ -163,31 +173,31 @@ export const JobCard: React.FC<JobCardProps> = ({
           ) : isWaitingList ? (
             <button
               onClick={() => onViewDetails && onViewDetails(job)}
-              className="bg-amber-100 text-amber-900 border border-amber-400 text-xs font-bold px-3 py-1.8 rounded-xl flex items-center gap-1"
+              className="bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1"
             >
               <span>#{waitingPos} {t.waitingList.split(' ')[0]}</span>
             </button>
           ) : isApplied ? (
             <button
               onClick={() => onViewDetails && onViewDetails(job)}
-              className="bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.8 rounded-xl"
+              className="bg-[#F1F5F9] text-[#64748B] text-xs font-bold px-3 py-2 rounded-xl border border-[#E2E8F0]"
             >
               <span>{t.tabApplied}</span>
             </button>
           ) : isFull ? (
             <button
               onClick={() => (onApply ? onApply(job) : onViewDetails && onViewDetails(job))}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3 py-1.8 rounded-xl shadow-sm transition-all"
+              className="bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] border border-[#DBEAFE] text-xs font-bold px-3 py-2 rounded-xl transition-all"
             >
               <span>{t.waitingList}</span>
             </button>
           ) : (
             <button
               onClick={() => (onApply ? onApply(job) : onViewDetails && onViewDetails(job))}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3.5 py-1.8 rounded-xl shadow-sm flex items-center gap-1 transition-all active:scale-95"
+              className="bg-[#F5A900] hover:bg-[#E09900] text-[#111827] font-black text-xs px-4 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition-all border border-[#E09900]/40 active:scale-95 cursor-pointer"
             >
               <span>{t.applyNow}</span>
-              <ArrowRight size={13} />
+              <ArrowRight size={13} className="stroke-[2.5]" />
             </button>
           )}
         </div>

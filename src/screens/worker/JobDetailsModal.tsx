@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Job } from '../../types';
 import { useApp } from '../../store/AppContext';
 import { calculateMatchScore } from '../../services/matchingService';
+import { getCategoryLabel } from '../../config/categories';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   X,
   MapPin,
@@ -30,7 +32,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
   onClose,
   onOpenConfirmed,
 }) => {
-  const { user, savedJobIds, toggleSaveJob, applyToJob, cancelConfirmedJob } = useApp();
+  const { user, savedJobIds, toggleSaveJob, applyToJob, cancelConfirmedJob, t, language } = useApp();
   const [isApplying, setIsApplying] = useState(false);
   const [justApplied, setJustApplied] = useState(false);
 
@@ -88,12 +90,12 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
 
           {/* Badges on Banner */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-            <span className="bg-amber-500 text-slate-950 text-xs font-black px-3 py-1 rounded-full shadow-md">
-              {job.category}
+            <span className="bg-[#2563EB] text-white text-xs font-black px-3 py-1 rounded-full shadow-md">
+              {getCategoryLabel(job.category, language)}
             </span>
-            <div className="bg-slate-900/90 text-amber-400 border border-amber-400/40 text-xs font-bold px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1">
-              <Sparkles size={12} />
-              <span>{matchResult.score}% AI Match</span>
+            <div className="bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] text-xs font-black px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1 shadow-sm">
+              <Sparkles size={12} className="text-[#F5A900] fill-[#F5A900]" />
+              <span>{matchResult.score}% {t.matchScore}</span>
             </div>
           </div>
         </div>
@@ -103,74 +105,74 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
           {/* Title & Wage */}
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-extrabold text-slate-900 leading-tight">
+              <h2 className="text-xl font-black text-[#111827] leading-tight">
                 {job.title}
               </h2>
-              <div className="text-xs text-slate-500 mt-0.5">
+              <div className="text-xs text-[#64748B] mt-0.5 font-medium">
                 Posted by {job.customerName}
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-2xl font-black text-amber-600 leading-none">
+              <div className="inline-block px-2.5 py-1 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl text-2xl font-black text-[#92400E] leading-tight">
                 ₹{job.wage}
               </div>
-              <div className="text-[10px] text-slate-500 font-semibold mt-0.5">Per Shift</div>
+              <div className="text-[10px] text-[#64748B] font-bold mt-0.5 uppercase tracking-wider">{t.perShift}</div>
             </div>
           </div>
 
           {/* Key Job Timing & Worker Slots Grid */}
-          <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs font-semibold">
+          <div className="grid grid-cols-3 gap-2 p-3 bg-[#F7F9FC] rounded-2xl border border-[#E2E8F0] text-xs font-semibold">
             <div className="space-y-0.5">
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Timing</div>
-              <div className="text-slate-800 font-bold">{job.startTime}</div>
-              <div className="text-[11px] text-slate-500">{job.duration}</div>
+              <div className="text-[10px] text-[#64748B] uppercase tracking-wide font-bold">{t.timingLabel}</div>
+              <div className="text-[#111827] font-black">{job.startTime}</div>
+              <div className="text-[11px] text-[#64748B]">{job.duration}</div>
             </div>
 
             <div className="space-y-0.5">
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Distance</div>
-              <div className="text-slate-800 font-bold">{job.approximateDistanceKm} km</div>
-              <div className="text-[11px] text-slate-500">From you</div>
+              <div className="text-[10px] text-[#64748B] uppercase tracking-wide font-bold">{t.distanceLabel}</div>
+              <div className="text-[#111827] font-black">{job.approximateDistanceKm} km</div>
+              <div className="text-[11px] text-[#64748B]">{t.fromYou}</div>
             </div>
 
             <div className="space-y-0.5">
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Required</div>
-              <div className="text-slate-800 font-bold">
+              <div className="text-[10px] text-[#64748B] uppercase tracking-wide font-bold">{t.requiredLabel}</div>
+              <div className="text-[#111827] font-black">
                 {job.workersConfirmed} / {job.workersRequired} Filled
               </div>
-              <div className="text-[11px] text-amber-600">
-                {Math.max(0, job.workersRequired - job.workersConfirmed)} slot(s) open
+              <div className="text-[11px] text-[#2563EB] font-bold">
+                {Math.max(0, job.workersRequired - job.workersConfirmed)} {t.slotsOpen}
               </div>
             </div>
           </div>
 
           {/* PRIVACY SHIELD: Location Disclosure */}
-          <div className="p-3.5 rounded-2xl border transition-all bg-slate-50 border-slate-200">
+          <div className="p-3.5 rounded-2xl border transition-all bg-[#F7F9FC] border-[#E2E8F0]">
             <div className="flex items-center gap-2 mb-1.5">
-              <MapPin size={16} className="text-amber-600" />
-              <div className="font-bold text-xs text-slate-800">Workplace Location</div>
+              <MapPin size={16} className="text-[#2563EB]" />
+              <div className="font-black text-xs text-[#111827]">{t.workplaceLocation}</div>
               {!isConfirmed && (
-                <span className="ml-auto flex items-center gap-1 text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                <span className="ml-auto flex items-center gap-1 text-[10px] bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-full font-bold">
                   <Lock size={10} />
-                  <span>Privacy Shielded</span>
+                  <span>{t.privacyShielded}</span>
                 </span>
               )}
             </div>
 
             {isConfirmed ? (
-              <div className="text-xs text-slate-700 space-y-1">
-                <p className="font-semibold text-slate-900">{job.exactLocation.exactAddress}</p>
+              <div className="text-xs text-[#111827] space-y-1">
+                <p className="font-bold text-[#111827]">{job.exactLocation.exactAddress}</p>
                 {job.exactLocation.landmark && (
-                  <p className="text-slate-500">Landmark: {job.exactLocation.landmark}</p>
+                  <p className="text-[#64748B]">Landmark: {job.exactLocation.landmark}</p>
                 )}
-                <div className="text-emerald-700 font-bold text-[11px] flex items-center gap-1 mt-1">
+                <div className="text-[#16A34A] font-bold text-[11px] flex items-center gap-1 mt-1">
                   <CheckCircle2 size={12} />
-                  <span>Exact address unlocked upon confirmation</span>
+                  <span>{t.exactAddressUnlocked}</span>
                 </div>
               </div>
             ) : (
-              <div className="text-xs text-slate-600">
-                <p className="font-semibold text-slate-800">{job.approximateArea}</p>
-                <p className="text-[11px] text-slate-500 mt-1 italic">
+              <div className="text-xs text-[#64748B]">
+                <p className="font-bold text-[#111827]">{job.approximateArea}</p>
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium leading-relaxed">
                   Exact house/shop number & live GPS route unlock immediately once the customer confirms your application.
                 </p>
               </div>
@@ -179,57 +181,57 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
 
           {/* Job Description */}
           <div>
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              About the Work
+            <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1.5">
+              {t.aboutTheWork}
             </h4>
-            <p className="text-sm text-slate-700 leading-relaxed bg-white p-3 rounded-2xl border border-slate-100">
+            <p className="text-sm text-[#111827] leading-relaxed bg-[#F7F9FC] p-3.5 rounded-2xl border border-[#E2E8F0] font-medium">
               {job.description}
             </p>
           </div>
 
           {/* AI Fair Match Breakdown (Section 35) */}
-          <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200">
+          <div className="p-3.5 bg-[#EFF6FF] rounded-2xl border border-[#DBEAFE]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Sparkles size={14} className="text-amber-600" />
-                <span className="font-extrabold text-xs text-amber-950">
-                  Transparent AI Match: {matchResult.score}%
+                <Sparkles size={14} className="text-[#2563EB]" />
+                <span className="font-black text-xs text-[#2563EB]">
+                  {t.transparentAiMatch}: {matchResult.score}%
                 </span>
               </div>
-              <span className="text-[10px] text-amber-800 font-semibold">SIH Cooperative Metric</span>
+              <span className="text-[10px] text-[#2563EB] font-bold">SIH Cooperative Metric</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-700 mb-2.5">
-              <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/60">
-                <div className="text-[9px] text-slate-500">Skills (30%)</div>
-                <div className="font-bold text-slate-800">{matchResult.breakdown.skills}/30</div>
+            <div className="grid grid-cols-3 gap-2 text-[11px] text-[#111827] mb-2.5">
+              <div className="bg-white p-2 rounded-xl border border-[#DBEAFE] shadow-xs">
+                <div className="text-[9px] text-[#64748B] font-bold">Skills (30%)</div>
+                <div className="font-black text-[#111827]">{matchResult.breakdown.skills}/30</div>
               </div>
-              <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/60">
-                <div className="text-[9px] text-slate-500">Distance (20%)</div>
-                <div className="font-bold text-slate-800">{matchResult.breakdown.distance}/20</div>
+              <div className="bg-white p-2 rounded-xl border border-[#DBEAFE] shadow-xs">
+                <div className="text-[9px] text-[#64748B] font-bold">Distance (20%)</div>
+                <div className="font-black text-[#111827]">{matchResult.breakdown.distance}/20</div>
               </div>
-              <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/60">
-                <div className="text-[9px] text-slate-500">Availability (20%)</div>
-                <div className="font-bold text-slate-800">{matchResult.breakdown.availability}/20</div>
+              <div className="bg-white p-2 rounded-xl border border-[#DBEAFE] shadow-xs">
+                <div className="text-[9px] text-[#64748B] font-bold">Availability (20%)</div>
+                <div className="font-black text-[#111827]">{matchResult.breakdown.availability}/20</div>
               </div>
-              <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/60">
-                <div className="text-[9px] text-slate-500">Rating (15%)</div>
-                <div className="font-bold text-slate-800">{matchResult.breakdown.rating}/15</div>
+              <div className="bg-white p-2 rounded-xl border border-[#DBEAFE] shadow-xs">
+                <div className="text-[9px] text-[#64748B] font-bold">Rating (15%)</div>
+                <div className="font-black text-[#111827]">{matchResult.breakdown.rating}/15</div>
               </div>
-              <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/60">
-                <div className="text-[9px] text-slate-500">Experience (10%)</div>
-                <div className="font-bold text-slate-800">{matchResult.breakdown.experience}/10</div>
+              <div className="bg-white p-2 rounded-xl border border-[#DBEAFE] shadow-xs">
+                <div className="text-[9px] text-[#64748B] font-bold">Experience (10%)</div>
+                <div className="font-black text-[#111827]">{matchResult.breakdown.experience}/10</div>
               </div>
-              <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/60">
-                <div className="text-[9px] text-slate-500">Reliability (5%)</div>
-                <div className="font-bold text-slate-800">{matchResult.breakdown.reliability}/5</div>
+              <div className="bg-white p-2 rounded-xl border border-[#DBEAFE] shadow-xs">
+                <div className="text-[9px] text-[#64748B] font-bold">Reliability (5%)</div>
+                <div className="font-black text-[#111827]">{matchResult.breakdown.reliability}/5</div>
               </div>
             </div>
 
-            <div className="space-y-1 text-[11px] text-amber-900">
+            <div className="space-y-1 text-[11px] text-[#111827] font-medium">
               {matchResult.reasons.map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
+                  <CheckCircle2 size={12} className="text-[#2563EB] shrink-0" />
                   <span>{r}</span>
                 </div>
               ))}
@@ -237,28 +239,29 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
           </div>
 
           {/* Customer Profile & Reputation */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+          <div className="p-3.5 bg-[#F7F9FC] rounded-2xl border border-[#E2E8F0] flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
+              <UserAvatar
                 src={job.customerPhoto}
-                alt={job.customerName}
-                className="w-11 h-11 rounded-full object-cover border border-slate-300 shadow-xs"
+                name={job.customerName}
+                role="customer"
+                size="md"
               />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-slate-900">{job.customerName}</span>
+                  <span className="font-black text-sm text-[#111827]">{job.customerName}</span>
                   {job.customerKyc && (
                     <span title="KYC Verified">
-                      <ShieldCheck size={15} className="text-emerald-600" />
+                      <ShieldCheck size={15} className="text-[#2563EB]" />
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                  <span className="flex items-center gap-0.5 text-amber-600 font-bold">
-                    <Star size={12} className="fill-amber-400 text-amber-400" />
+                <div className="flex items-center gap-2 text-xs text-[#64748B] mt-0.5">
+                  <span className="flex items-center gap-0.5 text-[#92400E] font-bold">
+                    <Star size={12} className="fill-[#F59E0B] text-[#F59E0B]" />
                     {job.customerRating}
                   </span>
-                  <span>• 30+ completed gigs</span>
+                  <span className="font-medium">• 30+ completed gigs</span>
                 </div>
               </div>
             </div>
@@ -266,15 +269,15 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
         </div>
 
         {/* Footer Action CTA */}
-        <div className="p-4 border-t border-slate-200 bg-white">
+        <div className="p-4 border-t border-[#E2E8F0] bg-white">
           {isConfirmed ? (
             <div className="space-y-2">
               <button
                 onClick={() => onOpenConfirmed && onOpenConfirmed(job)}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-2xl shadow-md flex items-center justify-center gap-2 text-sm transition-all"
+                className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs flex items-center justify-center gap-2 text-sm transition-all active:scale-95 cursor-pointer"
               >
                 <Navigation size={16} />
-                <span>Open Confirmed Job & Navigation</span>
+                <span>{t.navigate}</span>
               </button>
               <button
                 onClick={() => {
@@ -283,27 +286,27 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
                     onClose();
                   }
                 }}
-                className="w-full text-xs text-rose-600 font-bold py-1 hover:underline"
+                className="w-full text-xs text-rose-600 font-bold py-1 hover:underline text-center cursor-pointer"
               >
-                Cancel My Confirmed Slot
+                {t.cancelSlotBtn}
               </button>
             </div>
           ) : isWaitingList ? (
-            <div className="bg-amber-50 border border-amber-300 p-3 rounded-2xl text-center">
-              <div className="font-extrabold text-sm text-amber-900">
-                You are #{waitingPos} on the Waiting List
+            <div className="bg-[#EFF6FF] border border-[#DBEAFE] p-3.5 rounded-2xl text-center">
+              <div className="font-black text-sm text-[#2563EB]">
+                #{waitingPos} {t.tabWaitingList}
               </div>
-              <p className="text-xs text-amber-800 mt-1">
+              <p className="text-xs text-[#64748B] mt-1 font-medium">
                 If any confirmed worker cancels, you will automatically be promoted to Confirmed!
               </p>
             </div>
           ) : isApplied || justApplied ? (
-            <div className="bg-slate-100 p-3 rounded-2xl text-center border border-slate-200">
-              <div className="font-extrabold text-sm text-slate-800 flex items-center justify-center gap-1.5">
-                <CheckCircle2 size={16} className="text-emerald-600" />
+            <div className="bg-[#F7F9FC] p-3.5 rounded-2xl text-center border border-[#E2E8F0]">
+              <div className="font-black text-sm text-[#111827] flex items-center justify-center gap-1.5">
+                <CheckCircle2 size={16} className="text-[#16A34A]" />
                 <span>Application Submitted</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[#64748B] mt-1 font-medium">
                 Status: Waiting for customer review & confirmation.
               </p>
             </div>
@@ -311,14 +314,14 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
             <button
               onClick={handleApply}
               disabled={isApplying}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 rounded-2xl shadow-md flex items-center justify-center gap-2 text-sm transition-all active:scale-98 disabled:opacity-60"
+              className="w-full bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] border border-[#DBEAFE] font-bold py-3.5 rounded-2xl shadow-xs flex items-center justify-center gap-2 text-sm transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
             >
               {isApplying ? (
-                <span>Adding to waiting list...</span>
+                <span>Loading...</span>
               ) : (
                 <>
                   <Users size={16} />
-                  <span>Job Filled — Join Waiting List</span>
+                  <span>{t.joinWaitingListBtn}</span>
                 </>
               )}
             </button>
@@ -326,14 +329,14 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
             <button
               onClick={handleApply}
               disabled={isApplying}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-2xl shadow-md flex items-center justify-center gap-2 text-sm transition-all active:scale-98 disabled:opacity-60"
+              className="w-full bg-[#F5A900] hover:bg-[#E09900] text-[#111827] font-black py-3.5 rounded-2xl shadow-xs flex items-center justify-center gap-2 text-sm transition-all active:scale-95 disabled:opacity-60 border border-[#E09900]/40 cursor-pointer"
             >
               {isApplying ? (
-                <span>Submitting application...</span>
+                <span>Loading...</span>
               ) : (
                 <>
-                  <span>Apply Now (₹{job.wage})</span>
-                  <ArrowRight size={16} />
+                  <span>{t.applyNow} (₹{job.wage})</span>
+                  <ArrowRight size={16} className="stroke-[2.5]" />
                 </>
               )}
             </button>

@@ -17,6 +17,10 @@ import {
   AttendanceRecord,
   PaymentRecord,
   DigitalReceiptData,
+  WorkerPaymentPreference,
+  WorkerBankDetails,
+  WorkerUpiDetails,
+  PaymentStatus,
 } from '../types';
 import {
   INITIAL_CURRENT_USER,
@@ -24,9 +28,11 @@ import {
   SEED_CUSTOMERS,
   SEED_JOBS,
   INITIAL_NOTIFICATIONS,
+  SEED_PAYMENTS,
 } from '../data/seedData';
 import { calculateMatchScore } from '../services/matchingService';
 import { translations, Translations } from '../data/translations';
+import { api } from '../services/api';
 
 interface AppContextType {
   // Auth & User
@@ -107,9 +113,15 @@ interface AppContextType {
   payments: PaymentRecord[];
   activeReceipt: DigitalReceiptData | null;
   setActiveReceipt: (receipt: DigitalReceiptData | null) => void;
+  updateWorkerPaymentPreference: (pref: WorkerPaymentPreference) => Promise<boolean>;
+  updateBankDetails: (details: WorkerBankDetails) => void;
+  updateUpiDetails: (details: WorkerUpiDetails) => void;
+  updatePaymentStatus: (paymentId: string, status: PaymentStatus, notes?: string) => void;
   authorizeJobPayment: (jobId: string, amount: number) => PaymentRecord;
   releaseJobPayment: (paymentId: string, utrNumber?: string) => void;
   disputeJobPayment: (paymentId: string, reason: string) => void;
+  recordOfflinePayment: (jobId: string, amount: number, notes?: string) => PaymentRecord;
+  settleOfflinePayment: (paymentId: string, notes?: string) => void;
 
   // Worker Directory Direct Invites (Phase 5)
   inviteWorkerToJob: (workerId: string, jobId: string) => void;
@@ -122,6 +134,11 @@ interface AppContextType {
   setActiveLiveTrackingJobId: (id: string | null) => void;
   systemMode: 'demo' | 'production';
   toggleSystemMode: () => void;
+
+  // Theme (Dark / Light Mode)
+  theme: 'dark' | 'light';
+  setTheme: (theme: 'dark' | 'light') => void;
+  toggleTheme: () => void;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -169,7 +186,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [jobs, setJobs] = useState<Job[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'jobs');
-    return saved ? JSON.parse(saved) : SEED_JOBS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Strictly deduplicate by ID and content signature to purge any legacy duplicates
+          const map = new Map<string, Job>();
+          const seenSignatures = new Set<string>();
+          for (const j of parsed) {
+            const sig = `${j.customerId || j.customerName}_${j.title}_${j.wage}_${j.startTime}_${j.category}`;
+            if (!map.has(j.id) && !seenSignatures.has(sig)) {
+              map.set(j.id, j);
+              seenSignatures.add(sig);
+            }
+          }
+          return Array.from(map.values());
+        }
+      } catch (_) {}
+    }
+    return SEED_JOBS;
   });
 
   const [allWorkers, setAllWorkers] = useState<User[]>(() => {
@@ -234,29 +269,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Protected Payments (Phases 8–13)
   const [payments, setPayments] = useState<PaymentRecord[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'payments');
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 'pay-1',
-            jobId: 'job-1',
-            jobTitle: 'Shop Loading & Unloading Assistant',
-            employerId: 'c1',
-            employerName: 'Kumar Stores (Suresh Kumar)',
-            workerId: 'w1',
-            workerName: 'Arun Kumar',
-            amount: 800,
-            platformFee: 0,
-            totalAmount: 800,
-            method: 'UPI',
-            status: 'AUTHORIZED', // Protected Payment held
-            isSimulatedDemo: true,
-            createdAt: new Date().toISOString(),
-          },
-        ];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (_) {}
+    }
+    return SEED_PAYMENTS;
   });
 
   const [activeReceipt, setActiveReceipt] = useState<DigitalReceiptData | null>(null);
+
+  const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'theme');
+    return (saved as 'dark' | 'light') || 'dark';
+  });
+
+  const setTheme = (newTheme: 'dark' | 'light') => {
+    setThemeState(newTheme);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  };
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   const toggleSystemMode = () => {
     setSystemMode(prev => (prev === 'demo' ? 'production' : 'demo'));
@@ -369,7 +419,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       preferredDistance: prefs.preferredDistance ?? prev.preferredDistance,
       preferredWage: prefs.minimumWage ?? prev.preferredWage,
       skills: prefs.skills ?? prev.skills,
+      paymentPreference: prefs.paymentPreference ?? prev.paymentPreference,
+      preferredPaymentMethod: prefs.paymentPreference ?? prev.preferredPaymentMethod,
     }));
+
+    if (prefs.paymentPreference) {
+      const pref = prefs.paymentPreference;
+      setAllWorkers(prev =>
+        prev.map(w =>
+          w.id === user.id
+            ? { ...w, paymentPreference: pref, preferredPaymentMethod: pref }
+            : w
+        )
+      );
+      try {
+        fetch(`/api/v1/workers/${user.id}/payment-preference`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentPreference: pref }),
+        }).catch(() => {});
+      } catch (_) {}
+    }
   };
 
   const addNotification = useCallback((notif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
@@ -625,6 +695,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Create New Job
   const createJob = (jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>): Job => {
+    // Check if an identical job already exists to prevent duplicate submissions
+    const existing = jobs.find(
+      j =>
+        (j.customerId === jobData.customerId || j.customerName === jobData.customerName) &&
+        j.title.trim().toLowerCase() === jobData.title.trim().toLowerCase() &&
+        j.category === jobData.category &&
+        j.wage === jobData.wage &&
+        j.startTime === jobData.startTime
+    );
+
+    if (existing) {
+      return existing;
+    }
+
     const newJob: Job = {
       ...jobData,
       id: 'job-' + Date.now(),
@@ -637,7 +721,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updatedAt: new Date().toISOString(),
     };
 
-    setJobs(prev => [newJob, ...prev]);
+    setJobs(prev => {
+      const map = new Map<string, Job>();
+      // Put newJob first
+      map.set(newJob.id, newJob);
+      for (const j of prev) {
+        if (!map.has(j.id)) {
+          const sig = `${j.customerId || j.customerName}_${j.title.trim().toLowerCase()}_${j.wage}_${j.startTime}_${j.category}`;
+          const newSig = `${newJob.customerId || newJob.customerName}_${newJob.title.trim().toLowerCase()}_${newJob.wage}_${newJob.startTime}_${newJob.category}`;
+          if (sig !== newSig) {
+            map.set(j.id, j);
+          }
+        }
+      }
+      return Array.from(map.values());
+    });
 
     // Check if new job matches worker preferences and fire Alert
     if (user.preferredCategories.includes(newJob.category) && newJob.wage >= user.preferredWage) {
@@ -650,6 +748,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         actionScreen: 'job_details',
       });
     }
+
+    // Sync newly created job to backend API (and Supabase if configured)
+    api.postJob(newJob).catch(err => {
+      console.warn('[JobSync] Warning syncing job to backend:', err);
+    });
 
     return newJob;
   };
@@ -788,11 +891,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  // --- PROTECTED PAYMENT WORKFLOW (Phases 8–13) ---
+  // --- PROTECTED PAYMENT WORKFLOW (Phases 8–13) & OFFLINE SETTLEMENT ---
+  const updateWorkerPaymentPreference = async (pref: WorkerPaymentPreference): Promise<boolean> => {
+    try {
+      setUser(prev => ({
+        ...prev,
+        paymentPreference: pref,
+        preferredPaymentMethod: pref,
+      }));
+
+      setAllWorkers(prev =>
+        prev.map(w =>
+          w.id === user.id
+            ? { ...w, paymentPreference: pref, preferredPaymentMethod: pref }
+            : w
+        )
+      );
+
+      const res = await fetch(`/api/v1/workers/${user.id}/payment-preference`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentPreference: pref }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+
+      addNotification({
+        recipientId: user.id,
+        title: 'Payment Method Updated',
+        message: `Preferred payout set to ${
+          pref === 'ONLINE' ? 'Online Payment (Protected UPI/Bank)' : 'Offline Payment (Cash on Shift Completion)'
+        }.`,
+        type: 'alert_triggered',
+      });
+
+      return true;
+    } catch (err) {
+      console.error('[Payment Preference Save Error]', err);
+      return false;
+    }
+  };
+
   const authorizeJobPayment = (jobId: string, amount: number): PaymentRecord => {
     const targetJob = jobs.find(j => j.id === jobId);
     const workerId = targetJob?.confirmedWorkerIds[0] || user.id;
     const worker = allWorkers.find(w => w.id === workerId) || user;
+    const pref: WorkerPaymentPreference =
+      worker.paymentPreference ||
+      (worker.preferredPaymentMethod === 'Cash' || worker.preferredPaymentMethod === 'OFFLINE'
+        ? 'OFFLINE'
+        : 'ONLINE');
 
     const newPayment: PaymentRecord = {
       id: 'pay-' + Date.now(),
@@ -805,8 +955,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       amount,
       platformFee: 0.0, // Cooperative zero cut
       totalAmount: amount,
-      method: 'UPI',
-      status: 'AUTHORIZED', // Protected state
+      method: pref === 'OFFLINE' ? 'OFFLINE' : 'UPI',
+      paymentPreference: pref,
+      status: pref === 'OFFLINE' ? 'PENDING' : 'AUTHORIZED',
       isSimulatedDemo: systemMode === 'demo',
       createdAt: new Date().toISOString(),
     };
@@ -815,13 +966,101 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     addNotification({
       recipientId: workerId,
-      title: `Wage Authorized: ₹${amount} (Protected)`,
-      message: `Payment authorized for "${newPayment.jobTitle}". Will release upon shift completion.`,
+      title: pref === 'OFFLINE' ? `Offline Cash Wage Set: ₹${amount}` : `Wage Authorized: ₹${amount} (Protected)`,
+      message:
+        pref === 'OFFLINE'
+          ? `Employer recorded shift payment of ₹${amount} in Cash upon completion.`
+          : `Payment authorized for "${newPayment.jobTitle}". Will release upon shift completion.`,
       type: 'payment_authorized',
       targetJobId: jobId,
     });
 
     return newPayment;
+  };
+
+  const recordOfflinePayment = (jobId: string, amount: number, notes?: string): PaymentRecord => {
+    const targetJob = jobs.find(j => j.id === jobId);
+    const workerId = targetJob?.confirmedWorkerIds[0] || user.id;
+    const worker = allWorkers.find(w => w.id === workerId) || user;
+
+    const newPayment: PaymentRecord = {
+      id: 'pay-off-' + Date.now(),
+      jobId,
+      jobTitle: targetJob?.title || 'Shift Work',
+      employerId: targetJob?.customerId || 'c1',
+      employerName: targetJob?.customerName || 'Customer',
+      workerId,
+      workerName: worker.name,
+      amount,
+      platformFee: 0.0,
+      totalAmount: amount,
+      method: 'OFFLINE',
+      paymentPreference: 'OFFLINE',
+      status: 'PENDING',
+      offlineNotes: notes || 'Direct Cash Settlement on shift completion',
+      isSimulatedDemo: systemMode === 'demo',
+      createdAt: new Date().toISOString(),
+    };
+
+    setPayments(prev => [newPayment, ...prev]);
+
+    try {
+      fetch('/api/v1/payments/record-offline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId,
+          employerId: targetJob?.customerId || 'c1',
+          workerId,
+          amount,
+          notes,
+        }),
+      }).catch(() => {});
+    } catch (_) {}
+
+    addNotification({
+      recipientId: workerId,
+      title: `Offline Cash Payment Recorded: ₹${amount}`,
+      message: `Pending cash payment of ₹${amount} recorded for "${newPayment.jobTitle}". Employer will mark as paid upon handover.`,
+      type: 'payment_authorized',
+      targetJobId: jobId,
+    });
+
+    return newPayment;
+  };
+
+  const settleOfflinePayment = (paymentId: string, notes?: string) => {
+    setPayments(prev =>
+      prev.map(p => {
+        if (p.id !== paymentId) return p;
+        return {
+          ...p,
+          status: 'PAID',
+          offlineSettledAt: new Date().toISOString(),
+          offlineNotes: notes || p.offlineNotes || 'Cash handed over in full upon shift completion.',
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    const targetPayment = payments.find(p => p.id === paymentId);
+    if (targetPayment) {
+      try {
+        fetch(`/api/v1/payments/${paymentId}/settle-offline`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes }),
+        }).catch(() => {});
+      } catch (_) {}
+
+      addNotification({
+        recipientId: targetPayment.workerId,
+        title: `Cash Payment Settled: ₹${targetPayment.amount} ✓`,
+        message: `Employer confirmed handover of ₹${targetPayment.amount} in Cash. Payment completed.`,
+        type: 'payment_released',
+        targetJobId: targetPayment.jobId,
+      });
+    }
   };
 
   const releaseJobPayment = (paymentId: string, utrNumber?: string) => {
@@ -873,6 +1112,85 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         targetJobId: targetPayment.jobId,
       });
     }
+  };
+
+  const updateBankDetails = (details: WorkerBankDetails) => {
+    setUser(prev => ({
+      ...prev,
+      bankDetails: details,
+    }));
+    setAllWorkers(prev =>
+      prev.map(w => (w.id === user.id ? { ...w, bankDetails: details } : w))
+    );
+    try {
+      fetch(`/api/v1/workers/${user.id}/bank-details`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountHolderName: details.accountHolderName,
+          bankName: details.bankName,
+          accountNumber: details.accountNumberMasked,
+          ifscCode: details.ifscCode,
+        }),
+      }).catch(() => {});
+    } catch (_) {}
+
+    addNotification({
+      recipientId: user.id,
+      title: 'Bank Details Updated',
+      message: `Direct payout account updated to ${details.bankName} (${details.accountNumberMasked}).`,
+      type: 'alert_triggered',
+    });
+  };
+
+  const updateUpiDetails = (details: WorkerUpiDetails) => {
+    setUser(prev => ({
+      ...prev,
+      upiDetails: details,
+    }));
+    setAllWorkers(prev =>
+      prev.map(w => (w.id === user.id ? { ...w, upiDetails: details } : w))
+    );
+    try {
+      fetch(`/api/v1/workers/${user.id}/upi-details`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          upiId: details.upiIdMasked,
+          isPrimary: details.isPrimary,
+        }),
+      }).catch(() => {});
+    } catch (_) {}
+
+    addNotification({
+      recipientId: user.id,
+      title: 'UPI Details Updated',
+      message: `Primary UPI ID updated to ${details.upiIdMasked}.`,
+      type: 'alert_triggered',
+    });
+  };
+
+  const updatePaymentStatus = (paymentId: string, status: PaymentStatus, notes?: string) => {
+    setPayments(prev =>
+      prev.map(p => {
+        if (p.id !== paymentId) return p;
+        return {
+          ...p,
+          status,
+          offlineNotes: notes || p.offlineNotes,
+          offlineSettledAt: (status === 'PAID' || status === 'COMPLETED') ? (p.offlineSettledAt || new Date().toISOString()) : p.offlineSettledAt,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    try {
+      fetch(`/api/v1/payments/${paymentId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes }),
+      }).catch(() => {});
+    } catch (_) {}
   };
 
   // --- WORKER DIRECTORY DIRECT INVITE (Phase 5) ---
@@ -1040,6 +1358,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveScreen('home');
     setFilters(DEFAULT_FILTERS);
     setActiveLiveTrackingJobId(null);
+    setPayments(SEED_PAYMENTS);
   };
 
   const advanceDemoTime = (_minutes: number) => {
@@ -1171,12 +1490,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         payments,
         activeReceipt,
         setActiveReceipt,
+        updateWorkerPaymentPreference,
+        updateBankDetails,
+        updateUpiDetails,
+        updatePaymentStatus,
         authorizeJobPayment,
         releaseJobPayment,
         disputeJobPayment,
+        recordOfflinePayment,
+        settleOfflinePayment,
         inviteWorkerToJob,
         systemMode,
         toggleSystemMode,
+        theme,
+        setTheme,
+        toggleTheme,
       }}
     >
       {children}

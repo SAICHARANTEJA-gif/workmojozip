@@ -1,7 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { isSupabaseConfigured } from './db/supabaseClient';
+import { isSupabaseConfigured, supabase } from './db/supabaseClient';
+import { processAiChat } from './aiService';
 
 dotenv.config();
 
@@ -15,10 +16,11 @@ app.use(express.json());
 interface ServerStore {
   users: any[];
   workerProfiles: any[];
+  workerBankDetails: any[];
+  workerUpiDetails: any[];
   jobs: any[];
   applications: any[];
   jobWorkers: any[];
-  waitingList: any[];
   attendance: any[];
   payments: any[];
   paymentTransactions: any[];
@@ -89,6 +91,7 @@ const db: ServerStore = {
       approxDistanceKm: 1.2,
       upiMasked: 'arun••••@oksbi',
       bankMasked: '•••• •••• 4892 (State Bank of India)',
+      preferredPaymentMethod: 'ONLINE',
     },
     {
       userId: 'w2',
@@ -103,6 +106,7 @@ const db: ServerStore = {
       approxDistanceKm: 2.8,
       upiMasked: 'ravi••••@ybl',
       bankMasked: '•••• •••• 1024 (Canara Bank)',
+      preferredPaymentMethod: 'ONLINE',
     },
     {
       userId: 'w3',
@@ -117,6 +121,7 @@ const db: ServerStore = {
       approxDistanceKm: 2.1,
       upiMasked: 'priya••••@icici',
       bankMasked: '•••• •••• 9923 (HDFC Bank)',
+      preferredPaymentMethod: 'ONLINE',
     },
     {
       userId: 'w4',
@@ -131,6 +136,7 @@ const db: ServerStore = {
       approxDistanceKm: 3.4,
       upiMasked: 'suresh••••@paytm',
       bankMasked: '•••• •••• 3341 (Bank of Baroda)',
+      preferredPaymentMethod: 'ONLINE',
     },
   ],
   jobs: [
@@ -191,7 +197,38 @@ const db: ServerStore = {
   ],
   applications: [],
   jobWorkers: [],
-  waitingList: [],
+  workerBankDetails: [
+    {
+      id: 'bd-w1',
+      workerId: 'w1',
+      accountHolderName: 'Arun Kumar',
+      bankName: 'State Bank of India',
+      accountNumberMasked: '•••• •••• 4892',
+      ifscCode: 'SBIN0004521',
+    },
+    {
+      id: 'bd-worker-me',
+      workerId: 'worker-me',
+      accountHolderName: 'Arun Kumar',
+      bankName: 'State Bank of India',
+      accountNumberMasked: '•••• •••• 4892',
+      ifscCode: 'SBIN0004521',
+    },
+  ],
+  workerUpiDetails: [
+    {
+      id: 'upi-w1',
+      workerId: 'w1',
+      upiIdMasked: 'arun.kumar@oksbi',
+      isPrimary: true,
+    },
+    {
+      id: 'upi-worker-me',
+      workerId: 'worker-me',
+      upiIdMasked: 'arun.kumar@oksbi',
+      isPrimary: true,
+    },
+  ],
   attendance: [
     {
       id: 'att-1',
@@ -207,17 +244,67 @@ const db: ServerStore = {
     {
       id: 'pay-1',
       jobId: 'job-1',
+      jobTitle: 'Shop Loading & Unloading Assistant',
       employerId: 'c1',
+      employerName: 'Kumar Stores (Suresh Kumar)',
       workerId: 'w1',
+      workerName: 'Arun Kumar',
       amount: 800,
       platformFee: 0,
       totalAmount: 800,
-      method: 'UPI',
-      status: 'AUTHORIZED', // Protected Payment state
-      createdAt: new Date().toISOString(),
+      method: 'ONLINE',
+      paymentPreference: 'ONLINE',
+      status: 'PAID',
+      transactionRef: 'WM-TXN-20260906-8812',
+      utrNumber: 'UPI-49281098231',
+      createdAt: '2026-09-06T14:30:00.000Z',
+      updatedAt: '2026-09-06T18:00:00.000Z',
+    },
+    {
+      id: 'pay-2',
+      jobId: 'job-2',
+      jobTitle: 'Apartment Deep Cleaning',
+      employerId: 'c1',
+      employerName: 'Kumar Stores (Suresh Kumar)',
+      workerId: 'w1',
+      workerName: 'Arun Kumar',
+      amount: 650,
+      platformFee: 0,
+      totalAmount: 650,
+      method: 'OFFLINE',
+      paymentPreference: 'OFFLINE',
+      status: 'PENDING',
+      offlineNotes: 'Direct Cash handover upon shift completion',
+      createdAt: '2026-09-07T08:15:00.000Z',
+    },
+    {
+      id: 'pay-3',
+      jobId: 'job-3',
+      jobTitle: 'Warehouse Pallet Relocation',
+      employerId: 'c1',
+      employerName: 'Kumar Stores (Suresh Kumar)',
+      workerId: 'w1',
+      workerName: 'Arun Kumar',
+      amount: 900,
+      platformFee: 0,
+      totalAmount: 900,
+      method: 'ONLINE',
+      paymentPreference: 'ONLINE',
+      status: 'PROCESSING',
+      transactionRef: 'WM-TXN-20260907-9921',
+      createdAt: '2026-09-07T09:00:00.000Z',
     },
   ],
-  paymentTransactions: [],
+  paymentTransactions: [
+    {
+      id: 'txn-1',
+      paymentId: 'pay-1',
+      transactionRef: 'WM-TXN-20260906-8812',
+      utrNumber: 'UPI-49281098231',
+      gatewayStatus: 'SUCCESS',
+      timestamp: '2026-09-06T18:00:00.000Z',
+    },
+  ],
   ratings: [],
   reports: [],
   notifications: [
@@ -383,26 +470,141 @@ app.post('/api/v1/workers/invite', (req: Request, res: Response) => {
 // ============================================================================
 // 4. JOBS API (Phase 1 & 2)
 // ============================================================================
-app.get('/api/v1/jobs', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    count: db.jobs.length,
-    jobs: db.jobs,
-  });
+app.get('/api/v1/jobs', async (req: Request, res: Response) => {
+  try {
+    let combinedJobs = [...db.jobs];
+
+    // If Supabase is connected, query jobs and merge seamlessly
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.from('jobs').select('*');
+        if (!error && data && data.length > 0) {
+          const sbJobs = data.map((row: any) => ({
+            id: row.id,
+            customerId: row.employer_id,
+            customerName: 'Verified Employer',
+            title: row.title,
+            category: row.category,
+            description: row.description || '',
+            wage: Number(row.wage),
+            startTime: row.start_time,
+            endTime: row.end_time || '05:00 PM',
+            duration: row.duration || '8 hours',
+            urgency: row.urgency || 'Today',
+            approximateArea: row.approximate_area,
+            approximateDistanceKm: Number(row.approximate_distance_km) || 2.5,
+            exactLocation: {
+              approximateArea: row.approximate_area,
+              exactAddress: row.exact_address || '',
+              landmark: row.landmark || '',
+              lat: Number(row.exact_lat) || 12.934,
+              lng: Number(row.exact_lng) || 77.625,
+            },
+            workersRequired: row.workers_required || 1,
+            workersConfirmed: row.workers_confirmed || 0,
+            selectionMode: row.selection_mode || 'manual',
+            status: row.status || 'Posted',
+            applicants: [],
+            confirmedWorkerIds: [],
+            waitingList: [],
+            recurring: row.recurring || 'none',
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }));
+          combinedJobs = [...sbJobs, ...combinedJobs];
+        }
+      } catch (sbErr) {
+        console.warn('[Supabase] Warning reading jobs:', sbErr);
+      }
+    }
+
+    // STRICT DEDUPLICATION: Map by ID and content signature to guarantee no job is returned multiple times
+    const uniqueMap = new Map<string, any>();
+    const seenSignatures = new Set<string>();
+    for (const job of combinedJobs) {
+      const sig = `${job.title}_${job.category}_${job.wage}_${job.startTime}_${job.approximateArea}`;
+      if (!uniqueMap.has(job.id) && !seenSignatures.has(sig)) {
+        uniqueMap.set(job.id, job);
+        seenSignatures.add(sig);
+      }
+    }
+    const resultJobs = Array.from(uniqueMap.values());
+
+    res.json({
+      success: true,
+      count: resultJobs.length,
+      jobs: resultJobs,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post('/api/v1/jobs', (req: Request, res: Response) => {
+app.post('/api/v1/jobs', async (req: Request, res: Response) => {
+  const jobPayload = req.body;
+  const jobId = jobPayload.id || `job-${Date.now()}`;
+
+  // IDEMPOTENCY CHECK: Check if an identical job already exists to prevent duplicate creation
+  const existingJob = db.jobs.find(
+    j =>
+      j.id === jobId ||
+      (j.title.trim().toLowerCase() === String(jobPayload.title || '').trim().toLowerCase() &&
+        j.category === jobPayload.category &&
+        Number(j.wage) === Number(jobPayload.wage) &&
+        j.startTime === jobPayload.startTime &&
+        (j.customerId === jobPayload.customerId || j.employerId === jobPayload.customerId))
+  );
+
+  if (existingJob) {
+    return res.status(200).json({
+      success: true,
+      job: existingJob,
+      message: 'Job already exists, returning existing record.',
+    });
+  }
+
   const newJob = {
-    id: `job-${Date.now()}`,
-    ...req.body,
-    workersConfirmed: 0,
-    applicants: [],
-    confirmedWorkerIds: [],
-    waitingList: [],
-    status: 'Open',
-    createdAt: new Date().toISOString(),
+    id: jobId,
+    ...jobPayload,
+    workersConfirmed: jobPayload.workersConfirmed || 0,
+    applicants: jobPayload.applicants || [],
+    confirmedWorkerIds: jobPayload.confirmedWorkerIds || [],
+    waitingList: jobPayload.waitingList || [],
+    status: jobPayload.status || 'Posted',
+    createdAt: jobPayload.createdAt || new Date().toISOString(),
+    updatedAt: jobPayload.updatedAt || new Date().toISOString(),
   };
+
   db.jobs.unshift(newJob);
+
+  // If Supabase is configured, attempt to persist to Supabase
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase.from('jobs').upsert({
+        id: newJob.id,
+        employer_id: newJob.customerId || newJob.employerId || '00000000-0000-0000-0000-000000000000',
+        title: newJob.title,
+        description: newJob.description || '',
+        category: newJob.category,
+        wage: newJob.wage,
+        start_time: newJob.startTime,
+        duration: newJob.duration || '8 hours',
+        urgency: newJob.urgency || 'Today',
+        workers_required: newJob.workersRequired || 1,
+        workers_confirmed: newJob.workersConfirmed || 0,
+        approximate_area: newJob.approximateArea || '',
+        approximate_distance_km: newJob.approximateDistanceKm || 2.5,
+        exact_address: newJob.exactLocation?.exactAddress || newJob.exactAddress || newJob.approximateArea || '',
+        landmark: newJob.exactLocation?.landmark || newJob.landmark || '',
+        exact_lat: newJob.exactLocation?.lat || 12.934,
+        exact_lng: newJob.exactLocation?.lng || 77.625,
+        status: newJob.status || 'Open',
+        recurring: newJob.recurring || 'none',
+      });
+    } catch (sbErr) {
+      console.warn('[Supabase] Warning persisting job:', sbErr);
+    }
+  }
 
   res.status(201).json({
     success: true,
@@ -655,9 +857,382 @@ app.post('/api/v1/payments/:id/dispute', (req: Request, res: Response) => {
   });
 });
 
+// --- Worker Payment Method Preference & Offline Payment Endpoints ---
+
+// Fetch Worker Payment Method Preference
+app.get('/api/v1/workers/:id/payment-preference', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const isTargetWorker = (wId: string) => wId === id || (id === 'worker-me' && wId === 'w1') || (id === 'w1' && wId === 'worker-me');
+  const profile = db.workerProfiles.find(p => isTargetWorker(p.userId));
+  const preference = profile?.preferredPaymentMethod || 'ONLINE';
+  res.json({
+    success: true,
+    workerId: id,
+    preferredPaymentMethod: preference,
+    paymentPreference: preference,
+  });
+});
+
+// Update Worker Payment Method Preference
+app.patch('/api/v1/workers/:id/payment-preference', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { paymentPreference, preferredPaymentMethod } = req.body;
+  const rawPref = (paymentPreference || preferredPaymentMethod || '').toString().trim().toUpperCase();
+
+  if (rawPref !== 'ONLINE' && rawPref !== 'OFFLINE') {
+    return res.status(400).json({
+      error: 'Invalid payment preference. Accepted values: ONLINE, OFFLINE.',
+    });
+  }
+
+  const isTargetWorker = (wId: string) => wId === id || (id === 'worker-me' && wId === 'w1') || (id === 'w1' && wId === 'worker-me');
+
+  let profile = db.workerProfiles.find(p => isTargetWorker(p.userId));
+  if (!profile) {
+    profile = {
+      userId: id,
+      skills: ['General Labour'],
+      categories: ['Labour'],
+      experienceJobs: 1,
+      rating: 5.0,
+      reliabilityScore: 100,
+      minDailyWage: 600,
+      availability: 'Available',
+      approxArea: 'Bengaluru',
+      approxDistanceKm: 2.0,
+      preferredPaymentMethod: rawPref,
+    };
+    db.workerProfiles.push(profile);
+  } else {
+    profile.preferredPaymentMethod = rawPref;
+  }
+
+  db.workerProfiles.forEach(p => {
+    if (isTargetWorker(p.userId)) {
+      p.preferredPaymentMethod = rawPref;
+    }
+  });
+
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase
+        .from('worker_profiles')
+        .update({ preferred_payment_method: rawPref })
+        .eq('user_id', id);
+    } catch (err) {
+      console.warn('[Supabase] Warning updating preferred_payment_method:', err);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Payment preference updated successfully.',
+    workerId: id,
+    paymentPreference: rawPref,
+    preferredPaymentMethod: rawPref,
+  });
+});
+
+// Record Offline / Cash Payment (Initial status: PENDING)
+app.post('/api/v1/payments/record-offline', (req: Request, res: Response) => {
+  const { jobId, employerId, workerId, amount, notes } = req.body;
+
+  if (!jobId || !employerId || !workerId || !amount) {
+    return res.status(400).json({ error: 'jobId, employerId, workerId, and amount are required.' });
+  }
+
+  const payment = {
+    id: `pay-${Date.now()}`,
+    jobId,
+    employerId,
+    workerId,
+    amount: Number(amount),
+    platformFee: 0.0,
+    totalAmount: Number(amount),
+    method: 'OFFLINE',
+    paymentPreference: 'OFFLINE',
+    status: 'PENDING', // Remains pending until employer records completion
+    offlineNotes: notes || 'Direct Cash Settlement on shift completion',
+    createdAt: new Date().toISOString(),
+  };
+  db.payments.push(payment);
+
+  db.notifications.push({
+    id: `notif-pay-${Date.now()}`,
+    recipientUserId: workerId,
+    title: 'Offline Cash Payment Recorded',
+    message: `Employer recorded pending cash payment of ₹${payment.amount}. Settle in cash upon shift completion.`,
+    type: 'payment_authorized',
+    read: false,
+    jobId,
+    createdAt: new Date().toISOString(),
+  });
+
+  res.json({
+    success: true,
+    message: 'Offline cash payment recorded as PENDING.',
+    payment,
+  });
+});
+
+// Mark Offline Cash Payment as Completed / Settled
+app.post('/api/v1/payments/:id/settle-offline', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { notes } = req.body;
+
+  const payment = db.payments.find(p => p.id === id);
+  if (!payment) return res.status(404).json({ error: 'Payment record not found' });
+
+  payment.status = 'PAID';
+  payment.offlineSettledAt = new Date().toISOString();
+  payment.updatedAt = new Date().toISOString();
+  if (notes) payment.offlineNotes = notes;
+
+  const txn = {
+    id: `txn-cash-${Date.now()}`,
+    paymentId: payment.id,
+    transactionRef: `WM-CASH-${Date.now().toString().slice(-8)}`,
+    utrNumber: `CASH-HANDOVER-${Date.now().toString().slice(-8)}`,
+    gatewayStatus: 'SUCCESS_OFFLINE',
+    timestamp: new Date().toISOString(),
+  };
+  db.paymentTransactions.push(txn);
+
+  db.notifications.push({
+    id: `notif-pay-settled-${Date.now()}`,
+    recipientUserId: payment.workerId,
+    title: 'Cash Payment Settled ✓ ₹' + payment.amount,
+    message: `Employer confirmed hand-to-hand cash payment of ₹${payment.amount}. Shift payment completed.`,
+    type: 'payment_released',
+    read: false,
+    jobId: payment.jobId,
+    createdAt: new Date().toISOString(),
+  });
+
+  res.json({
+    success: true,
+    message: 'Offline cash payment successfully marked as PAID / Settled.',
+    payment,
+    transaction: txn,
+  });
+});
+
+// Helper functions for safe masking
+function maskAccountNumber(acc: string): string {
+  if (!acc) return '•••• •••• 4892';
+  const clean = acc.replace(/\s+/g, '');
+  if (clean.length <= 4) return clean;
+  return `•••• •••• ${clean.slice(-4)}`;
+}
+
+function maskUpiId(upi: string): string {
+  if (!upi) return '';
+  const parts = upi.split('@');
+  if (parts.length < 2) return upi;
+  const username = parts[0];
+  const handle = parts[1];
+  if (username.length <= 3) return `${username.slice(0, 1)}••••@${handle}`;
+  return `${username.slice(0, 3)}••••@${handle}`;
+}
+
+// Fetch all payments for a specific worker
+app.get('/api/v1/payments/worker/:workerId', (req: Request, res: Response) => {
+  const { workerId } = req.params;
+  const isWorkerMatch = (id: string) => id === workerId || (workerId === 'worker-me' && id === 'w1') || (workerId === 'w1' && id === 'worker-me');
+
+  const payments = db.payments.filter(p => isWorkerMatch(p.workerId));
+  res.json({
+    success: true,
+    workerId,
+    count: payments.length,
+    payments,
+  });
+});
+
+// Fetch all payments for an employer
+app.get('/api/v1/payments/employer/:employerId', (req: Request, res: Response) => {
+  const { employerId } = req.params;
+  const payments = db.payments.filter(p => p.employerId === employerId || !employerId || employerId === 'all');
+  res.json({
+    success: true,
+    employerId,
+    count: payments.length,
+    payments,
+  });
+});
+
+// Update Payment Status (e.g. PROCESSING, COMPLETED, PAID, DISPUTED, FAILED)
+app.post('/api/v1/payments/:id/status', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, notes, utrNumber } = req.body;
+
+  const validStatuses = ['PENDING', 'AUTHORIZED', 'PROCESSING', 'PAID', 'COMPLETED', 'FAILED', 'REFUNDED', 'DISPUTED'];
+  const normalizedStatus = (status || '').toString().trim().toUpperCase();
+
+  if (!validStatuses.includes(normalizedStatus)) {
+    return res.status(400).json({
+      error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+    });
+  }
+
+  const payment = db.payments.find(p => p.id === id);
+  if (!payment) return res.status(404).json({ error: 'Payment record not found' });
+
+  payment.status = normalizedStatus;
+  payment.updatedAt = new Date().toISOString();
+  if (notes) payment.offlineNotes = notes;
+
+  if (normalizedStatus === 'PAID' || normalizedStatus === 'COMPLETED') {
+    if (!payment.offlineSettledAt && (payment.method === 'OFFLINE' || payment.paymentPreference === 'OFFLINE')) {
+      payment.offlineSettledAt = new Date().toISOString();
+    }
+    const txn = {
+      id: `txn-${Date.now()}`,
+      paymentId: payment.id,
+      transactionRef: payment.transactionRef || `WM-TXN-${Date.now().toString().slice(-8)}`,
+      utrNumber: utrNumber || payment.utrNumber || (payment.method === 'OFFLINE' ? `CASH-${Date.now().toString().slice(-8)}` : `UPI-${Date.now().toString().slice(-10)}`),
+      gatewayStatus: payment.method === 'OFFLINE' ? 'SUCCESS_OFFLINE' : 'SUCCESS',
+      timestamp: new Date().toISOString(),
+    };
+    db.paymentTransactions.push(txn);
+  }
+
+  res.json({
+    success: true,
+    message: `Payment status updated to ${normalizedStatus}`,
+    payment,
+  });
+});
+
+// Fetch Worker Bank & UPI Details Safely
+app.get('/api/v1/workers/:id/payment-details', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const isTargetWorker = (wId: string) => wId === id || (id === 'worker-me' && wId === 'w1') || (id === 'w1' && wId === 'worker-me');
+
+  const profile = db.workerProfiles.find(p => isTargetWorker(p.userId));
+  const bank = db.workerBankDetails.find(b => isTargetWorker(b.workerId)) || {
+    id: `bd-${id}`,
+    workerId: id,
+    accountHolderName: 'Arun Kumar',
+    bankName: 'State Bank of India',
+    accountNumberMasked: '•••• •••• 4892',
+    ifscCode: 'SBIN0004521',
+  };
+  const upi = db.workerUpiDetails.find(u => isTargetWorker(u.workerId)) || {
+    id: `upi-${id}`,
+    workerId: id,
+    upiIdMasked: profile?.upiMasked || 'arun.kumar@oksbi',
+    isPrimary: true,
+  };
+
+  res.json({
+    success: true,
+    workerId: id,
+    preferredPaymentMethod: profile?.preferredPaymentMethod || 'ONLINE',
+    paymentPreference: profile?.preferredPaymentMethod || 'ONLINE',
+    bankDetails: bank,
+    upiDetails: upi,
+  });
+});
+
+// Update Worker Bank Details Safely
+app.put('/api/v1/workers/:id/bank-details', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { accountHolderName, bankName, accountNumber, ifscCode } = req.body;
+
+  if (!accountHolderName || !bankName || !ifscCode) {
+    return res.status(400).json({ error: 'accountHolderName, bankName, and ifscCode are required.' });
+  }
+
+  const isTargetWorker = (wId: string) => wId === id || (id === 'worker-me' && wId === 'w1') || (id === 'w1' && wId === 'worker-me');
+
+  let bank = db.workerBankDetails.find(b => isTargetWorker(b.workerId));
+  const maskedAcc = accountNumber ? maskAccountNumber(accountNumber) : (bank?.accountNumberMasked || '•••• •••• 4892');
+
+  if (bank) {
+    bank.accountHolderName = accountHolderName;
+    bank.bankName = bankName;
+    bank.accountNumberMasked = maskedAcc;
+    bank.ifscCode = ifscCode.toUpperCase().trim();
+    bank.updatedAt = new Date().toISOString();
+  } else {
+    bank = {
+      id: `bd-${Date.now()}`,
+      workerId: id,
+      accountHolderName,
+      bankName,
+      accountNumberMasked: maskedAcc,
+      ifscCode: ifscCode.toUpperCase().trim(),
+      createdAt: new Date().toISOString(),
+    };
+    db.workerBankDetails.push(bank);
+  }
+
+  let profile = db.workerProfiles.find(p => isTargetWorker(p.userId));
+  if (profile) {
+    profile.bankMasked = `${maskedAcc} (${bankName})`;
+  }
+
+  res.json({
+    success: true,
+    message: 'Worker bank details updated successfully.',
+    bankDetails: bank,
+  });
+});
+
+// Update Worker UPI Details Safely
+app.put('/api/v1/workers/:id/upi-details', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { upiId, isPrimary } = req.body;
+
+  if (!upiId) {
+    return res.status(400).json({ error: 'upiId is required.' });
+  }
+
+  const isTargetWorker = (wId: string) => wId === id || (id === 'worker-me' && wId === 'w1') || (id === 'w1' && wId === 'worker-me');
+
+  let upi = db.workerUpiDetails.find(u => isTargetWorker(u.workerId));
+  const maskedUpi = upiId.includes('••••') ? upiId : maskUpiId(upiId);
+
+  if (upi) {
+    upi.upiIdMasked = maskedUpi;
+    if (isPrimary !== undefined) upi.isPrimary = Boolean(isPrimary);
+    upi.updatedAt = new Date().toISOString();
+  } else {
+    upi = {
+      id: `upi-${Date.now()}`,
+      workerId: id,
+      upiIdMasked: maskedUpi,
+      isPrimary: isPrimary !== undefined ? Boolean(isPrimary) : true,
+      createdAt: new Date().toISOString(),
+    };
+    db.workerUpiDetails.push(upi);
+  }
+
+  let profile = db.workerProfiles.find(p => isTargetWorker(p.userId));
+  if (profile) {
+    profile.upiMasked = maskedUpi;
+  }
+
+  res.json({
+    success: true,
+    message: 'Worker UPI details updated successfully.',
+    upiDetails: upi,
+  });
+});
+
 // ============================================================================
-// 7. ADMIN DASHBOARD API (Phase 20)
+// 7. SYSTEM & ADMIN APIs
 // ============================================================================
+app.get('/api/v1/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    dualStore: true,
+  });
+});
+
 app.get('/api/v1/admin/overview', (req: Request, res: Response) => {
   const totalUsers = db.users.length;
   const totalWorkers = db.workerProfiles.length;
@@ -683,8 +1258,37 @@ app.get('/api/v1/admin/overview', (req: Request, res: Response) => {
   });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`[WORK MOJO] API Backend running on http://localhost:${PORT}`);
-  console.log(`[WORK MOJO] Supabase/PostgreSQL schema ready. Dual store active.`);
+// ============================================================================
+// 8. MOJO AI MULTILINGUAL ASSISTANT API
+// ============================================================================
+app.post(['/api/v1/ai/chat', '/api/v1/mojo/chat'], async (req: Request, res: Response) => {
+  try {
+    const { message, language, role, context } = req.body;
+    const result = await processAiChat({
+      message,
+      language,
+      role,
+      context,
+    });
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Mojo AI API Error]:', error);
+    res.status(500).json({
+      success: false,
+      reply: 'Mojo is temporarily unavailable. Please try again.',
+      language: req.body?.language || 'en',
+      provider: 'mojo-engine',
+    });
+  }
 });
+
+// Start Server
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`[WORK MOJO] API Backend running on http://localhost:${PORT}`);
+    console.log(`[WORK MOJO] Supabase/PostgreSQL schema ready. Dual store active.`);
+  });
+}
+
+export default app;
+export { app };

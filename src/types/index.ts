@@ -4,13 +4,39 @@ export type KycStatus = 'verified' | 'pending' | 'rejected';
 export type AvailabilityStatus = 'Available' | 'Busy' | 'Away';
 
 export type WorkCategory = 
-  | 'Labour'
-  | 'Cleaning'
-  | 'Delivery'
-  | 'Gardening'
   | 'Construction'
   | 'Loading/Unloading'
+  | 'Cleaning'
+  | 'Delivery'
+  | 'Driving'
+  | 'Warehouse'
+  | 'Security'
+  | 'Painting'
+  | 'Plumbing'
+  | 'Electrical Work'
+  | 'Carpentry'
+  | 'Masonry'
+  | 'Gardening'
+  | 'Cooking'
+  | 'Hotel/Restaurant'
+  | 'Event Staff'
+  | 'Housekeeping'
+  | 'Office Assistant'
+  | 'Data Entry'
+  | 'Sales'
+  | 'Retail'
+  | 'Delivery Partner'
+  | 'Moving/Shifting'
+  | 'Machine Operator'
+  | 'Factory Worker'
+  | 'Maintenance'
   | 'Repair'
+  | 'Agriculture'
+  | 'Farm Work'
+  | 'Packing'
+  | 'Domestic Help'
+  | 'Caregiving'
+  | 'Labour'
   | 'Shop/Store Help'
   | 'Other';
 
@@ -60,6 +86,8 @@ export interface WorkerUpiDetails {
   isPrimary: boolean;
 }
 
+export type WorkerPaymentPreference = 'ONLINE' | 'OFFLINE';
+
 export interface User {
   id: string;
   name: string;
@@ -85,7 +113,8 @@ export interface User {
   savedJobIds: string[];
   bankDetails?: WorkerBankDetails;
   upiDetails?: WorkerUpiDetails;
-  preferredPaymentMethod?: 'UPI' | 'Cash' | 'Direct Transfer';
+  preferredPaymentMethod?: 'ONLINE' | 'OFFLINE' | 'UPI' | 'Cash' | 'Direct Transfer';
+  paymentPreference?: WorkerPaymentPreference;
   createdAt: string;
 }
 
@@ -170,6 +199,7 @@ export type PaymentStatus =
   | 'AUTHORIZED'
   | 'PROCESSING'
   | 'PAID'
+  | 'COMPLETED'
   | 'FAILED'
   | 'REFUNDED'
   | 'DISPUTED';
@@ -185,11 +215,14 @@ export interface PaymentRecord {
   amount: number;
   platformFee: number;
   totalAmount: number;
-  method: 'UPI' | 'Cash' | 'Direct Transfer';
+  method: 'UPI' | 'Cash' | 'Direct Transfer' | 'ONLINE' | 'OFFLINE';
+  paymentPreference?: WorkerPaymentPreference;
   status: PaymentStatus;
   transactionRef?: string;
   utrNumber?: string;
   isSimulatedDemo: boolean;
+  offlineNotes?: string;
+  offlineSettledAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -271,6 +304,7 @@ export interface WorkerPreferences {
   minimumWage: number;
   preferredTime: WorkTimePreference;
   skills: string[];
+  paymentPreference?: WorkerPaymentPreference;
 }
 
 export type SupportedLanguage = 'en' | 'te' | 'hi' | 'ta';

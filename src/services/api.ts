@@ -151,4 +151,35 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}/admin/overview`);
     return await res.json();
   },
+
+  // Mojo AI Assistant
+  chatWithMojo: async (
+    message: string,
+    language: string = 'en',
+    role: string = 'worker',
+    context?: any
+  ) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const res = await fetch(`${API_BASE_URL}/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, language, role, context }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        throw new Error(`AI API returned status ${res.status}`);
+      }
+      return await res.json();
+    } catch (err: any) {
+      console.warn('[api.chatWithMojo] Request failed:', err);
+      return {
+        success: false,
+        error: err.name === 'AbortError' ? 'timeout' : 'network_failure',
+        reply: null,
+      };
+    }
+  },
 };

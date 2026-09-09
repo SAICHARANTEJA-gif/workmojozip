@@ -5,6 +5,7 @@ import { JobCard } from '../../components/common/JobCard';
 import { InteractiveWorkMap } from '../../components/map/InteractiveWorkMap';
 import { calculateMatchScore } from '../../services/matchingService';
 import { speechService } from '../../services/speechService';
+import { getCategoryLabel } from '../../config/categories';
 import {
   Search,
   Mic,
@@ -26,7 +27,7 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
   onSelectJob,
   onOpenFilters,
 }) => {
-  const { jobs, user, filters, setFilters, language } = useApp();
+  const { jobs, user, filters, setFilters, language, theme, t } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [isListening, setIsListening] = useState(false);
 
@@ -88,9 +89,18 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
     });
   }, [jobs, filters, user.skills]);
 
-  // Sorting
+  // Sorting with uniqueness guarantee
   const sortedJobs = useMemo(() => {
-    const list = [...filteredJobs];
+    const seenIds = new Set<string>();
+    const uniqueList: Job[] = [];
+    for (const job of filteredJobs) {
+      if (!seenIds.has(job.id)) {
+        seenIds.add(job.id);
+        uniqueList.push(job);
+      }
+    }
+
+    const list = [...uniqueList];
     switch (filters.sortBy) {
       case 'Nearest':
         return list.sort((a, b) => a.approximateDistanceKm - b.approximateDistanceKm);
@@ -138,24 +148,24 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
   };
 
   return (
-    <div className="pb-24 max-w-lg mx-auto px-4 pt-3 space-y-4">
+    <div className="pb-24 max-w-lg mx-auto px-4 pt-3 space-y-4 text-[#111827]">
       {/* Search Bar & View Toggle */}
       <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center bg-white rounded-2xl border border-slate-200 shadow-xs p-1.5 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-200">
-          <div className="p-2 text-slate-400">
+        <div className="flex-1 flex items-center rounded-2xl border border-[#E2E8F0] bg-white p-1.5 shadow-xs transition-all focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#2563EB]/15">
+          <div className="p-2 text-[#2563EB]">
             <Search size={18} />
           </div>
           <input
             type="text"
             value={filters.searchQuery}
             onChange={e => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
-            placeholder="Search work, category or area..."
-            className="flex-1 text-sm bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-medium"
+            placeholder={t.searchPlaceholder}
+            className="flex-1 text-sm bg-transparent border-none outline-none font-medium text-[#111827] placeholder-[#64748B]"
           />
           {filters.searchQuery && (
             <button
               onClick={() => setFilters(prev => ({ ...prev, searchQuery: '' }))}
-              className="p-1 text-slate-400 hover:text-slate-600"
+              className="p-1 text-[#64748B] hover:text-[#111827]"
             >
               <X size={16} />
             </button>
@@ -164,7 +174,9 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
             type="button"
             onClick={handleVoiceSearch}
             className={`p-2 rounded-xl transition-all ${
-              isListening ? 'bg-rose-600 text-white animate-pulse' : 'text-amber-600 hover:bg-amber-50'
+              isListening
+                ? 'bg-rose-600 text-white animate-pulse'
+                : 'bg-[#FFFBEB] text-[#F5A900] border border-[#FDE68A] hover:bg-[#F5A900] hover:text-[#111827]'
             }`}
             title="Search with Voice"
           >
@@ -173,13 +185,13 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
         </div>
 
         {/* List <-> Map Toggle */}
-        <div className="flex items-center bg-slate-800 p-1 rounded-2xl border border-slate-700 shrink-0">
+        <div className="flex items-center p-1 rounded-2xl border border-[#E2E8F0] bg-white shadow-xs shrink-0">
           <button
             onClick={() => setViewMode('list')}
             className={`p-2 rounded-xl transition-all ${
               viewMode === 'list'
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#2563EB] text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#2563EB]'
             }`}
             title="List View"
           >
@@ -189,8 +201,8 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
             onClick={() => setViewMode('map')}
             className={`p-2 rounded-xl transition-all ${
               viewMode === 'map'
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#2563EB] text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#2563EB]'
             }`}
             title="Map View"
           >
@@ -204,26 +216,26 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <button
             onClick={onOpenFilters}
-            className="flex items-center gap-1.5 bg-white border border-slate-200 hover:border-amber-400 px-3 py-1.5 rounded-xl font-bold text-slate-800 shadow-xs transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold shadow-xs transition-colors shrink-0 border border-[#E2E8F0] bg-white hover:border-[#2563EB] text-[#111827]"
           >
-            <Sliders size={13} className="text-amber-600" />
-            <span>Filters</span>
+            <Sliders size={13} className="text-[#2563EB]" />
+            <span>{t.filterTitle}</span>
             {(filters.selectedCategories.length > 0 ||
               filters.minWage > 0 ||
               filters.maxDistance < 15 ||
               filters.kycOnly ||
               filters.urgency !== 'All') && (
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span className="w-2 h-2 rounded-full bg-[#2563EB]"></span>
             )}
           </button>
 
           {/* Sort Selector */}
-          <div className="flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl text-slate-700 font-semibold shrink-0">
-            <ArrowUpDown size={12} className="text-slate-500" />
+          <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-semibold shrink-0 border border-[#E2E8F0] bg-white text-[#111827]">
+            <ArrowUpDown size={12} className="text-[#2563EB]" />
             <select
               value={filters.sortBy}
               onChange={e => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
-              className="bg-transparent border-none outline-none font-bold text-slate-800 cursor-pointer text-xs"
+              className="bg-transparent border-none outline-none font-bold cursor-pointer text-xs text-[#111827] [&>option]:bg-white [&>option]:text-[#111827]"
             >
               <option value="Best Match">Sort: Best Match</option>
               <option value="Nearest">Sort: Nearest</option>
@@ -234,8 +246,8 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
           </div>
         </div>
 
-        <span className="text-slate-500 font-bold text-[11px] shrink-0">
-          {sortedJobs.length} Jobs
+        <span className="font-bold text-[11px] shrink-0 text-[#64748B]">
+          {sortedJobs.length} {t.navJobs}
         </span>
       </div>
 
@@ -245,12 +257,12 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
           {filters.selectedCategories.map(cat => (
             <span
               key={cat}
-              className="bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1"
+              className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]"
             >
-              <span>{cat}</span>
+              <span>{getCategoryLabel(cat, language)}</span>
               <button
                 onClick={() => removeCategoryChip(cat)}
-                className="hover:text-rose-700"
+                className="hover:text-rose-600"
               >
                 <X size={12} />
               </button>
@@ -266,17 +278,21 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
             jobs={sortedJobs}
             onSelectJob={job => onSelectJob(job)}
           />
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-center text-[#64748B]">
             Drag to pan map. Tap any wage pin (e.g. ₹800) to preview & apply.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           {sortedJobs.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 text-center border border-slate-200 shadow-xs space-y-3">
-              <div className="text-4xl">🔍</div>
-              <h3 className="font-extrabold text-base text-slate-800">No jobs match your filters</h3>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+            <div className="rounded-3xl p-8 text-center border border-[#E2E8F0] bg-white shadow-xs space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB]">
+                <Search size={24} />
+              </div>
+              <h3 className="font-extrabold text-base text-[#111827]">
+                No jobs match your filters
+              </h3>
+              <p className="text-xs max-w-xs mx-auto text-[#64748B]">
                 Try expanding your distance radius, adjusting minimum wage, or clearing category filters.
               </p>
               <button
@@ -292,9 +308,9 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
                     urgency: 'All',
                   }));
                 }}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-sm"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-xs"
               >
-                Clear All Filters
+                {t.clearFilters}
               </button>
             </div>
           ) : (

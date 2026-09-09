@@ -25,6 +25,7 @@ import { WorkerDirectory } from './components/workers/WorkerDirectory';
 import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
 
 // Shared Screens & Modals
+import { PaymentsView } from './screens/shared/PaymentsView';
 import { NotificationsView } from './screens/shared/NotificationsView';
 import { ProfileAndSettingsView } from './screens/shared/ProfileAndSettingsView';
 import { RatingModal } from './components/common/RatingModal';
@@ -43,6 +44,7 @@ export const App: React.FC = () => {
     inviteWorkerToJob,
     pendingRatingJob,
     setPendingRatingJob,
+    theme,
   } = useApp();
 
   // Modals & Navigation states
@@ -56,26 +58,31 @@ export const App: React.FC = () => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
 
+  // Handle Confirmed Job direct navigation
+  const handleOpenConfirmedJob = (job: Job) => {
+    setConfirmedJob(job);
+    setActiveScreen('confirmed_job');
+  };
+
+  const handleOpenApplicants = (jobOrJobId?: Job | string) => {
+    if (typeof jobOrJobId === 'string') {
+      const found = jobs.find(j => j.id === jobOrJobId);
+      if (found) setSelectedJob(found);
+    } else if (jobOrJobId) {
+      setSelectedJob(jobOrJobId);
+    }
+    setActiveScreen('applicants');
+  };
+
   // If user is undergoing onboarding or not authenticated, render AuthFlow
   if (!isAuthenticated || onboardingStep !== 'app') {
     return <AuthFlow />;
   }
 
-  // Handle Confirmed Job direct navigation
-  const handleOpenConfirmedJob = (job: Job) => {
-    setSelectedJob(null);
-    setConfirmedJob(job);
-    setActiveScreen('confirmed_job');
-  };
-
-  const handleOpenApplicants = (jobId?: string) => {
-    setActiveScreen('applicants');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-900 font-sans antialiased flex flex-col items-center">
-      {/* Mobile-Frame Canvas Wrapper for SIH Demo */}
-      <div className="w-full max-w-md min-h-screen bg-slate-100 flex flex-col relative shadow-2xl overflow-x-hidden">
+    <div className="min-h-screen font-sans antialiased flex flex-col items-center bg-[#F7F9FC] text-[#111827]">
+      {/* Mobile-Frame Canvas Wrapper */}
+      <div className="w-full max-w-md min-h-screen flex flex-col relative shadow-xl overflow-x-hidden bg-white text-[#111827] border-x border-[#E2E8F0]">
         {/* Persistent Top Header */}
         <Header />
 
@@ -153,6 +160,8 @@ export const App: React.FC = () => {
           )}
 
           {/* Shared Across Both Roles */}
+          {activeScreen === 'payments' && <PaymentsView />}
+
           {activeScreen === 'notifications' && (
             <NotificationsView
               onOpenJob={job => setSelectedJob(job)}

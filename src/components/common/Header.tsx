@@ -3,10 +3,12 @@ import { useApp } from '../../store/AppContext';
 import { MojoMascotIcon } from '../mojo/MojoMascotIcon';
 import {
   Bell,
+  HardHat,
   Briefcase,
-  UserCheck,
   Radio,
   Sparkles,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { SupportedLanguage } from '../../types';
 
@@ -21,6 +23,8 @@ export const Header: React.FC = () => {
     language,
     setLanguage,
     t,
+    theme,
+    toggleTheme,
   } = useApp();
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -39,23 +43,24 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 shadow-md">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 shadow-2xs">
       <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
         {/* Brand & Mascot */}
         <div
           onClick={() => setActiveScreen('home')}
           className="flex items-center gap-2 cursor-pointer select-none group shrink-0"
         >
-          <div className="w-10 h-10 rounded-full bg-white p-0.5 shadow-sm border border-amber-400/40 overflow-hidden flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+          <div className="w-10 h-10 rounded-full bg-white p-0.5 shadow-xs border-2 border-[#2563EB]/20 overflow-hidden flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
             <img src="/logo.png" alt="Work Mojo Logo" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col justify-center">
             <div className="flex items-center gap-1">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white leading-none whitespace-nowrap">
-                {t.appName.split(' ')[0]} <span className="text-amber-400">{t.appName.split(' ')[1] || 'MOJO'}</span>
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-[#111827] leading-none whitespace-nowrap">
+                {t.appName.split(' ')[0]} <span className="text-[#2563EB]">{t.appName.split(' ')[1] || 'MOJO'}</span>
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F5A900] ml-0.5 align-top animate-pulse" />
               </span>
             </div>
-            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate max-w-[100px] sm:max-w-[130px] leading-tight mt-0.5">
+            <p className="text-[9px] sm:text-[10px] text-[#64748B] font-semibold truncate max-w-[100px] sm:max-w-[130px] leading-tight mt-0.5">
               {t.tagline}
             </p>
           </div>
@@ -64,15 +69,15 @@ export const Header: React.FC = () => {
         {/* Right Action Tools: Language, Role Switcher, Notifications */}
         <div className="flex items-center gap-1.5">
           {/* Language Selector Dropdown */}
-          <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+          <div className="flex items-center bg-[#EFF6FF] rounded-xl p-0.5 border border-[#DBEAFE]">
             {languages.map(lang => (
               <button
                 key={lang.code}
                 onClick={() => setLanguage(lang.code)}
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
                   language === lang.code
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#2563EB] text-white font-black shadow-2xs'
+                    : 'text-[#64748B] hover:text-[#111827]'
                 }`}
               >
                 {lang.label}
@@ -80,25 +85,21 @@ export const Header: React.FC = () => {
             ))}
           </div>
 
-          {/* DUAL ROLE SWITCHER */}
+          {/* DUAL ROLE SWITCHER - Yellow WorkMojo Highlight CTA Button */}
           <button
             onClick={toggleRole}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${
-              activeRole === 'worker'
-                ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-                : 'bg-indigo-600 text-white hover:bg-indigo-500'
-            }`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all shadow-xs active:scale-95 bg-[#F5A900] hover:bg-[#E09900] text-[#111827] border border-[#FDE68A] cursor-pointer"
             title="Switch between Worker and Customer mode"
           >
             {activeRole === 'worker' ? (
               <>
-                <Briefcase size={12} />
-                <span className="text-[11px]">{t.workerMode.split(' ')[0]}</span>
+                <HardHat size={14} className="text-[#111827]" />
+                <span className="text-[11px] font-black">{t.workerMode.split(' ')[0]}</span>
               </>
             ) : (
               <>
-                <UserCheck size={12} />
-                <span className="text-[11px]">{t.customerMode.split(' ')[0]}</span>
+                <Briefcase size={14} className="text-[#111827]" />
+                <span className="text-[11px] font-black">{t.customerMode.split(' ')[0]}</span>
               </>
             )}
           </button>
@@ -106,12 +107,12 @@ export const Header: React.FC = () => {
           {/* Notifications Bell */}
           <button
             onClick={() => setActiveScreen('notifications')}
-            className="relative p-1.5 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded-full transition-colors"
+            className="relative p-2 text-[#2563EB] bg-[#EFF6FF] hover:bg-[#DBEAFE] border border-[#DBEAFE] rounded-xl transition-colors shadow-2xs"
             title="Notifications"
           >
-            <Bell size={18} />
+            <Bell size={17} />
             {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse shadow-xs">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -121,25 +122,23 @@ export const Header: React.FC = () => {
 
       {/* Sub-bar for Worker Availability Toggle */}
       {activeRole === 'worker' && (
-        <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs max-w-lg mx-auto">
-          <div className="flex items-center gap-1.5 text-slate-300 font-medium">
-            <Radio size={13} className="text-amber-400 animate-pulse" />
+        <div className="mt-2 pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs max-w-lg mx-auto">
+          <div className="flex items-center gap-1.5 text-[#64748B] font-semibold">
+            <Radio size={13} className="text-[#2563EB] animate-pulse" />
             <span>{t.statusLabel}</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
+          <div className="flex items-center gap-1 p-0.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
             {(['Available', 'Busy', 'Away'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setUserAvailability(st)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all ${
+                className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all ${
                   user.availability === st
                     ? st === 'Available'
-                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                      : st === 'Busy'
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-slate-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#16A34A] text-white font-black shadow-xs'
+                      : 'bg-white text-[#111827] font-black shadow-xs border border-[#E2E8F0]'
+                    : 'text-[#64748B] hover:text-[#111827]'
                 }`}
               >
                 {getAvailabilityLabel(st)}

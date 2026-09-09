@@ -17,9 +17,12 @@ import {
   QrCode,
   Phone,
   MessageSquare,
+  CreditCard,
+  Banknote,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AttendanceQRModal } from '../../components/attendance/AttendanceQRModal';
+import { UserAvatar } from '../../components/common/UserAvatar';
 
 interface CustomerApplicantsProps {
   initialJobId?: string | null;
@@ -36,6 +39,8 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     autoSelectWorkersForJob,
     attendanceRecords,
     recordAttendanceCheckIn,
+    t,
+    language,
   } = useApp();
 
   // Selected job filter
@@ -97,16 +102,16 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
   const slotsRemaining = Math.max(0, currentJob.workersRequired - currentJob.workersConfirmed);
 
   return (
-    <div className="pb-24 max-w-lg mx-auto px-4 pt-3 space-y-4">
+    <div className="pb-24 max-w-lg mx-auto px-4 pt-3 space-y-4 text-[#111827]">
       {/* Job Selector Pill */}
       <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1.5">
           Select Job Posting
         </label>
         <select
           value={selectedJobId}
           onChange={e => setSelectedJobId(e.target.value)}
-          className="w-full bg-white p-2.5 rounded-2xl border border-slate-200 font-extrabold text-sm text-slate-900 shadow-xs outline-none"
+          className="w-full bg-white p-2.5 rounded-2xl border border-[#E2E8F0] font-extrabold text-sm text-[#111827] shadow-xs outline-none focus:border-[#2563EB]"
         >
           {jobs.map(job => (
             <option key={job.id} value={job.id}>
@@ -117,33 +122,33 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
       </div>
 
       {/* Header Summary & Slot Status */}
-      <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+      <div className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-black text-slate-900 leading-tight">
+            <h2 className="text-base font-black text-[#111827] leading-tight">
               {currentJob.title}
             </h2>
-            <div className="text-xs text-slate-500 mt-0.5">
+            <div className="text-xs text-[#64748B] mt-0.5">
               ₹{currentJob.wage} • {currentJob.startTime} • {currentJob.approximateArea}
             </div>
           </div>
 
           <div className="text-right">
-            <span className="text-xs font-black text-amber-600 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-black text-[#2563EB] bg-[#EFF6FF] border border-[#DBEAFE] px-2.5 py-1 rounded-full">
               {currentJob.workersConfirmed} / {currentJob.workersRequired} Confirmed
             </span>
           </div>
         </div>
 
         {/* Action Controls: Compare view toggle & Auto-Select */}
-        <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-          <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-2 pt-1 border-t border-[#E2E8F0]">
+          <div className="flex bg-[#F1F5F9] p-0.5 rounded-xl border border-[#E2E8F0]">
             <button
               onClick={() => setViewMode('cards')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'cards'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'text-[#64748B] hover:text-[#111827]'
               }`}
             >
               Cards
@@ -152,81 +157,82 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
               onClick={() => setViewMode('compare')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
                 viewMode === 'compare'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'text-[#64748B] hover:text-[#111827]'
               }`}
             >
               <Table size={12} />
-              <span>Compare (Sec 68)</span>
+              <span>{t.compareCandidates}</span>
             </button>
           </div>
 
           {slotsRemaining > 0 && applicantScoredList.length > 0 && (
             <button
               onClick={handleAutoSelect}
-              className="ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1 transition-all active:scale-95"
+              className="ml-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-black px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
             >
               <Sparkles size={13} />
-              <span>Auto-Fill Best {slotsRemaining}</span>
+              <span>{t.autoFill} ({slotsRemaining})</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* VIEW MODE 1: COMPARISON MATRIX TABLE (Section 68) */}
+      {/* VIEW MODE 1: COMPARISON MATRIX TABLE */}
       {viewMode === 'compare' ? (
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
-          <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-[#E2E8F0] overflow-hidden shadow-xs">
+          <div className="p-3 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Table size={15} className="text-amber-600" />
-              <h3 className="font-extrabold text-xs text-slate-900 uppercase tracking-wider">
-                Candidate Comparison Matrix
+              <Table size={15} className="text-[#2563EB]" />
+              <h3 className="font-extrabold text-xs text-[#111827] uppercase tracking-wider">
+                {t.compareCandidates}
               </h3>
             </div>
-            <span className="text-[10px] text-slate-500 font-semibold">
-              Transparent Fair Match
+            <span className="text-[10px] text-[#64748B] font-semibold">
+              {t.transparentAiMatch}
             </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/70 text-slate-600 text-[10px] uppercase font-bold border-b border-slate-200">
+              <thead className="bg-[#F1F5F9] text-[#64748B] text-[10px] uppercase font-bold border-b border-[#E2E8F0]">
                 <tr>
                   <th className="p-2.5">Worker</th>
                   <th className="p-2.5">Rating</th>
                   <th className="p-2.5">Jobs</th>
                   <th className="p-2.5">Distance</th>
-                  <th className="p-2.5">Reliability</th>
-                  <th className="p-2.5">AI Match</th>
+                  <th className="p-2.5">{t.reliable}</th>
+                  <th className="p-2.5">{t.matchScore}</th>
                   <th className="p-2.5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+              <tbody className="divide-y divide-[#E2E8F0] font-medium text-[#111827]">
                 {applicantScoredList.map(({ worker, match }) => (
-                  <tr key={worker.id} className="hover:bg-amber-50/40 transition-colors">
+                  <tr key={worker.id} className="hover:bg-[#EFF6FF]/50 transition-colors">
                     <td className="p-2.5 flex items-center gap-2">
-                      <img
+                      <UserAvatar
                         src={worker.profilePhoto}
-                        alt={worker.name}
-                        className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                        name={worker.name}
+                        role="worker"
+                        size="sm"
                       />
                       <div>
-                        <div className="font-bold text-slate-900 line-clamp-1">{worker.name}</div>
-                        <div className="text-[10px] text-slate-400">{worker.skills[0]}</div>
+                        <div className="font-bold text-[#111827] line-clamp-1">{worker.name}</div>
+                        <div className="text-[10px] text-[#64748B]">{worker.skills[0]}</div>
                       </div>
                     </td>
-                    <td className="p-2.5 font-bold text-amber-600">
+                    <td className="p-2.5 font-bold text-[#2563EB]">
                       ★ {worker.rating}
                     </td>
                     <td className="p-2.5">{worker.completedJobs}</td>
                     <td className="p-2.5">{currentJob.approximateDistanceKm} km</td>
                     <td className="p-2.5">
-                      <span className="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                      <span className="bg-[#F0FDF4] text-[#16A34A] font-bold px-1.5 py-0.5 rounded text-[10px]">
                         {worker.reliabilityScore}%
                       </span>
                     </td>
                     <td className="p-2.5">
-                      <span className="bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded text-[10px]">
+                      <span className="bg-[#EFF6FF] text-[#2563EB] font-black px-1.5 py-0.5 rounded text-[10px]">
                         {match.score}%
                       </span>
                     </td>
@@ -234,9 +240,9 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                       <button
                         onClick={() => handleConfirmWorker(worker.id)}
                         disabled={slotsRemaining <= 0}
-                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-2.5 py-1 rounded-lg text-[11px] disabled:opacity-40 transition-all active:scale-95 shadow-xs"
+                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black px-2.5 py-1 rounded-lg text-[11px] disabled:opacity-40 transition-all active:scale-95 shadow-xs cursor-pointer"
                       >
-                        Select
+                        {t.acceptAndHire}
                       </button>
                     </td>
                   </tr>
@@ -251,9 +257,9 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
           {/* Confirmed Workers Banner */}
           {confirmedWorkers.length > 0 && (
             <div className="space-y-2">
-              <div className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-600" />
-                <span>Confirmed Workers ({confirmedWorkers.length})</span>
+              <div className="text-xs font-bold text-[#16A34A] uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 size={14} className="text-[#16A34A]" />
+                <span>{t.tabConfirmed} ({confirmedWorkers.length})</span>
               </div>
 
               {confirmedWorkers.map(worker => {
@@ -263,51 +269,56 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                 return (
                   <div
                     key={worker.id}
-                    className="bg-emerald-50/60 border border-emerald-300 rounded-3xl p-3.5 space-y-3 shadow-xs"
+                    className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-3xl p-3.5 space-y-3 shadow-xs"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <img
+                        <UserAvatar
                           src={worker.profilePhoto}
-                          alt={worker.name}
-                          className="w-11 h-11 rounded-xl object-cover border border-emerald-300"
+                          name={worker.name}
+                          role="worker"
+                          size="md"
                         />
                         <div>
-                          <div className="flex items-center gap-1 font-extrabold text-sm text-slate-900">
+                          <div className="flex items-center gap-1 font-extrabold text-sm text-[#111827]">
                             <span>{worker.name}</span>
-                            <ShieldCheck size={14} className="text-emerald-600" />
+                            <ShieldCheck size={14} className="text-[#16A34A]" />
                           </div>
-                          <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                            <span className="text-amber-600 font-bold">{worker.rating}★</span>
-                            <span>• {worker.reliabilityScore}% Reliability</span>
+                          <div className="text-xs text-[#64748B] flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[#F59E0B] font-bold">{worker.rating}★</span>
+                            <span>• {worker.reliabilityScore}% {t.reliable}</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">
+                              {(worker.paymentPreference || 'ONLINE') === 'OFFLINE' ? <Banknote size={10} /> : <CreditCard size={10} />}
+                              <span>{(worker.paymentPreference || 'ONLINE') === 'OFFLINE' ? 'Cash' : 'Online'}</span>
+                            </span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-end gap-1">
-                        <span className="bg-emerald-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                        <span className="bg-[#16A34A] text-white text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
                           <CheckCircle2 size={11} />
-                          <span>Confirmed</span>
+                          <span>{t.confirmed}</span>
                         </span>
-                        <span className="text-[10px] text-slate-500 font-semibold">
-                          Attendance: <strong className={isCheckedIn ? 'text-emerald-700' : 'text-amber-700'}>{att ? att.status : 'PENDING'}</strong>
+                        <span className="text-[10px] text-[#64748B] font-semibold">
+                          Attendance: <strong className={isCheckedIn ? 'text-[#16A34A]' : 'text-[#2563EB]'}>{att ? att.status : 'PENDING'}</strong>
                         </span>
                       </div>
                     </div>
 
                     {/* Direct Owner & Worker Connection Action Bar */}
-                    <div className="flex gap-2 pt-1 border-t border-emerald-200/80">
+                    <div className="flex gap-2 pt-1 border-t border-[#BBF7D0]">
                       <button
                         onClick={() => setSelectedQRWorker(worker)}
-                        className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                        className="bg-white hover:bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                       >
-                        <QrCode size={13} className="text-amber-600" />
+                        <QrCode size={13} className="text-[#2563EB]" />
                         <span>Check-In QR</span>
                       </button>
 
                       <a
                         href={`tel:${worker.phone || '+919876543210'}`}
-                        className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
+                        className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
                       >
                         <Phone size={13} />
                         <span>Call Worker Directly</span>
@@ -321,81 +332,86 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
 
           {/* Pending Applicants */}
           <div className="space-y-2 pt-1">
-            <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-              <span>Awaiting Review ({applicantScoredList.length})</span>
-              <span className="text-[11px] text-amber-700 font-semibold">
-                Ranked by AI Match
+            <div className="text-xs font-bold text-[#111827] uppercase tracking-wider flex items-center justify-between">
+              <span>{t.reviewApplicants} ({applicantScoredList.length})</span>
+              <span className="text-[11px] text-[#2563EB] font-semibold">
+                {t.transparentAiMatch}
               </span>
             </div>
 
             {applicantScoredList.length === 0 ? (
-              <div className="bg-white rounded-3xl p-6 text-center border border-slate-200 text-slate-500 text-xs">
+              <div className="bg-white rounded-3xl p-6 text-center border border-[#E2E8F0] text-[#64748B] text-xs">
                 No new unconfirmed applicants for this job right now.
               </div>
             ) : (
               applicantScoredList.map(({ worker, match }) => (
                 <div
                   key={worker.id}
-                  className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs hover:border-amber-400 space-y-3 transition-all"
+                  className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-xs hover:border-[#2563EB] space-y-3 transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <img
+                      <UserAvatar
                         src={worker.profilePhoto}
-                        alt={worker.name}
-                        className="w-13 h-13 rounded-2xl object-cover border border-slate-200 shadow-xs"
+                        name={worker.name}
+                        role="worker"
+                        size="md"
                       />
                       <div>
-                        <div className="flex items-center gap-1.5 font-black text-sm text-slate-900">
+                        <div className="flex items-center gap-1.5 font-black text-sm text-[#111827]">
                           <span>{worker.name}</span>
-                          <ShieldCheck size={15} className="text-emerald-600" />
+                          <ShieldCheck size={15} className="text-[#16A34A]" />
                         </div>
-                        <div className="text-xs font-bold text-slate-600 mt-0.5">
+                        <div className="text-xs font-bold text-[#64748B] mt-0.5">
                           {worker.skills.slice(0, 2).join(', ')} • {worker.experience}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                          <span className="flex items-center gap-0.5 text-amber-600 font-bold">
-                            <Star size={11} className="fill-amber-400 text-amber-400" />
+                        <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1 flex-wrap">
+                          <span className="flex items-center gap-0.5 text-[#F59E0B] font-bold">
+                            <Star size={11} className="fill-[#F59E0B] text-[#F59E0B]" />
                             {worker.rating}★
                           </span>
                           <span>• {worker.completedJobs} jobs done</span>
-                          <span className="text-emerald-700 font-bold">
-                            • {worker.reliabilityScore}% reliable
+                          <span className="text-[#16A34A] font-bold">
+                            • {worker.reliabilityScore}% {t.reliable}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">
+                            {(worker.paymentPreference || 'ONLINE') === 'OFFLINE' ? <Banknote size={10} /> : <CreditCard size={10} />}
+                            <span>{(worker.paymentPreference || 'ONLINE') === 'OFFLINE' ? 'Prefers Cash' : 'Prefers Online'}</span>
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-amber-100 text-amber-950 border border-amber-300 px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1 shrink-0">
-                      <Sparkles size={12} className="text-amber-600" />
-                      <span>{match.score}% Match</span>
+                    <div className="bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1 shrink-0">
+                      <Sparkles size={12} className="text-[#2563EB]" />
+                      <span>{match.score}% {t.matchScore}</span>
                     </div>
                   </div>
 
                   {/* Transparent Match Reasons */}
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-wrap gap-1.5 text-[11px] text-slate-700">
+                  <div className="bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0] flex flex-wrap gap-1.5 text-[11px] text-[#111827]">
                     {match.reasons.map((r, i) => (
                       <span key={i} className="flex items-center gap-1">
-                        <CheckCircle2 size={11} className="text-emerald-600" />
+                        <CheckCircle2 size={11} className="text-[#16A34A]" />
                         <span>{r}</span>
-                        {i < match.reasons.length - 1 && <span className="text-slate-300">•</span>}
+                        {i < match.reasons.length - 1 && <span className="text-[#CBD5E1]">•</span>}
                       </span>
                     ))}
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-slate-500 font-semibold">
-                      {currentJob.approximateDistanceKm} km from workplace
+                    <span className="text-xs text-[#64748B] font-semibold">
+                      {currentJob.approximateDistanceKm} km {t.fromYou}
                     </span>
 
                     <button
                       onClick={() => handleConfirmWorker(worker.id)}
                       disabled={slotsRemaining <= 0}
-                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                      className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
                     >
                       <UserCheck size={14} />
-                      <span>Confirm Worker</span>
+                      <span>{t.acceptAndHire}</span>
                     </button>
                   </div>
                 </div>
@@ -406,26 +422,26 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
           {/* Waiting List Candidates */}
           {waitingListWorkers.length > 0 && (
             <div className="space-y-2 pt-2">
-              <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock size={14} className="text-amber-600" />
-                <span>Automatic Waiting List ({waitingListWorkers.length})</span>
+              <div className="text-xs font-bold text-[#111827] uppercase tracking-wider flex items-center gap-1.5">
+                <Clock size={14} className="text-[#2563EB]" />
+                <span>{t.tabWaitingList} ({waitingListWorkers.length})</span>
               </div>
 
               {waitingListWorkers.map((worker, idx) => (
                 <div
                   key={worker.id}
-                  className="bg-amber-50/50 border border-amber-200 rounded-2xl p-3 flex items-center justify-between text-xs"
+                  className="bg-[#EFF6FF] border border-[#DBEAFE] rounded-2xl p-3 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs">
+                    <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white font-black flex items-center justify-center text-xs">
                       #{idx + 1}
                     </span>
                     <div>
-                      <div className="font-extrabold text-slate-900">{worker.name}</div>
-                      <div className="text-slate-500 text-[11px]">{worker.rating}★ • {worker.reliabilityScore}% reliability</div>
+                      <div className="font-extrabold text-[#111827]">{worker.name}</div>
+                      <div className="text-[#64748B] text-[11px]">{worker.rating}★ • {worker.reliabilityScore}% reliability</div>
                     </div>
                   </div>
-                  <span className="text-[11px] text-amber-800 font-semibold">
+                  <span className="text-[11px] text-[#2563EB] font-semibold">
                     Auto-replaces if someone cancels
                   </span>
                 </div>
