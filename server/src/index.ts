@@ -1224,11 +1224,14 @@ app.put('/api/v1/workers/:id/upi-details', (req: Request, res: Response) => {
 // ============================================================================
 // 7. SYSTEM & ADMIN APIs
 // ============================================================================
-app.get('/api/v1/health', (req: Request, res: Response) => {
+app.get(['/health', '/api/health', '/api/v1/health'], (req: Request, res: Response) => {
   res.json({
-    status: 'healthy',
+    status: 'online',
+    platform: 'WORK MOJO API Backend',
+    version: '2.0.0',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    aiAvailable: true,
     dualStore: true,
   });
 });
@@ -1261,13 +1264,22 @@ app.get('/api/v1/admin/overview', (req: Request, res: Response) => {
 // ============================================================================
 // 8. MOJO AI MULTILINGUAL ASSISTANT API
 // ============================================================================
-app.post(['/api/v1/ai/chat', '/api/v1/mojo/chat'], async (req: Request, res: Response) => {
+app.post(['/api/v1/ai/chat', '/api/v1/mojo/chat', '/api/ai/chat', '/ai/chat'], async (req: Request, res: Response) => {
   try {
-    const { message, language, role, context } = req.body;
+    const { message, language, role, context } = req.body || {};
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      res.status(400).json({
+        success: false,
+        reply: 'Message is required',
+        language: language || 'en',
+        provider: 'mojo-engine',
+      });
+      return;
+    }
     const result = await processAiChat({
-      message,
-      language,
-      role,
+      message: message.trim(),
+      language: language || 'en',
+      role: role || 'worker',
       context,
     });
     res.json(result);
@@ -1280,6 +1292,16 @@ app.post(['/api/v1/ai/chat', '/api/v1/mojo/chat'], async (req: Request, res: Res
       provider: 'mojo-engine',
     });
   }
+});
+
+app.get(['/api/v1/ai/chat', '/api/v1/mojo/chat', '/api/ai/chat', '/ai/chat'], (req: Request, res: Response) => {
+  res.json({
+    status: 'online',
+    endpoint: '/api/v1/ai/chat',
+    method: 'POST',
+    description: 'WorkMojo Multilingual AI Assistant Chat API. Send a POST request with { message, language, role, context }.',
+    supportedLanguages: ['en', 'te', 'hi', 'ta'],
+  });
 });
 
 // Start Server

@@ -30,6 +30,7 @@ export interface AiChatResponse {
 async function callGemini(apiKey: string, req: AiChatRequest): Promise<string | null> {
   const lang = req.language || 'en';
   const role = req.role || 'worker';
+  const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
   
   const systemPrompt = `You are Mojo, the official AI assistant of WorkMojo — India's premier commission-free gig platform connecting daily-wage workers and local employers.
 You must respond strictly in the user's selected language: ${
@@ -41,8 +42,11 @@ The user is a ${role}.
 Keep responses helpful, friendly, empathetic, concise (2-4 sentences max), and directly relevant to jobs, wages, payments (100% direct retain, UPI or Cash), safety (SOS), and QR attendance.`;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,19 +62,21 @@ Keep responses helpful, friendly, empathetic, concise (2-4 sentences max), and d
             temperature: 0.7,
           },
         }),
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn('[Gemini API] Request failed with status:', response.status);
+      console.warn(`[Gemini API] Request failed with status ${response.status}`);
       return null;
     }
 
     const data: any = await response.json();
     const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     return candidateText ? candidateText.trim() : null;
-  } catch (err) {
-    console.warn('[Gemini API] Error calling Gemini:', err);
+  } catch (err: any) {
+    console.warn('[Gemini API] Error calling Gemini:', err?.message || err);
     return null;
   }
 }
@@ -79,6 +85,7 @@ Keep responses helpful, friendly, empathetic, concise (2-4 sentences max), and d
 async function callOpenAI(apiKey: string, req: AiChatRequest): Promise<string | null> {
   const lang = req.language || 'en';
   const role = req.role || 'worker';
+  const modelName = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
   const systemPrompt = `You are Mojo, the official AI assistant of WorkMojo (India's zero-commission gig platform).
 Respond strictly in ${
@@ -89,6 +96,9 @@ Respond strictly in ${
 User is a ${role}. Keep responses concise, warm, helpful (2-4 sentences max).`;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -96,7 +106,7 @@ User is a ${role}. Keep responses concise, warm, helpful (2-4 sentences max).`;
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: modelName,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: req.message },
@@ -104,18 +114,20 @@ User is a ${role}. Keep responses concise, warm, helpful (2-4 sentences max).`;
         max_tokens: 200,
         temperature: 0.7,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn('[OpenAI API] Request failed with status:', response.status);
+      console.warn(`[OpenAI API] Request failed with status ${response.status}`);
       return null;
     }
 
     const data: any = await response.json();
     const candidateText = data?.choices?.[0]?.message?.content;
     return candidateText ? candidateText.trim() : null;
-  } catch (err) {
-    console.warn('[OpenAI API] Error calling OpenAI:', err);
+  } catch (err: any) {
+    console.warn('[OpenAI API] Error calling OpenAI:', err?.message || err);
     return null;
   }
 }
@@ -561,10 +573,16 @@ export async function processAiChat(req: AiChatRequest): Promise<AiChatResponse>
   }
 
   // Check 1: Optional Google Gemini API Key
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const geminiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GEMINI_API_KEY ||
+    process.env.GEMINI_KEY;
+
   if (geminiKey && geminiKey.trim() !== '') {
     const geminiReply = await callGemini(geminiKey.trim(), req);
     if (geminiReply) {
+      console.log(`[Mojo AI] Query answered via Google Gemini (${language})`);
       return {
         success: true,
         reply: geminiReply,
@@ -575,10 +593,11 @@ export async function processAiChat(req: AiChatRequest): Promise<AiChatResponse>
   }
 
   // Check 2: Optional OpenAI API Key
-  const openAiKey = process.env.OPENAI_API_KEY;
+  const openAiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
   if (openAiKey && openAiKey.trim() !== '') {
     const openAiReply = await callOpenAI(openAiKey.trim(), req);
     if (openAiReply) {
+      console.log(`[Mojo AI] Query answered via OpenAI (${language})`);
       return {
         success: true,
         reply: openAiReply,
@@ -590,6 +609,7 @@ export async function processAiChat(req: AiChatRequest): Promise<AiChatResponse>
 
   // Check 3: Built-in Multilingual Domain Engine (Fast, 100% Reliable, Zero Cost)
   const domainResult = generateDomainResponse(req);
+  console.log(`[Mojo AI] Query answered via Built-in Domain Engine (${language})`);
   return {
     success: true,
     reply: domainResult.reply,

@@ -1,16 +1,32 @@
-// API Client bridging Frontend to Backend (Phase 1)
+// API Client bridging Frontend to Backend
 const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  return `http://${host}:5000/api/v1`;
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    // Local development connects to port 5000
+    if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) {
+      return `http://${host}:5000/api/v1`;
+    }
+    // Remote/production deployments (e.g. Vercel) target the live Render backend
+    return 'https://workmojozip.onrender.com/api/v1';
+  }
+  return 'https://workmojozip.onrender.com/api/v1';
 };
 
 const getHealthUrl = () => {
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '') + '/api/health';
+    return import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') + '/api/health';
   }
-  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  return `http://${host}:5000/api/health`;
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) {
+      return `http://${host}:5000/api/health`;
+    }
+    return 'https://workmojozip.onrender.com/api/health';
+  }
+  return 'https://workmojozip.onrender.com/api/health';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -161,7 +177,7 @@ export const api = {
   ) => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
       const res = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

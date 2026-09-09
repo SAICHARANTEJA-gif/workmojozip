@@ -456,21 +456,29 @@ export const FloatingMojoAssistant: React.FC = () => {
           handleSpeakMessage(newMsgId, res.reply, res.language || language);
         }
       } else {
-        // Friendly localized error message
-        const errorReply =
-          language === 'te'
-            ? 'మోజో ప్రస్తుతం అందుబాటులో లేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.'
-            : language === 'hi'
-            ? 'मोजो अस्थायी रूप से अनुपलब्ध है। कृपया पुन: प्रयास करें।'
-            : language === 'ta'
-            ? 'மோஜோ தற்காலிகமாக கிடைக்கவில்லை. மீண்டும் முயற்சிக்கவும்.'
-            : 'Mojo is temporarily unavailable. Please try again.';
+        // Friendly localized error message with cold start awareness
+        const isTimeout = res?.error === 'timeout';
+        const errorReply = isTimeout
+          ? (language === 'te'
+              ? 'మోజో సర్వర్ ప్రారంభమవుతోంది (Render ఉచిత సర్వర్ మొదట ప్రారంభం కావడానికి కొద్ది సమయం పడుతుంది). దయచేసి మళ్ళీ ప్రయత్నించండి.'
+              : language === 'hi'
+              ? 'मोजो सर्वर शुरू हो रहा है (Render फ्री टियर शुरू होने में कुछ सेकंड लगते हैं)। कृपया पुन: प्रयास करें।'
+              : language === 'ta'
+              ? 'மோஜோ சேவையகம் தொடங்குகிறது (Render தொடங்குவதற்கு சில வினாடிகள் ஆகும்). தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'
+              : 'Mojo server is starting up (Render free tier cold start). Please tap Retry in a moment.')
+          : (language === 'te'
+              ? 'మోజో ప్రస్తుతం అందుబాటులో లేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.'
+              : language === 'hi'
+              ? 'मोजो अस्थायी रूप से अनुपलब्ध है। कृपया पुन: प्रयास करें।'
+              : language === 'ta'
+              ? 'மோஜோ தற்காலிகமாக கிடைக்கவில்லை. மீண்டும் முயற்சிக்கவும்.'
+              : 'Mojo is temporarily unavailable. Please try again.');
 
         const retryLabel =
-          language === 'te' ? 'మళ్ళీ ప్రయత్నించండి' :
-          language === 'hi' ? 'पुन: प्रयास करें' :
-          language === 'ta' ? 'மீண்டும் முயற்சிக்கவும்' :
-          'Retry';
+          language === 'te' ? '🔄 మళ్ళీ ప్రయత్నించండి' :
+          language === 'hi' ? '🔄 पुन: प्रयास करें' :
+          language === 'ta' ? '🔄 மீண்டும் முயற்சிக்கவும்' :
+          '🔄 Retry';
 
         const errorMsg: ChatMessage = {
           id: 'err-' + Date.now(),
@@ -496,11 +504,17 @@ export const FloatingMojoAssistant: React.FC = () => {
           ? 'மோஜோ தற்காலிகமாக கிடைக்கவில்லை. மீண்டும் முயற்சிக்கவும்.'
           : 'Mojo is temporarily unavailable. Please try again.';
 
+      const retryLabel =
+        language === 'te' ? '🔄 మళ్ళీ ప్రయత్నించండి' :
+        language === 'hi' ? '🔄 पुन: प्रयास करें' :
+        language === 'ta' ? '🔄 மீண்டும் முயற்சிக்கவும்' :
+        '🔄 Retry';
+
       const errorMsg: ChatMessage = {
         id: 'err-' + Date.now(),
         sender: 'mojo',
         text: errorReply,
-        actionText: 'Retry',
+        actionText: retryLabel,
         onAction: () => handleSendMessage(text),
         timestamp: 'Just now',
         lang: language,
