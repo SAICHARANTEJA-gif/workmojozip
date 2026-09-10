@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { isSupabaseConfigured, isServiceRoleActive, supabase } from './db/supabaseClient';
 import { processAiChat } from './aiService';
 import { predictWorkerJobMatch, rankWorkersForJob, getMLDiagnostics } from './ml/mlMatchingService';
+import { requestOtp, verifyOtp, normalizePhoneNumber } from './services/otpService';
 
 dotenv.config();
 
@@ -345,113 +346,83 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
   const { phone } = req.body;
   if (!phone) {
-    return res.status(400).json({ error: 'Mobile number is required' });
+    return res.status(400).json({ success: false, error: 'Mobile number is required' });
   }
 
   const rawDigits = phone.replace(/\D/g, '');
   if (rawDigits.length < 10) {
-    return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+    return res.status(400).json({ success: false, error: 'Please enter a valid 10-digit mobile number' });
   }
 
-  const cleanPhone = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
-
-  if (isSupabaseConfigured()) {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: cleanPhone,
-      });
-      if (error) {
-        console.warn('[AUTH] Supabase SMS error:', error.message);
-        return res.status(503).json({
-          success: false,
-          error: 'OTP verification is currently unavailable. Please try again later.',
-        });
-      }
-      return res.json({
-        success: true,
-        message: `Verification code sent to ${cleanPhone}`,
-      });
-    } catch (err: any) {
-      console.warn('[AUTH] Send OTP exception:', err.message);
-      return res.status(503).json({
-        success: false,
-        error: 'OTP verification is currently unavailable. Please try again later.',
-      });
-    }
+  const result = await requestOtp(phone);
+  if (!result.success) {
+    return res.status(result.status).json({
+      success: false,
+      error: result.error,
+      retryAfterSeconds: result.retryAfterSeconds,
+    });
   }
 
-  // Graceful fallback when external SMS provider is unconfigured (Never fake/default OTP)
-  return res.status(503).json({
-    success: false,
-    error: 'OTP verification is currently unavailable. Please try again later.',
+  return res.status(200).json({
+    success: true,
+    message: result.message || 'OTP sent successfully',
   });
 });
 
 app.post('/api/v1/auth/verify-otp', async (req: Request, res: Response) => {
   const { phone, otp, name, gender, role } = req.body;
   if (!phone || !otp) {
-    return res.status(400).json({ error: 'Phone and OTP are required' });
+    return res.status(400).json({ success: false, error: 'Phone and OTP are required' });
   }
 
   const rawDigits = phone.replace(/\D/g, '');
-  const cleanPhone = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+  if (rawDigits.length < 10) {
+    return res.status(400).json({ success: false, error: 'Please enter a valid 10-digit mobile number' });
+  }
 
-  if (isSupabaseConfigured()) {
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: cleanPhone,
-        token: otp.trim(),
-        type: 'sms',
-      });
+  const cleanPhone = normalizePhoneNumber(phone);
 
-      if (error || !data.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid or expired OTP code. Please try again.',
-        });
+  // 1. Verify submitted OTP using crypto.timingSafeEqual on salted SHA-256 hash
+  const verification = verifyOtp(cleanPhone, String(otp));
+  if (!verification.success) {
+    return res.status(verification.status).json({
+      success: false,
+      error: verification.error,
+    });
+  }
+
+  // 2. Locate or initialize user in store & synchronize with Supabase if active
+  let user = db.users.find(u => u.phone === cleanPhone);
+  if (!user) {
+    user = {
+      id: `u-${Date.now()}`,
+      phone: cleanPhone,
+      name: name || 'User',
+      gender: gender || 'Male',
+      role: role || 'worker',
+      kycVerified: false, // Strict: Never auto-verify KYC on login
+      profilePhoto: role === 'customer'
+        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
+    };
+    db.users.push(user);
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('users').upsert([user]);
+      } catch (err: any) {
+        console.warn('[AUTH] Supabase user upsert notice:', err.message);
       }
-
-      // Check existing user or initialize profile
-      let user = db.users.find(u => u.phone === cleanPhone);
-      if (!user) {
-        user = {
-          id: data.user.id || `u-${Date.now()}`,
-          phone: cleanPhone,
-          name: name || 'User',
-          gender: gender || 'Male',
-          role: role || 'worker',
-          kycVerified: false, // Strict: Never auto-verify KYC on login
-          profilePhoto: role === 'customer'
-            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
-            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-        };
-        db.users.push(user);
-        try {
-          await supabase.from('users').upsert([user]);
-        } catch (_) {}
-      }
-
-      const token = data.session?.access_token || `wm_auth_token_${user.id}_${Date.now()}`;
-      return res.json({
-        success: true,
-        token,
-        user,
-      });
-    } catch (err: any) {
-      console.warn('[AUTH] Verify OTP exception:', err.message);
-      return res.status(503).json({
-        success: false,
-        error: 'OTP verification is currently unavailable. Please try again later.',
-      });
     }
   }
 
-  // Without SMS provider, reject gracefully without fake validation
-  return res.status(503).json({
-    success: false,
-    error: 'OTP verification is currently unavailable. Please try again later.',
+  const token = `wm_auth_token_${user.id}_${Date.now()}`;
+  return res.json({
+    success: true,
+    token,
+    user,
   });
 });
+
 
 // ============================================================================
 // 3. WORKER DIRECTORY / "FIND WORKERS" (Phase 5)

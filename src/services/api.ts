@@ -50,21 +50,49 @@ export const api = {
 
   // Auth
   sendOtp: async (phone: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone }),
-    });
-    return await res.json();
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || 'OTP service is temporarily unavailable. Please try again later.',
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: 'Unable to connect to the server. Please check your internet connection and try again.',
+      };
+    }
   },
 
   verifyOtp: async (phone: string, otp: string, name?: string, gender?: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp, name, gender }),
-    });
-    return await res.json();
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp, name, gender }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || 'Invalid or expired verification code. Please try again.',
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: 'Unable to connect to the server. Please check your internet connection and try again.',
+      };
+    }
   },
 
   // Worker Directory
