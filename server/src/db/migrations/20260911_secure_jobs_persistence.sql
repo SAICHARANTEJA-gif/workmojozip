@@ -1,19 +1,21 @@
 ﻿-- ============================================================================
 -- WORKMOJO PRODUCTION MIGRATION: Secure Jobs Persistence & Referential Integrity
--- Migration File: 20260911_secure_jobs_persistence.sql (Replaces 20260911_fix_jobs_persistence.sql)
+-- Migration File: 20260911_secure_jobs_persistence.sql
 -- 
 -- Security & Architectural Guarantees:
 -- 1. Row Level Security (RLS) remains ENABLED on all 16 tables.
 -- 2. Sensitive tables (users, worker_profiles, payments, ratings, applications,
 --    notifications, attendance, reports, blocked_users) remain strictly protected.
---    No public write policies are added for sensitive tables.
+--    Zero public write policies exist on sensitive tables.
 -- 3. Only the jobs table receives necessary type conversions to support
 --    WorkMojo string identifiers (e.g. 'job-1789056254222', 'cust-kumar').
 -- 4. Foreign key referential integrity from dependent tables (applications,
 --    job_workers, waiting_list, attendance, payments, notifications, ratings,
 --    reports) to jobs(id) is PRESERVED.
--- 5. The Render Express backend uses SUPABASE_SERVICE_ROLE_KEY for trusted
---    server-side database operations.
+-- 5. Zero public INSERT/UPDATE/DELETE policies on jobs. Public clients (anon)
+--    can ONLY read (SELECT) open jobs.
+-- 6. All backend writes are performed exclusively by the Render Express backend
+--    using SUPABASE_SERVICE_ROLE_KEY (which safely bypasses RLS at the PostgreSQL level).
 -- ============================================================================
 
 -- Step 1: Temporarily drop dependent foreign keys to jobs(id) to allow type alteration
@@ -74,7 +76,7 @@ ALTER TABLE IF EXISTS jobs ADD COLUMN IF NOT EXISTS customer_kyc BOOLEAN DEFAULT
 ALTER TABLE IF EXISTS jobs ADD COLUMN IF NOT EXISTS business_name TEXT DEFAULT '';
 ALTER TABLE IF EXISTS jobs ADD COLUMN IF NOT EXISTS selection_mode VARCHAR(30) DEFAULT 'manual';
 
--- Step 6: Ensure Row Level Security is ENABLED on ALL tables
+-- Step 6: Ensure Row Level Security is ENABLED on ALL 16 tables
 ALTER TABLE IF EXISTS jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS worker_profiles ENABLE ROW LEVEL SECURITY;
@@ -91,28 +93,28 @@ ALTER TABLE IF EXISTS reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS blocked_users ENABLE ROW LEVEL SECURITY;
 
 -- Step 7: Define Secure Policies for the jobs table ONLY
--- Public read access: Anyone (anon/authenticated) can browse open jobs
+-- Clean up any legacy or broad policies on jobs
+DROP POLICY IF EXISTS "Public access on jobs" ON jobs;
 DROP POLICY IF EXISTS "Public read on jobs" ON jobs;
 DROP POLICY IF EXISTS "Allow public read on jobs" ON jobs;
-CREATE POLICY "Public read on jobs" ON jobs 
-    FOR SELECT TO anon, authenticated, service_role
-    USING (true);
-
--- Controlled write access on jobs table for backend ingestion
 DROP POLICY IF EXISTS "Service write on jobs" ON jobs;
 DROP POLICY IF EXISTS "Allow insert on jobs" ON jobs;
-CREATE POLICY "Service write on jobs" ON jobs 
-    FOR INSERT TO anon, authenticated, service_role 
-    WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Service update on jobs" ON jobs;
 DROP POLICY IF EXISTS "Allow update on jobs" ON jobs;
-CREATE POLICY "Service update on jobs" ON jobs 
-    FOR UPDATE TO anon, authenticated, service_role 
-    USING (true) WITH CHECK (true);
 
--- Step 8: Verification query
+-- 7A: Public READ ONLY: Anyone (anon/authenticated) can browse open jobs
+CREATE POLICY "Allow public read on jobs" ON jobs 
+    FOR SELECT TO anon, authenticated
+    USING (true);
+
+-- 7B: NO INSERT policy for anon
+-- 7C: NO UPDATE policy for anon
+-- 7D: NO DELETE policy for anon
+-- NOTE: The Render Express backend uses SUPABASE_SERVICE_ROLE_KEY, which bypasses RLS
+-- in PostgreSQL. Direct writes from public clients (anon) are strictly blocked.
+
+-- Step 8: Verification query (inspecting updated columns)
 SELECT table_name, column_name, data_type 
 FROM information_schema.columns 
-WHERE table_name IN ('jobs', 'applications', 'payments') 
+WHERE table_name IN ('jobs', 'applications', 'payments', 'job_workers', 'attendance') 
   AND column_name IN ('id', 'job_id', 'employer_id');
