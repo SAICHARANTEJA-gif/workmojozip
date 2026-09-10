@@ -4,7 +4,7 @@ import { Job, User, PaymentRecord } from '../../types';
 import { PaymentModal } from '../../components/payment/PaymentModal';
 import { DigitalReceiptModal } from '../../components/payment/DigitalReceiptModal';
 import { UserAvatar } from '../../components/common/UserAvatar';
-import { getCategoryLabel } from '../../config/categories';
+import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import {
   Clock,
   CheckCircle2,
@@ -99,8 +99,9 @@ export const CustomerOngoingJobView: React.FC<CustomerOngoingProps> = ({
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-full">
-                    {getCategoryLabel(job.category, language)}
+                  <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                    <span>{getCategoryEmoji(job.category)}</span>
+                    <span>{getCategoryLabel(job.category, language)}</span>
                   </span>
                   <h3 className="font-extrabold text-base text-[#111827] mt-1">{job.title}</h3>
                   <div className="text-xs text-[#64748B] flex items-center gap-1.5 mt-0.5">

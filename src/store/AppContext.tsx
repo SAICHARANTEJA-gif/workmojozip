@@ -209,7 +209,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [allWorkers, setAllWorkers] = useState<User[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'workers');
-    return saved ? JSON.parse(saved) : SEED_WORKERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const map = new Map<string, User>();
+          SEED_WORKERS.forEach(w => map.set(w.id, w));
+          parsed.forEach((w: User) => map.set(w.id, { ...(map.get(w.id) || {}), ...w }));
+          return Array.from(map.values());
+        }
+      } catch (_) {}
+    }
+    return SEED_WORKERS;
   });
 
   const [allCustomers, setAllCustomers] = useState<User[]>(() => {

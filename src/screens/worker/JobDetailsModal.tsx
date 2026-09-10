@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Job } from '../../types';
 import { useApp } from '../../store/AppContext';
 import { calculateMatchScore } from '../../services/matchingService';
-import { getCategoryLabel } from '../../config/categories';
+import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   X,
@@ -90,8 +90,9 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
 
           {/* Badges on Banner */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-            <span className="bg-[#2563EB] text-white text-xs font-black px-3 py-1 rounded-full shadow-md">
-              {getCategoryLabel(job.category, language)}
+            <span className="bg-[#2563EB] text-white text-xs font-black px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1.5">
+              <span>{getCategoryEmoji(job.category)}</span>
+              <span>{getCategoryLabel(job.category, language)}</span>
             </span>
             <div className="bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] text-xs font-black px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1 shadow-sm">
               <Sparkles size={12} className="text-[#F5A900] fill-[#F5A900]" />

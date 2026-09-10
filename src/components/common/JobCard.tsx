@@ -2,7 +2,7 @@ import React from 'react';
 import { Job } from '../../types';
 import { useApp } from '../../store/AppContext';
 import { calculateMatchScore } from '../../services/matchingService';
-import { getCategoryLabel } from '../../config/categories';
+import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from './UserAvatar';
 import {
   Clock,
@@ -45,8 +45,9 @@ export const JobCard: React.FC<JobCardProps> = ({
       {/* Top Bar: Category Pill, Match Score, Save Button */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
-            {getCategoryLabel(job.category, language)}
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE] inline-flex items-center gap-1.5">
+            <span className="text-xs">{getCategoryEmoji(job.category)}</span>
+            <span>{getCategoryLabel(job.category, language)}</span>
           </span>
           {activeRole === 'worker' && (
             <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 border bg-[#FFFBEB] text-[#92400E] border-[#FDE68A] shadow-2xs">

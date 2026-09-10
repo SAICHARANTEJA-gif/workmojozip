@@ -23,6 +23,7 @@ import {
 import confetti from 'canvas-confetti';
 import { AttendanceQRModal } from '../../components/attendance/AttendanceQRModal';
 import { UserAvatar } from '../../components/common/UserAvatar';
+import { getCategoryEmoji } from '../../config/categories';
 
 interface CustomerApplicantsProps {
   initialJobId?: string | null;
@@ -31,6 +32,7 @@ interface CustomerApplicantsProps {
 
 export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
   initialJobId,
+  onSelectWorker,
 }) => {
   const {
     jobs,
@@ -209,7 +211,11 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
               <tbody className="divide-y divide-[#E2E8F0] font-medium text-[#111827]">
                 {applicantScoredList.map(({ worker, match }) => (
                   <tr key={worker.id} className="hover:bg-[#EFF6FF]/50 transition-colors">
-                    <td className="p-2.5 flex items-center gap-2">
+                    <td
+                      className="p-2.5 flex items-center gap-2 cursor-pointer"
+                      onClick={() => onSelectWorker?.(worker)}
+                      title="View Worker Profile"
+                    >
                       <UserAvatar
                         src={worker.profilePhoto}
                         name={worker.name}
@@ -217,7 +223,12 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                         size="sm"
                       />
                       <div>
-                        <div className="font-bold text-[#111827] line-clamp-1">{worker.name}</div>
+                        <div className="font-bold text-[#111827] line-clamp-1 hover:text-[#2563EB] flex items-center gap-1">
+                          <span>{worker.name}</span>
+                          <span className="text-[11px]">
+                            {getCategoryEmoji(worker.preferredCategories?.[0] || worker.skills?.[0])}
+                          </span>
+                        </div>
                         <div className="text-[10px] text-[#64748B]">{worker.skills[0]}</div>
                       </div>
                     </td>
@@ -272,7 +283,11 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                     className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-3xl p-3.5 space-y-3 shadow-xs"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                      <div
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => onSelectWorker?.(worker)}
+                        title="View Worker Profile"
+                      >
                         <UserAvatar
                           src={worker.profilePhoto}
                           name={worker.name}
@@ -280,8 +295,11 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                           size="md"
                         />
                         <div>
-                          <div className="flex items-center gap-1 font-extrabold text-sm text-[#111827]">
+                          <div className="flex items-center gap-1 font-extrabold text-sm text-[#111827] hover:text-[#2563EB] transition-colors">
                             <span>{worker.name}</span>
+                            <span className="text-xs">
+                              {getCategoryEmoji(worker.preferredCategories?.[0] || worker.skills?.[0])}
+                            </span>
                             <ShieldCheck size={14} className="text-[#16A34A]" />
                           </div>
                           <div className="text-xs text-[#64748B] flex items-center gap-1.5 flex-wrap">
@@ -314,6 +332,13 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                       >
                         <QrCode size={13} className="text-[#2563EB]" />
                         <span>Check-In QR</span>
+                      </button>
+
+                      <button
+                        onClick={() => onSelectWorker?.(worker)}
+                        className="bg-white hover:bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                      >
+                        <span>Profile</span>
                       </button>
 
                       <a
@@ -350,7 +375,11 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                   className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-xs hover:border-[#2563EB] space-y-3 transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
+                    <div
+                      className="flex items-center gap-3 cursor-pointer"
+                      onClick={() => onSelectWorker?.(worker)}
+                      title="View Worker Profile"
+                    >
                       <UserAvatar
                         src={worker.profilePhoto}
                         name={worker.name}
@@ -358,8 +387,11 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                         size="md"
                       />
                       <div>
-                        <div className="flex items-center gap-1.5 font-black text-sm text-[#111827]">
+                        <div className="flex items-center gap-1.5 font-black text-sm text-[#111827] hover:text-[#2563EB] transition-colors">
                           <span>{worker.name}</span>
+                          <span className="text-xs">
+                            {getCategoryEmoji(worker.preferredCategories?.[0] || worker.skills?.[0])}
+                          </span>
                           <ShieldCheck size={15} className="text-[#16A34A]" />
                         </div>
                         <div className="text-xs font-bold text-[#64748B] mt-0.5">
@@ -405,14 +437,23 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                       {currentJob.approximateDistanceKm} km {t.fromYou}
                     </span>
 
-                    <button
-                      onClick={() => handleConfirmWorker(worker.id)}
-                      disabled={slotsRemaining <= 0}
-                      className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
-                    >
-                      <UserCheck size={14} />
-                      <span>{t.acceptAndHire}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onSelectWorker?.(worker)}
+                        className="bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] font-bold px-3 py-2 rounded-xl text-xs transition-all active:scale-95 border border-[#DBEAFE] cursor-pointer"
+                      >
+                        Profile
+                      </button>
+
+                      <button
+                        onClick={() => handleConfirmWorker(worker.id)}
+                        disabled={slotsRemaining <= 0}
+                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
+                      >
+                        <UserCheck size={14} />
+                        <span>{t.acceptAndHire}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -430,14 +471,21 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
               {waitingListWorkers.map((worker, idx) => (
                 <div
                   key={worker.id}
-                  className="bg-[#EFF6FF] border border-[#DBEAFE] rounded-2xl p-3 flex items-center justify-between text-xs"
+                  onClick={() => onSelectWorker?.(worker)}
+                  className="bg-[#EFF6FF] border border-[#DBEAFE] rounded-2xl p-3 flex items-center justify-between text-xs cursor-pointer hover:border-[#2563EB] transition-all"
+                  title="Click to view worker profile"
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white font-black flex items-center justify-center text-xs">
                       #{idx + 1}
                     </span>
                     <div>
-                      <div className="font-extrabold text-[#111827]">{worker.name}</div>
+                      <div className="font-extrabold text-[#111827] flex items-center gap-1">
+                        <span>{worker.name}</span>
+                        <span className="text-[11px]">
+                          {getCategoryEmoji(worker.preferredCategories?.[0] || worker.skills?.[0])}
+                        </span>
+                      </div>
                       <div className="text-[#64748B] text-[11px]">{worker.rating}★ • {worker.reliabilityScore}% reliability</div>
                     </div>
                   </div>

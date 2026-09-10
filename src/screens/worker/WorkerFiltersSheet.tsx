@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../store/AppContext';
 import { WorkCategory, WorkTimePreference, JobUrgency } from '../../types';
-import { getCategoryLabel } from '../../config/categories';
+import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { X, Check, RotateCcw, Filter, Sparkles } from 'lucide-react';
 
 interface FilterSheetProps {
@@ -150,13 +150,13 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
                   <button
                     key={cat}
                     onClick={() => toggleCategory(cat)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                       isSelected
                         ? 'bg-[#2563EB] text-white shadow-sm'
                         : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#EFF6FF]'
                     }`}
                   >
-                    {isSelected && <Check size={12} className="text-white" />}
+                    {isSelected ? <Check size={12} className="text-white" /> : <span>{getCategoryEmoji(cat)}</span>}
                     <span>{getCategoryLabel(cat, language)}</span>
                   </button>
                 );

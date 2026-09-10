@@ -40,6 +40,7 @@ export interface CategoryInfo {
   id: WorkCategory;
   labels: Record<SupportedLanguage, string>;
   icon: React.ComponentType<{ size?: number; className?: string }>;
+  emoji?: string;
   color: string; // Tailwind color class for badge
   bgColor: string;
   borderColor: string;
@@ -508,6 +509,81 @@ export const WORK_CATEGORIES: CategoryInfo[] = [
   },
 ];
 
+export const CATEGORY_EMOJIS: Record<string, string> = {
+  'Construction': '👷',
+  'Loading/Unloading': '📦',
+  'Cleaning': '🧹',
+  'Delivery': '🛵',
+  'Driving': '🚗',
+  'Warehouse': '🏭',
+  'Security': '🛡️',
+  'Painting': '🎨',
+  'Plumbing': '🔧',
+  'Electrical Work': '⚡',
+  'Carpentry': '🪚',
+  'Masonry': '🧱',
+  'Gardening': '🌱',
+  'Cooking': '👨‍🍳',
+  'Hotel/Restaurant': '🍽️',
+  'Event Staff': '🎟️',
+  'Housekeeping': '🏡',
+  'Office Assistant': '💼',
+  'Data Entry': '💻',
+  'Sales': '📈',
+  'Retail': '🛍️',
+  'Delivery Partner': '🛵',
+  'Moving/Shifting': '🚛',
+  'Machine Operator': '⚙️',
+  'Factory Worker': '🏭',
+  'Maintenance': '🛠️',
+  'Repair': '🛠️',
+  'Agriculture': '🌾',
+  'Farm Work': '🚜',
+  'Packing': '📦',
+  'Domestic Help': '🧽',
+  'Caregiving': '🤝',
+  'Labour': '💪',
+  'Shop/Store Help': '🏪',
+  'Other': '📋',
+};
+
+export function getCategoryEmoji(category: string | undefined | null): string {
+  if (!category) return '💼';
+  if (CATEGORY_EMOJIS[category]) return CATEGORY_EMOJIS[category];
+
+  const c = category.toLowerCase().trim();
+  if (c.includes('plumb')) return '🔧';
+  if (c.includes('electr')) return '⚡';
+  if (c.includes('carpent') || c.includes('wood')) return '🪚';
+  if (c.includes('paint')) return '🎨';
+  if (c.includes('mason') || c.includes('brick') || c.includes('తాపీ') || c.includes('मिस्त्री') || c.includes('கொத்தனார்')) return '🧱';
+  if (c.includes('clean') || c.includes('housekeep') || c.includes('झाड़ू') || c.includes('శుభ్రం') || c.includes('துப்புரவு')) return '🧹';
+  if (c.includes('cook') || c.includes('chef') || c.includes('रसोइया') || c.includes('వంట') || c.includes('சமையல்')) return '👨‍🍳';
+  if (c.includes('driv') || c.includes('ड्राइवर') || c.includes('డ్రైవర్') || c.includes('ஓட்டுநர்')) return '🚗';
+  if (c.includes('deliver') || c.includes('courier') || c.includes('டெலிவரி')) return '🛵';
+  if (c.includes('garden') || c.includes('पौध') || c.includes('తోట') || c.includes('தோட்டம்')) return '🌱';
+  if (c.includes('secur') || c.includes('guard') || c.includes('सुरक्षा') || c.includes('பாதுகாவலர்')) return '🛡️';
+  if (c.includes('load') || c.includes('unload') || c.includes('pack')) return '📦';
+  if (c.includes('wareh') || c.includes('godown') || c.includes('fact')) return '🏭';
+  if (c.includes('repair') || c.includes('maint') || c.includes('मरम्मत') || c.includes('రిపేర్')) return '🛠️';
+  if (c.includes('construct') || c.includes('build') || c.includes('నిర్మాణ') || c.includes('निर्माण') || c.includes('கட்டுமானம்')) return '👷';
+  if (c.includes('labour') || c.includes('labor') || c.includes('मजदूर') || c.includes('కూలీ')) return '💪';
+  if (c.includes('hotel') || c.includes('restaur') || c.includes('food')) return '🍽️';
+  if (c.includes('event') || c.includes('ticket')) return '🎟️';
+  if (c.includes('retail') || c.includes('shop') || c.includes('store')) return '🏪';
+  if (c.includes('care') || c.includes('elder')) return '🤝';
+  if (c.includes('farm') || c.includes('agri')) return '🌾';
+
+  return '💼';
+}
+
+// Populate emoji on all category records
+WORK_CATEGORIES.forEach(c => {
+  if (!c.emoji) {
+    c.emoji = getCategoryEmoji(c.id);
+  }
+});
+
 export function getCategoryInfo(id: WorkCategory): CategoryInfo {
   return WORK_CATEGORIES.find(c => c.id === id) || WORK_CATEGORIES[WORK_CATEGORIES.length - 1];
 }
@@ -516,4 +592,5 @@ export function getCategoryLabel(id: WorkCategory, lang: SupportedLanguage): str
   const info = getCategoryInfo(id);
   return info.labels[lang] || info.labels.en || id;
 }
+
 

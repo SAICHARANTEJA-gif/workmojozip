@@ -354,6 +354,156 @@ function generateDomainResponse(req: AiChatRequest): { reply: string; action?: a
     q.includes('அவசரம்') ||
     q.includes('பாதுகாப்பு');
 
+  // --- PRIORITY ROUTE: Worker Discovery & "View Skilled Workers" ---
+  // Triggers when user asks "Find me a plumber", "I need a plumber", "hire electrician", or searches workers
+  const isSeekingWorker =
+    q.includes('find me') ||
+    q.includes('i need a') ||
+    q.includes('i need an') ||
+    q.includes('need a ') ||
+    q.includes('need an ') ||
+    q.includes('hire') ||
+    q.includes('looking for') ||
+    q.includes('want a') ||
+    q.includes('show workers') ||
+    q.includes('view workers') ||
+    q.includes('skilled worker') ||
+    q.includes('worker directory') ||
+    q.includes('workers near') ||
+    q.includes('వర్కర్లు కావాలి') ||
+    q.includes('వర్కర్') ||
+    q.includes('కావాలి') ||
+    q.includes('मजदूर चाहिए') ||
+    q.includes('कामगार चाहिए') ||
+    q.includes('कारीगर') ||
+    q.includes('தொழிலாளி வேண்டும்') ||
+    q.includes('ஆட்கள் வேண்டும்') ||
+    (role === 'customer' && (q.includes('plumb') || q.includes('electr') || q.includes('paint') || q.includes('carpent') || q.includes('mason') || q.includes('clean') || q.includes('cook') || q.includes('driv')));
+
+  if (isSeekingWorker) {
+    let matchedCat = 'All';
+    let tradeLabelEn = 'Skilled Worker';
+    let tradeLabelTe = 'స్కిల్డ్ వర్కర్';
+    let tradeLabelHi = 'कुशल कामगार';
+    let tradeLabelTa = 'திறமையான தொழிலாளி';
+
+    if (q.includes('plumb') || q.includes('ప్లంబ') || q.includes('प्लंबर') || q.includes('பிளம்ப')) {
+      matchedCat = 'Plumbing';
+      tradeLabelEn = 'Plumber';
+      tradeLabelTe = 'ప్లంబర్';
+      tradeLabelHi = 'प्लंबर';
+      tradeLabelTa = 'பிளம்பர்';
+    } else if (q.includes('electr') || q.includes('ఎలక్ట్రీ') || q.includes('इलेक्ट्री') || q.includes('மின்சார')) {
+      matchedCat = 'Electrical Work';
+      tradeLabelEn = 'Electrician';
+      tradeLabelTe = 'ఎలక్ట్రీషియన్';
+      tradeLabelHi = 'इलेक्ट्रीशियन';
+      tradeLabelTa = 'எலக்ட்ரீஷியன்';
+    } else if (q.includes('carpent') || q.includes('వడ్రంగి') || q.includes('बढ़ई') || q.includes('தச்சர்')) {
+      matchedCat = 'Carpentry';
+      tradeLabelEn = 'Carpenter';
+      tradeLabelTe = 'కార్పెంటర్';
+      tradeLabelHi = 'बढ़ई / कारपेंटर';
+      tradeLabelTa = 'தச்சர்';
+    } else if (q.includes('paint') || q.includes('పెయింట') || q.includes('पेंटर') || q.includes('வண்ண')) {
+      matchedCat = 'Painting';
+      tradeLabelEn = 'Painter';
+      tradeLabelTe = 'పెయింటర్';
+      tradeLabelHi = 'पेंटर';
+      tradeLabelTa = 'பெயிண்டர்';
+    } else if (q.includes('mason') || q.includes('తాపీ') || q.includes('मिस्त्री') || q.includes('கொத்தனார்')) {
+      matchedCat = 'Masonry';
+      tradeLabelEn = 'Mason';
+      tradeLabelTe = 'తాపీ మేస్త్రీ';
+      tradeLabelHi = 'मिस्त्री (राजमिस्त्री)';
+      tradeLabelTa = 'கொத்தனார்';
+    } else if (q.includes('clean') || q.includes('శుభ్రం') || q.includes('सफाई') || q.includes('துப்புரவு')) {
+      matchedCat = 'Cleaning';
+      tradeLabelEn = 'Cleaner';
+      tradeLabelTe = 'క్లీనర్';
+      tradeLabelHi = 'सफाई सहायक';
+      tradeLabelTa = 'துப்புரவாளர்';
+    } else if (q.includes('cook') || q.includes('chef') || q.includes('వంట') || q.includes('रसोइ') || q.includes('சமையல்')) {
+      matchedCat = 'Cooking';
+      tradeLabelEn = 'Cook';
+      tradeLabelTe = 'వంట మనిషి';
+      tradeLabelHi = 'रसोइया (कुक)';
+      tradeLabelTa = 'சமையல்காரர்';
+    } else if (q.includes('driv') || q.includes('డ్రైవ') || q.includes('ड्राइव') || q.includes('ஓட்டுநர்')) {
+      matchedCat = 'Driving';
+      tradeLabelEn = 'Driver';
+      tradeLabelTe = 'డ్రైవర్';
+      tradeLabelHi = 'ड्राइवर';
+      tradeLabelTa = 'ஓட்டுநர்';
+    } else if (q.includes('garden') || q.includes('తోట') || q.includes('माली') || q.includes('தோட்டம்')) {
+      matchedCat = 'Gardening';
+      tradeLabelEn = 'Gardener';
+      tradeLabelTe = 'గార్డెనర్';
+      tradeLabelHi = 'माली';
+      tradeLabelTa = 'தோட்டக்காரர்';
+    } else if (q.includes('secur') || q.includes('guard') || q.includes('గార్డ్') || q.includes('सुरक्षा') || q.includes('பாதுகாவலர்')) {
+      matchedCat = 'Security';
+      tradeLabelEn = 'Security Guard';
+      tradeLabelTe = 'సెక్యూరిటీ గార్డ్';
+      tradeLabelHi = 'सुरक्षा गार्ड';
+      tradeLabelTa = 'பாதுகாவலர்';
+    } else if (q.includes('construct') || q.includes('building') || q.includes('నిర్మాణ') || q.includes('निर्माण') || q.includes('கட்டுமான')) {
+      matchedCat = 'Construction';
+      tradeLabelEn = 'Construction Worker';
+      tradeLabelTe = 'నిర్మాణ వర్కర్';
+      tradeLabelHi = 'निर्माण मजदूर';
+      tradeLabelTa = 'கட்டுமான தொழிலாளி';
+    } else if (q.includes('load') || q.includes('unload') || q.includes('లోడింగ్') || q.includes('लोडिंग') || q.includes('ஏற்றுதல்')) {
+      matchedCat = 'Loading/Unloading';
+      tradeLabelEn = 'Loading Helper';
+      tradeLabelTe = 'లోడింగ్ హెల్పర్';
+      tradeLabelHi = 'लोडिंग सहायक';
+      tradeLabelTa = 'ஏற்றுதல் உதவியாளர்';
+    }
+
+    if (lang === 'te') {
+      return {
+        reply: `మీ కోసం సమీపంలో నైపుణ్యం కలిగిన ${tradeLabelTe}లు సిద్ధంగా ఉన్నారు! వర్కర్ల ప్రొఫైల్స్, రేటింగ్‌లు మరియు అనుభవాన్ని చూడటానికి క్రింది బటన్ నొక్కండి.`,
+        action: {
+          type: 'view_workers',
+          category: matchedCat,
+          filterCategory: matchedCat,
+          label: 'స్కిల్డ్ వర్కర్లను చూడండి',
+        },
+      };
+    } else if (lang === 'hi') {
+      return {
+        reply: `मुझे आपके निकट कुशल एवं सत्यापित ${tradeLabelHi} मिले हैं! कामगारों की प्रोफ़ाइल, रेटिंग व अनुभव देखने और उन्हें सीधे आमंत्रित करने के लिए नीचे टैप करें।`,
+        action: {
+          type: 'view_workers',
+          category: matchedCat,
+          filterCategory: matchedCat,
+          label: 'कुशल कामगार देखें',
+        },
+      };
+    } else if (lang === 'ta') {
+      return {
+        reply: `உங்கள் பகுதியில் திறமையான ${tradeLabelTa} தொழிலாளர்கள் உள்ளனர்! சுயவிவரங்கள் மற்றும் மதிப்பீடுகளைக் காண கீழே தட்டவும்.`,
+        action: {
+          type: 'view_workers',
+          category: matchedCat,
+          filterCategory: matchedCat,
+          label: 'திறமையான தொழிலாளர்கள்',
+        },
+      };
+    } else {
+      return {
+        reply: `I found verified, skilled ${tradeLabelEn}s ready near you on WorkMojo! Tap below to view skilled workers with transparent ratings and hire directly.`,
+        action: {
+          type: 'view_workers',
+          category: matchedCat,
+          filterCategory: matchedCat,
+          label: 'View Skilled Workers',
+        },
+      };
+    }
+  }
+
   // Route 1: Construction Gigs
   if (isConstruction) {
     if (lang === 'te') {

@@ -115,6 +115,8 @@ export interface User {
   upiDetails?: WorkerUpiDetails;
   preferredPaymentMethod?: 'ONLINE' | 'OFFLINE' | 'UPI' | 'Cash' | 'Direct Transfer';
   paymentPreference?: WorkerPaymentPreference;
+  bio?: string;
+  locationArea?: string;
   createdAt: string;
 }
 

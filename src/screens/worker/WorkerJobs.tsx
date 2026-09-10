@@ -5,7 +5,7 @@ import { JobCard } from '../../components/common/JobCard';
 import { InteractiveWorkMap } from '../../components/map/InteractiveWorkMap';
 import { calculateMatchScore } from '../../services/matchingService';
 import { speechService } from '../../services/speechService';
-import { getCategoryLabel } from '../../config/categories';
+import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import {
   Search,
   Mic,
@@ -257,12 +257,13 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
           {filters.selectedCategories.map(cat => (
             <span
               key={cat}
-              className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]"
+              className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]"
             >
+              <span>{getCategoryEmoji(cat)}</span>
               <span>{getCategoryLabel(cat, language)}</span>
               <button
                 onClick={() => removeCategoryChip(cat)}
-                className="hover:text-rose-600"
+                className="hover:text-rose-600 ml-0.5"
               >
                 <X size={12} />
               </button>

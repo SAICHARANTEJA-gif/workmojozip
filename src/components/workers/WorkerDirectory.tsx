@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Job } from '../../types';
+import { getCategoryEmoji } from '../../config/categories';
 import {
   ShieldCheck,
   Star,
@@ -13,25 +14,45 @@ import {
   X,
   Sliders,
   Phone,
+  ArrowLeft,
+  AlertCircle,
 } from 'lucide-react';
 
 interface WorkerDirectoryProps {
   workers: User[];
   postedJobs: Job[];
+  initialCategory?: string;
+  initialSearch?: string;
   onInviteWorker: (workerId: string, jobId: string) => void;
+  onSelectWorker?: (worker: User) => void;
   onBack: () => void;
 }
 
 export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
-  workers,
-  postedJobs,
+  workers = [],
+  postedJobs = [],
+  initialCategory,
+  initialSearch,
   onInviteWorker,
+  onSelectWorker,
   onBack,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState(initialSearch || '');
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'All');
   const [minRating, setMinRating] = useState<number>(0);
   const [availabilityFilter, setAvailabilityFilter] = useState<string>('All');
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialSearch]);
 
   // Invite Modal State
   const [invitingWorker, setInvitingWorker] = useState<User | null>(null);
@@ -42,29 +63,61 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
 
   const categories = [
     'All',
-    'Loading/Unloading',
+    'Plumbing',
+    'Electrical Work',
+    'Carpentry',
+    'Painting',
+    'Masonry',
     'Cleaning',
-    'Construction',
-    'Delivery',
+    'Cooking',
     'Gardening',
-    'Labour',
+    'Driving',
+    'Delivery',
+    'Construction',
+    'Loading/Unloading',
+    'Warehouse',
+    'Security',
     'Repair',
+    'Labour',
   ];
 
+  // Robust category matching for searches & pills
+  const matchesCategory = (w: User, catFilter: string): boolean => {
+    if (catFilter === 'All') return true;
+    const target = catFilter.toLowerCase().trim();
+
+    // Direct check
+    if (w.preferredCategories?.some(c => c.toLowerCase().includes(target) || target.includes(c.toLowerCase()))) return true;
+    if (w.skills?.some(s => s.toLowerCase().includes(target) || target.includes(s.toLowerCase()))) return true;
+
+    // Fuzzy & Synonym mapping
+    if (target.includes('plumb') && (w.skills?.some(s => s.toLowerCase().includes('plumb')) || w.preferredCategories?.some(c => c.toLowerCase().includes('plumb')))) return true;
+    if (target.includes('electr') && (w.skills?.some(s => s.toLowerCase().includes('electr')) || w.preferredCategories?.some(c => c.toLowerCase().includes('electr')))) return true;
+    if (target.includes('carpent') && (w.skills?.some(s => s.toLowerCase().includes('carpent')) || w.preferredCategories?.some(c => c.toLowerCase().includes('carpent')))) return true;
+    if (target.includes('paint') && (w.skills?.some(s => s.toLowerCase().includes('paint')) || w.preferredCategories?.some(c => c.toLowerCase().includes('paint')))) return true;
+    if (target.includes('mason') && (w.skills?.some(s => s.toLowerCase().includes('mason')) || w.preferredCategories?.some(c => c.toLowerCase().includes('mason')))) return true;
+    if (target.includes('clean') && (w.skills?.some(s => s.toLowerCase().includes('clean')) || w.preferredCategories?.some(c => c.toLowerCase().includes('clean')))) return true;
+    if (target.includes('cook') && (w.skills?.some(s => s.toLowerCase().includes('cook')) || w.preferredCategories?.some(c => c.toLowerCase().includes('cook')))) return true;
+    if (target.includes('driv') && (w.skills?.some(s => s.toLowerCase().includes('driv')) || w.preferredCategories?.some(c => c.toLowerCase().includes('driv')))) return true;
+    if (target.includes('garden') && (w.skills?.some(s => s.toLowerCase().includes('garden')) || w.preferredCategories?.some(c => c.toLowerCase().includes('garden')))) return true;
+
+    return false;
+  };
+
   // Filtering
-  const filteredWorkers = workers.filter(w => {
+  const filteredWorkers = (workers || []).filter(w => {
+    if (!w) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = w.name.toLowerCase().includes(q);
-      const matchSkills = w.skills.some(s => s.toLowerCase().includes(q));
-      if (!matchName && !matchSkills) return false;
+      const matchName = w.name?.toLowerCase().includes(q);
+      const matchSkills = w.skills?.some(s => s.toLowerCase().includes(q));
+      const matchBio = w.bio?.toLowerCase().includes(q);
+      if (!matchName && !matchSkills && !matchBio) return false;
     }
     if (selectedCategory !== 'All') {
-      const matchCat = w.preferredCategories?.includes(selectedCategory as any);
-      const matchSkill = w.skills.some(s => s.toLowerCase() === selectedCategory.toLowerCase());
-      if (!matchCat && !matchSkill) return false;
+      if (!matchesCategory(w, selectedCategory)) return false;
     }
-    if (minRating > 0 && w.rating < minRating) return false;
+    if (minRating > 0 && (w.rating || 0) < minRating) return false;
     if (availabilityFilter !== 'All' && w.availability !== availabilityFilter) return false;
     return true;
   });
@@ -124,13 +177,14 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+            className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition-all inline-flex items-center gap-1.5 ${
               selectedCategory === cat
                 ? 'bg-[#2563EB] text-white shadow-xs'
                 : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F7F9FC]'
             }`}
           >
-            {cat}
+            <span>{cat === 'All' ? '🌐' : getCategoryEmoji(cat)}</span>
+            <span>{cat}</span>
           </button>
         ))}
       </div>
@@ -168,94 +222,137 @@ export const WorkerDirectory: React.FC<WorkerDirectoryProps> = ({
         </span>
       </div>
 
-      {/* Workers Grid */}
-      <div className="space-y-3">
-        {filteredWorkers.map(w => (
-          <div
-            key={w.id}
-            className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm hover:shadow-md transition-all space-y-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <img
-                    src={w.profilePhoto}
-                    alt={w.name}
-                    className="w-14 h-14 rounded-2xl object-cover border border-[#E2E8F0] shadow-inner"
-                  />
-                  {w.kycStatus === 'verified' && (
-                    <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm border-2 border-white">
-                      <CheckCircle2 size={12} />
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-[#111827] text-base leading-tight">
-                      {w.name}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1">
-                    <span className="flex items-center gap-0.5 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
-                      <Star size={11} className="fill-amber-400 text-amber-400" />
-                      {w.rating}★
-                    </span>
-                    <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
-                      {w.reliabilityScore}% Reliable
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Pill */}
-              <span
-                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                  w.availability === 'Available'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-[#F7F9FC] text-[#64748B] border-[#E2E8F0]'
-                }`}
-              >
-                {w.availability}
-              </span>
-            </div>
-
-            {/* Skills & Experience */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {w.skills.map((skill, i) => (
-                <span
-                  key={i}
-                  className="bg-[#F7F9FC] text-[#111827] border border-[#E2E8F0] text-[11px] font-medium px-2 py-0.5 rounded-lg"
-                >
-                  {skill}
-                </span>
-              ))}
-              <span className="bg-[#EFF6FF] text-[#2563EB] text-[11px] font-semibold px-2 py-0.5 rounded-lg border border-[#DBEAFE]">
-                {w.experience || '3+ years exp'}
-              </span>
-            </div>
-
-            {/* Location & Wage & Invite Button */}
-            <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
-              <div className="text-xs">
-                <span className="text-[#64748B] font-medium">Expected: </span>
-                <span className="font-bold text-[#2563EB]">
-                  ₹{w.preferredWage || 700} / shift
-                </span>
-              </div>
-
-              <button
-                onClick={() => setInvitingWorker(w)}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
-              >
-                <UserPlus size={14} />
-                <span>Invite to Job</span>
-              </button>
-            </div>
+      {/* Workers Grid or Empty Fallback */}
+      {filteredWorkers.length === 0 ? (
+        <div className="bg-white rounded-3xl p-8 border border-[#E2E8F0] text-center space-y-3 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto text-2xl">
+            {selectedCategory !== 'All' ? getCategoryEmoji(selectedCategory) : '🔍'}
           </div>
-        ))}
-      </div>
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-base text-[#111827]">
+              No workers found in {selectedCategory !== 'All' ? selectedCategory : 'this search'} right now
+            </h3>
+            <p className="text-xs text-[#64748B]">
+              Try adjusting your search query or browse verified workers across all categories.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setSelectedCategory('All');
+              setSearchQuery('');
+              setMinRating(0);
+              setAvailabilityFilter('All');
+            }}
+            className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-xs transition-all shadow-xs active:scale-95 cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <span>🌐</span>
+            <span>Browse All Workers</span>
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredWorkers.map(w => (
+            <div
+              key={w.id}
+              className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm hover:border-[#2563EB] hover:shadow-md transition-all space-y-3"
+            >
+              <div
+                className="flex items-start justify-between gap-3 cursor-pointer"
+                onClick={() => onSelectWorker?.(w)}
+                title="Click to view full worker profile"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <img
+                      src={w.profilePhoto}
+                      alt={w.name}
+                      className="w-14 h-14 rounded-2xl object-cover border border-[#E2E8F0] shadow-inner"
+                    />
+                    {w.kycStatus === 'verified' && (
+                      <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm border-2 border-white">
+                        <CheckCircle2 size={12} />
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-bold text-[#111827] text-base leading-tight hover:text-[#2563EB] transition-colors">
+                        {w.name}
+                      </h3>
+                      <span className="text-sm">
+                        {getCategoryEmoji(w.preferredCategories?.[0] || w.skills?.[0])}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1">
+                      <span className="flex items-center gap-0.5 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+                        <Star size={11} className="fill-amber-400 text-amber-400" />
+                        {w.rating}★
+                      </span>
+                      <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                        {w.reliabilityScore}% Reliable
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Pill */}
+                <span
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                    w.availability === 'Available'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-[#F7F9FC] text-[#64748B] border-[#E2E8F0]'
+                  }`}
+                >
+                  {w.availability}
+                </span>
+              </div>
+
+              {/* Skills & Experience */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {w.skills.map((skill, i) => (
+                  <span
+                    key={i}
+                    className="bg-[#F7F9FC] text-[#111827] border border-[#E2E8F0] text-[11px] font-medium px-2 py-0.5 rounded-lg"
+                  >
+                    {skill}
+                  </span>
+                ))}
+                <span className="bg-[#EFF6FF] text-[#2563EB] text-[11px] font-semibold px-2 py-0.5 rounded-lg border border-[#DBEAFE]">
+                  {w.experience || '3+ years exp'}
+                </span>
+              </div>
+
+              {/* Location & Wage & Actions */}
+              <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
+                <div className="text-xs">
+                  <span className="text-[#64748B] font-medium">Expected: </span>
+                  <span className="font-bold text-[#2563EB]">
+                    ₹{w.preferredWage || 700} / shift
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onSelectWorker?.(w)}
+                    className="bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] text-xs font-bold px-3 py-1.5 rounded-xl border border-[#DBEAFE] transition-all active:scale-95 cursor-pointer"
+                  >
+                    View Profile
+                  </button>
+                  <button
+                    onClick={() => setInvitingWorker(w)}
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <UserPlus size={13} />
+                    <span>Invite</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Invite Modal */}
       {invitingWorker && (

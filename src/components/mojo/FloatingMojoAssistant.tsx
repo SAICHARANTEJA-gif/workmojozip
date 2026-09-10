@@ -34,7 +34,13 @@ interface ChatMessage {
   retryQuery?: string;
 }
 
-export const FloatingMojoAssistant: React.FC = () => {
+export interface FloatingMojoAssistantProps {
+  onOpenDirectoryWithCategory?: (category: string) => void;
+}
+
+export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
+  onOpenDirectoryWithCategory,
+}) => {
   const {
     activeRole,
     activeScreen,
@@ -415,7 +421,18 @@ export const FloatingMojoAssistant: React.FC = () => {
         let actionText: string | undefined = res.action?.label;
         let onAction: (() => void) | undefined;
 
-        if (res.action?.type === 'filter_category' && res.action?.filterCategory) {
+        if (res.action?.type === 'view_workers') {
+          const cat = (res.action as any).category || res.action.filterCategory || 'All';
+          actionText = actionText || 'View Skilled Workers';
+          onAction = () => {
+            if (onOpenDirectoryWithCategory) {
+              onOpenDirectoryWithCategory(cat);
+            } else {
+              setActiveScreen('directory');
+            }
+            setIsOpen(false);
+          };
+        } else if (res.action?.type === 'filter_category' && res.action?.filterCategory) {
           const cat = res.action.filterCategory;
           actionText = actionText || `View ${cat} Gigs`;
           onAction = () => {
@@ -435,7 +452,11 @@ export const FloatingMojoAssistant: React.FC = () => {
           const targetScreen = res.action.target;
           actionText = actionText || `Open ${targetScreen}`;
           onAction = () => {
-            setActiveScreen(targetScreen);
+            if (targetScreen === 'directory' && onOpenDirectoryWithCategory) {
+              onOpenDirectoryWithCategory('All');
+            } else {
+              setActiveScreen(targetScreen);
+            }
             setIsOpen(false);
           };
         }

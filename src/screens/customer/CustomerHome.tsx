@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../store/AppContext';
 import { Job } from '../../types';
-import { getCategoryLabel } from '../../config/categories';
+import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   PlusCircle,
@@ -162,8 +162,9 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                     className="w-14 h-14 rounded-2xl object-cover border border-[#E2E8F0] shrink-0"
                   />
                   <div>
-                    <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-md">
-                      {getCategoryLabel(job.category, language)}
+                    <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                      <span>{getCategoryEmoji(job.category)}</span>
+                      <span>{getCategoryLabel(job.category, language)}</span>
                     </span>
                     <h3 className="font-extrabold text-sm text-[#111827] mt-0.5 line-clamp-1">
                       {job.title}

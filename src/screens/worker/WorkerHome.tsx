@@ -4,7 +4,7 @@ import { JobCard } from '../../components/common/JobCard';
 import { WorkCategory, Job } from '../../types';
 import { calculateMatchScore } from '../../services/matchingService';
 import { speechService } from '../../services/speechService';
-import { WORK_CATEGORIES, getCategoryLabel } from '../../config/categories';
+import { WORK_CATEGORIES, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   Search,
@@ -290,8 +290,7 @@ export const WorkerHome: React.FC<WorkerHomeProps> = ({
         </div>
 
         <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar">
-          {WORK_CATEGORIES.slice(0, 10).map(cat => {
-            const CatIcon = cat.icon;
+          {WORK_CATEGORIES.slice(0, 12).map(cat => {
             const jobCount = jobs.filter(j => j.category === cat.id).length;
             return (
               <button
@@ -299,8 +298,8 @@ export const WorkerHome: React.FC<WorkerHomeProps> = ({
                 onClick={() => handleCategoryClick(cat.id)}
                 className="shrink-0 px-3.5 py-3 rounded-2xl shadow-2xs flex flex-col items-center min-w-[94px] transition-all group active:scale-95 border border-[#E2E8F0] bg-white hover:border-[#F5A900] hover:shadow-xs text-[#111827] cursor-pointer"
               >
-                <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB] group-hover:scale-110 transition-transform mb-1.5 shadow-2xs">
-                  <CatIcon size={22} />
+                <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform mb-1.5 shadow-2xs select-none">
+                  {getCategoryEmoji(cat.id)}
                 </div>
                 <span className="text-xs font-bold text-center leading-tight text-[#111827] line-clamp-1">
                   {getCategoryLabel(cat.id, language)}

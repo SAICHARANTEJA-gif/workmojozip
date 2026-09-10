@@ -18,7 +18,7 @@ import {
   ArrowRight,
   ShieldAlert,
 } from 'lucide-react';
-import { WORK_CATEGORIES, getCategoryInfo, getCategoryLabel } from '../../config/categories';
+import { WORK_CATEGORIES, getCategoryInfo, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import confetti from 'canvas-confetti';
 
 interface PostJobWizardProps {
@@ -254,8 +254,8 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
 
               <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1">
                 {filteredCategories.map(cat => {
-                  const Icon = cat.icon;
                   const isSelected = category === cat.id;
+                  const emoji = getCategoryEmoji(cat.id);
                   return (
                     <button
                       key={cat.id}
@@ -267,8 +267,8 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
                           : 'bg-white hover:bg-[#F8FAFC] text-[#111827] border-[#E2E8F0]'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-[#2563EB] text-white' : 'bg-[#EFF6FF] text-[#2563EB]'}`}>
-                        <Icon size={16} />
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-lg leading-none ${isSelected ? 'bg-[#2563EB] text-white' : 'bg-[#EFF6FF] text-[#2563EB]'}`}>
+                        <span role="img" aria-label={cat.id}>{emoji}</span>
                       </div>
                       <span className="text-center text-[11px] leading-tight line-clamp-2">
                         {getCategoryLabel(cat.id, language)}
@@ -625,8 +625,9 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
                 <div className="p-3.5 space-y-2 bg-[#F8FAFC]">
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-full">
-                        {getCategoryLabel(category, language)}
+                      <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <span>{getCategoryEmoji(category)}</span>
+                        <span>{getCategoryLabel(category, language)}</span>
                       </span>
                       <h3 className="font-extrabold text-sm text-[#111827] mt-1">{title}</h3>
                     </div>

@@ -22,7 +22,9 @@ import { PostJobWizard } from './screens/customer/PostJobWizard';
 import { CustomerApplicantsView } from './screens/customer/CustomerApplicantsView';
 import { CustomerOngoingJobView } from './screens/customer/CustomerOngoingJobView';
 import { WorkerDirectory } from './components/workers/WorkerDirectory';
+import { WorkerProfileModal } from './components/workers/WorkerProfileModal';
 import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Shared Screens & Modals
 import { PaymentsView } from './screens/shared/PaymentsView';
@@ -30,7 +32,7 @@ import { NotificationsView } from './screens/shared/NotificationsView';
 import { ProfileAndSettingsView } from './screens/shared/ProfileAndSettingsView';
 import { RatingModal } from './components/common/RatingModal';
 import { SOSModal, ReportModal, BlockModal } from './components/common/SafetyModals';
-import { Job } from './types';
+import { Job, User } from './types';
 
 export const App: React.FC = () => {
   const {
@@ -42,6 +44,7 @@ export const App: React.FC = () => {
     jobs,
     allWorkers,
     inviteWorkerToJob,
+    confirmWorkerForJob,
     pendingRatingJob,
     setPendingRatingJob,
     theme,
@@ -50,6 +53,9 @@ export const App: React.FC = () => {
   // Modals & Navigation states
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [confirmedJob, setConfirmedJob] = useState<Job | null>(null);
+  const [selectedProfileWorker, setSelectedProfileWorker] = useState<User | null>(null);
+  const [directoryCategory, setDirectoryCategory] = useState<string | undefined>('All');
+  const [directorySearch, setDirectorySearch] = useState<string | undefined>('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
@@ -57,6 +63,12 @@ export const App: React.FC = () => {
   const [isSOSOpen, setIsSOSOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
+
+  const handleOpenDirectoryWithCategory = (cat?: string, search?: string) => {
+    setDirectoryCategory(cat || 'All');
+    setDirectorySearch(search || '');
+    setActiveScreen('directory');
+  };
 
   // Handle Confirmed Job direct navigation
   const handleOpenConfirmedJob = (job: Job) => {
@@ -91,91 +103,103 @@ export const App: React.FC = () => {
 
         {/* Dynamic Screen Routing */}
         <main className="flex-1 overflow-y-auto">
-          {activeRole === 'worker' ? (
-            <>
-              {activeScreen === 'home' && (
-                <WorkerHome
-                  onSelectJob={job => setSelectedJob(job)}
-                  onOpenPreferences={() => setIsPreferencesOpen(true)}
-                  onOpenAlerts={() => setIsAlertsOpen(true)}
-                  onOpenFilters={() => setIsFilterOpen(true)}
-                />
-              )}
+          <ErrorBoundary
+            fallbackTitle="Screen View Error"
+            fallbackMessage="This view encountered an unexpected issue. Your data and balance are completely safe."
+            onReset={() => setActiveScreen('home')}
+          >
+            {activeRole === 'worker' ? (
+              <>
+                {activeScreen === 'home' && (
+                  <WorkerHome
+                    onSelectJob={job => setSelectedJob(job)}
+                    onOpenPreferences={() => setIsPreferencesOpen(true)}
+                    onOpenAlerts={() => setIsAlertsOpen(true)}
+                    onOpenFilters={() => setIsFilterOpen(true)}
+                  />
+                )}
 
-              {activeScreen === 'jobs' && (
-                <WorkerJobs
-                  onSelectJob={job => setSelectedJob(job)}
-                  onOpenFilters={() => setIsFilterOpen(true)}
-                />
-              )}
+                {activeScreen === 'jobs' && (
+                  <WorkerJobs
+                    onSelectJob={job => setSelectedJob(job)}
+                    onOpenFilters={() => setIsFilterOpen(true)}
+                  />
+                )}
 
-              {activeScreen === 'my_jobs' && (
-                <WorkerMyJobs
-                  onSelectJob={job => setSelectedJob(job)}
-                  onOpenConfirmedJob={handleOpenConfirmedJob}
-                />
-              )}
+                {activeScreen === 'my_jobs' && (
+                  <WorkerMyJobs
+                    onSelectJob={job => setSelectedJob(job)}
+                    onOpenConfirmedJob={handleOpenConfirmedJob}
+                  />
+                )}
 
-              {activeScreen === 'confirmed_job' && (
-                <ConfirmedJobView
-                  job={confirmedJob || jobs[0]}
-                  onBack={() => setActiveScreen('my_jobs')}
-                  onOpenSOS={() => setIsSOSOpen(true)}
-                  onOpenReport={() => setIsReportOpen(true)}
-                  onOpenBlock={() => setIsBlockOpen(true)}
-                />
-              )}
-            </>
-          ) : (
-            /* Customer Mode */
-            <>
-              {activeScreen === 'home' && (
-                <CustomerHome
-                  onPostJob={() => setIsPostJobOpen(true)}
-                  onOpenJob={job => setSelectedJob(job)}
-                  onOpenApplicants={handleOpenApplicants}
-                  onOpenDirectory={() => setActiveScreen('directory')}
-                />
-              )}
+                {activeScreen === 'confirmed_job' && (
+                  <ConfirmedJobView
+                    job={confirmedJob || jobs[0]}
+                    onBack={() => setActiveScreen('my_jobs')}
+                    onOpenSOS={() => setIsSOSOpen(true)}
+                    onOpenReport={() => setIsReportOpen(true)}
+                    onOpenBlock={() => setIsBlockOpen(true)}
+                  />
+                )}
+              </>
+            ) : (
+              /* Customer Mode */
+              <>
+                {activeScreen === 'home' && (
+                  <CustomerHome
+                    onPostJob={() => setIsPostJobOpen(true)}
+                    onOpenJob={job => setSelectedJob(job)}
+                    onOpenApplicants={handleOpenApplicants}
+                    onOpenDirectory={() => handleOpenDirectoryWithCategory('All')}
+                  />
+                )}
 
-              {activeScreen === 'directory' && (
-                <WorkerDirectory
-                  workers={allWorkers}
-                  postedJobs={jobs.filter(j => j.status !== 'Finished')}
-                  onInviteWorker={(workerId, jobId) => inviteWorkerToJob(workerId, jobId)}
-                  onBack={() => setActiveScreen('home')}
-                />
-              )}
+                {activeScreen === 'my_jobs' && (
+                  <CustomerOngoingJobView
+                    onOpenRating={job => setPendingRatingJob(job)}
+                  />
+                )}
+              </>
+            )}
 
-              {activeScreen === 'my_jobs' && (
-                <CustomerOngoingJobView
-                  onOpenRating={job => setPendingRatingJob(job)}
-                />
-              )}
+            {/* Shared Across Both Roles (Never a blank screen) */}
+            {activeScreen === 'directory' && (
+              <WorkerDirectory
+                workers={allWorkers}
+                initialCategory={directoryCategory}
+                initialSearch={directorySearch}
+                postedJobs={jobs.filter(j => j.status !== 'Finished')}
+                onInviteWorker={(workerId, jobId) => inviteWorkerToJob(workerId, jobId)}
+                onSelectWorker={worker => setSelectedProfileWorker(worker)}
+                onBack={() => setActiveScreen('home')}
+              />
+            )}
 
-              {activeScreen === 'applicants' && (
-                <CustomerApplicantsView />
-              )}
-            </>
-          )}
+            {activeScreen === 'applicants' && (
+              <CustomerApplicantsView
+                initialJobId={selectedJob?.id}
+                onSelectWorker={worker => setSelectedProfileWorker(worker)}
+              />
+            )}
 
-          {/* Shared Across Both Roles */}
-          {activeScreen === 'payments' && <PaymentsView />}
+            {activeScreen === 'payments' && <PaymentsView />}
 
-          {activeScreen === 'notifications' && (
-            <NotificationsView
-              onOpenJob={job => setSelectedJob(job)}
-              onOpenConfirmedJob={handleOpenConfirmedJob}
-              onOpenApplicants={handleOpenApplicants}
-              onOpenRating={job => setPendingRatingJob(job)}
-            />
-          )}
+            {activeScreen === 'notifications' && (
+              <NotificationsView
+                onOpenJob={job => setSelectedJob(job)}
+                onOpenConfirmedJob={handleOpenConfirmedJob}
+                onOpenApplicants={handleOpenApplicants}
+                onOpenRating={job => setPendingRatingJob(job)}
+              />
+            )}
 
-          {activeScreen === 'profile' && <ProfileAndSettingsView />}
+            {activeScreen === 'profile' && <ProfileAndSettingsView />}
+          </ErrorBoundary>
         </main>
 
         {/* Floating Mojo AI Assistant (Not a bottom nav tab!) */}
-        <FloatingMojoAssistant />
+        <FloatingMojoAssistant onOpenDirectoryWithCategory={handleOpenDirectoryWithCategory} />
 
         {/* Bottom Navigation */}
         <BottomNav />
@@ -249,6 +273,28 @@ export const App: React.FC = () => {
           <BlockModal
             targetName={confirmedJob?.customerName || 'Customer'}
             onClose={() => setIsBlockOpen(false)}
+          />
+        )}
+
+        {/* 10. Dedicated Worker Profile Modal */}
+        {selectedProfileWorker && (
+          <WorkerProfileModal
+            worker={selectedProfileWorker}
+            jobContext={selectedJob}
+            onClose={() => setSelectedProfileWorker(null)}
+            onHire={worker => {
+              if (selectedJob) {
+                confirmWorkerForJob(selectedJob.id, worker.id);
+              }
+              setSelectedProfileWorker(null);
+            }}
+            onInvite={worker => {
+              const targetJob = selectedJob || jobs.find(j => j.status !== 'Finished');
+              if (targetJob) {
+                inviteWorkerToJob(worker.id, targetJob.id);
+              }
+              setSelectedProfileWorker(null);
+            }}
           />
         )}
       </div>
