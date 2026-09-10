@@ -165,14 +165,29 @@ export interface Translations {
   helpSupport: string;
   logoutBtn: string;
 
-  // AI & Common
-  clearChat: string;
+    clearChat: string;
   retryAction: string;
   cancelAction: string;
   confirmAction: string;
   backAction: string;
   nextAction: string;
   closeAction: string;
+
+  // Production Readiness Keys
+  loginBtn: string;
+  signUpBtn: string;
+  completeProfile: string;
+  completeKyc: string;
+  otpUnavailable: string;
+  invalidOtp: string;
+  cancelJob: string;
+  cancelJobConfirm: string;
+  jobCancelled: string;
+  mapLoading: string;
+  mapUnavailable: string;
+  uploadProfilePhoto: string;
+  uploadFailed: string;
+  authRequired: string;
 }
 
 export const translations: Record<SupportedLanguage, Translations> = {
@@ -344,6 +359,22 @@ export const translations: Record<SupportedLanguage, Translations> = {
     backAction: 'Back',
     nextAction: 'Next',
     closeAction: 'Close',
+
+    // Production Readiness
+    loginBtn: 'Log In',
+    signUpBtn: 'Sign Up',
+    completeProfile: 'Complete Profile',
+    completeKyc: 'Complete KYC Verification',
+    otpUnavailable: 'OTP verification is currently unavailable. Please try again later.',
+    invalidOtp: 'Invalid or expired OTP code. Please try again.',
+    cancelJob: 'Cancel Job',
+    cancelJobConfirm: 'Are you sure you want to cancel this job? This will notify all applicants and mark the job as cancelled.',
+    jobCancelled: 'Job Cancelled',
+    mapLoading: 'Loading live work map...',
+    mapUnavailable: 'Live map currently unavailable',
+    uploadProfilePhoto: 'Upload Profile Photo',
+    uploadFailed: 'Upload failed. Please ensure the image is JPEG, PNG, or WebP under 5MB.',
+    authRequired: 'Authentication Required',
   },
 
   te: {
@@ -514,6 +545,22 @@ export const translations: Record<SupportedLanguage, Translations> = {
     backAction: 'వెనుకకు',
     nextAction: 'తరువాత',
     closeAction: 'మూసివేయండి',
+
+    // Production Readiness
+    loginBtn: 'లాగిన్ అవ్వండి',
+    signUpBtn: 'సైన్ అప్',
+    completeProfile: 'ప్రొఫైల్ పూర్తి చేయండి',
+    completeKyc: 'KYC ధృవీకరణ పూర్తి చేయండి',
+    otpUnavailable: 'OTP ధృవీకరణ ప్రస్తుతం అందుబాటులో లేదు. దయచేసి కాసేపటి తర్వాత ప్రయత్నించండి.',
+    invalidOtp: 'చెల్లని లేదా గడువు ముగిసిన OTP. దయచేసి మళ్లీ ప్రయత్నించండి.',
+    cancelJob: 'ఉద్యోగాన్ని రద్దు చేయండి',
+    cancelJobConfirm: 'మీరు ఖచ్చితంగా ఈ ఉద్యోగాన్ని రద్దు చేయాలనుకుంటున్నారా? ఇది దరఖాస్తుదారులందరికీ తెలియజేస్తుంది.',
+    jobCancelled: 'ఉద్యోగం రద్దు చేయబడింది',
+    mapLoading: 'లైవ్ మ్యాప్ లోడ్ అవుతోంది...',
+    mapUnavailable: 'లైవ్ మ్యాప్ ప్రస్తుతం అందుబాటులో లేదు',
+    uploadProfilePhoto: 'ప్రొఫైల్ ఫోటో అప్‌లోడ్ చేయండి',
+    uploadFailed: 'అప్‌లోడ్ విఫలమైంది. 5MB లోపు చిత్రం మాత్రమే అప్‌లోడ్ చేయండి.',
+    authRequired: 'లాగిన్ అవసరం',
   },
 
   hi: {
@@ -684,6 +731,22 @@ export const translations: Record<SupportedLanguage, Translations> = {
     backAction: 'पीछे',
     nextAction: 'आगे',
     closeAction: 'बंद करें',
+
+    // Production Readiness
+    loginBtn: 'लॉग इन करें',
+    signUpBtn: 'साइन अप',
+    completeProfile: 'प्रोफ़ाइल पूरा करें',
+    completeKyc: 'KYC सत्यापन पूरा करें',
+    otpUnavailable: 'OTP सत्यापन वर्तमान में अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।',
+    invalidOtp: 'अमान्य या समाप्त OTP कोड। कृपया पुन: प्रयास करें।',
+    cancelJob: 'काम रद्द करें',
+    cancelJobConfirm: 'क्या आप वाकई इस काम को रद्द करना चाहते हैं? इससे सभी आवेदकों को सूचित किया जाएगा।',
+    jobCancelled: 'काम रद्द कर दिया गया',
+    mapLoading: 'लाइव मानचित्र लोड हो रहा है...',
+    mapUnavailable: 'लाइव मानचित्र वर्तमान में अनुपलब्ध है',
+    uploadProfilePhoto: 'प्रोफ़ाइल फ़ोटो अपलोड करें',
+    uploadFailed: 'अपलोड विफल रहा। कृपया 5MB से कम आकार की JPEG, PNG या WebP फ़ोटो चुनें।',
+    authRequired: 'प्रमाणीकरण आवश्यक है',
   },
 
   ta: {
@@ -854,5 +917,21 @@ export const translations: Record<SupportedLanguage, Translations> = {
     backAction: 'பின்னால்',
     nextAction: 'அடுத்து',
     closeAction: 'மூடுக',
+
+    // Production Readiness
+    loginBtn: 'உள்நுழைக',
+    signUpBtn: 'பதிவு செய்க',
+    completeProfile: 'சுயவிவரத்தை நிறைவு செய்க',
+    completeKyc: 'KYC சரிபார்ப்பை முடிக்கவும்',
+    otpUnavailable: 'OTP சரிபார்ப்பு தற்போது கிடைக்கவில்லை. சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.',
+    invalidOtp: 'தவறான அல்லது காலாவதியான OTP குறியீடு. மீண்டும் முயற்சிக்கவும்.',
+    cancelJob: 'வேலையை ரத்து செய்',
+    cancelJobConfirm: 'இந்த வேலையை நிச்சயமாக ரத்து செய்ய விரும்புகிறீர்களா? இது அனைத்து விண்ணப்பதாரர்களுக்கும் அறிவிக்கும்.',
+    jobCancelled: 'வேலை ரத்து செய்யப்பட்டது',
+    mapLoading: 'நேரலை வரைபடம் ஏற்றப்படுகிறது...',
+    mapUnavailable: 'நேரலை வரைபடம் தற்போது கிடைக்கவில்லை',
+    uploadProfilePhoto: 'சுயவிவரப் புகைப்படத்தைப் பதிவேற்றவும்',
+    uploadFailed: 'பதிவேற்றம் தோல்வியடைந்தது. 5MB க்கும் குறைவான புகைப்படத்தைத் தேர்ந்தெடுக்கவும்.',
+    authRequired: 'உள்நுழைவு தேவை',
   },
 };

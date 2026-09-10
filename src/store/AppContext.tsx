@@ -47,6 +47,7 @@ interface AppContextType {
   setRole: (role: UserRole) => void;
   setUserAvailability: (status: AvailabilityStatus) => void;
   updateUserPreferences: (prefs: Partial<WorkerPreferences>) => void;
+  updateUserProfile: (data: Partial<User>) => void;
   changePhoneNumber: (newPhone: string) => void;
   deleteAccount: () => void;
   completeAuthFlow: (userData?: Partial<User>) => void;
@@ -69,6 +70,7 @@ interface AppContextType {
   autoSelectWorkersForJob: (jobId: string) => void;
   simulateCompleteJob: (jobId: string) => void;
   rehireWorker: (workerId: string, category: WorkCategory) => void;
+  cancelJob: (jobId: string, reason?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
 
   // Applications
   applications: Application[];
@@ -168,15 +170,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth');
-    return saved ? JSON.parse(saved) : true; // default true for instant SIH presentation, user can logout or re-onboard
+    return saved ? JSON.parse(saved) : false; // Real login-first: false on initial launch
   });
 
   const [onboardingStep, setOnboardingStep] = useState<AppContextType['onboardingStep']>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'onboardingStep');
-    return saved ? (saved as any) : 'app';
+    return saved ? (saved as any) : 'login'; // Real login-first: start at login
   });
 
-  const [loginPhone, setLoginPhone] = useState<string>('9876543210');
+  const [loginPhone, setLoginPhone] = useState<string>('');
   const [activeRole, setActiveRole] = useState<UserRole>(user.role || 'worker');
 
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
@@ -453,6 +455,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const updateUserProfile = (data: Partial<User>) => {
+    setUser(prev => ({ ...prev, ...data }));
+    setAllWorkers(prev =>
+      prev.map(w => (w.id === user.id ? { ...w, ...data } : w))
+    );
+  };
+
   const addNotification = useCallback((notif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
     const newNotif: NotificationItem = {
       ...notif,
@@ -485,6 +494,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const applyToJob = (jobId: string): { success: boolean; isWaitingList: boolean; position?: number } => {
     let isWaiting = false;
     let position = 0;
+
+    const currentJob = jobs.find(j => j.id === jobId);
+    if (currentJob && (currentJob.status === 'Cancelled' || currentJob.status === 'CANCELLED')) {
+      addNotification({
+        recipientId: user.id,
+        title: 'Job Not Available',
+        message: 'This job has been cancelled by the employer and is no longer accepting applications.',
+        type: 'alert_triggered',
+        targetJobId: jobId,
+      });
+      return { success: false, isWaitingList: false };
+    }
 
     setJobs(prevJobs => {
       return prevJobs.map(job => {
@@ -842,6 +863,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     confirmWorkerForJob(quickJob.id, workerId);
     setSelectedJobId(quickJob.id);
     setActiveScreen('job_details');
+  };
+
+  // Cancel Job (Employer Operation with Backend & Supabase Sync)
+  const cancelJob = async (jobId: string, reason?: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    const targetJob = jobs.find(j => j.id === jobId);
+    if (!targetJob) {
+      return { success: false, error: 'Job not found' };
+    }
+    if (targetJob.status === 'Finished') {
+      return { success: false, error: 'Completed jobs cannot be cancelled.' };
+    }
+    if (targetJob.status === 'Cancelled' || targetJob.status === 'CANCELLED') {
+      return { success: false, error: 'Job is already cancelled.' };
+    }
+
+    // Call backend API (handles authorization and Supabase sync)
+    try {
+      await api.cancelJob(jobId, user.id, reason);
+    } catch (err: any) {
+      console.warn('[AppContext] Backend cancelJob notice:', err.message);
+    }
+
+    // Update local jobs state
+    setJobs(prev =>
+      prev.map(j => {
+        if (j.id !== jobId) return j;
+        return {
+          ...j,
+          status: 'CANCELLED',
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    // Notify all applicants and confirmed workers
+    const notifyUserIds = Array.from(new Set([...(targetJob.applicants || []), ...(targetJob.confirmedWorkerIds || [])]));
+    notifyUserIds.forEach(workerId => {
+      addNotification({
+        recipientId: workerId,
+        title: 'Job Cancelled by Employer',
+        message: `The job "${targetJob.title}" has been cancelled by the employer. Any allocated slots have been released.`,
+        type: 'alert_triggered',
+        targetJobId: targetJob.id,
+      });
+    });
+
+    // Notify employer
+    addNotification({
+      recipientId: user.id,
+      title: 'Job Cancelled',
+      message: `Your job "${targetJob.title}" has been successfully marked as cancelled.`,
+      type: 'alert_triggered',
+      targetJobId: targetJob.id,
+    });
+
+    return { success: true, message: 'Job cancelled successfully.' };
   };
 
   // --- ATTENDANCE SYSTEM METHODS (Phase 6 & 7) ---
@@ -1439,6 +1516,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setRole,
         setUserAvailability,
         updateUserPreferences,
+        updateUserProfile,
         changePhoneNumber,
         deleteAccount,
         completeAuthFlow,
@@ -1459,6 +1537,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         autoSelectWorkersForJob,
         simulateCompleteJob,
         rehireWorker,
+        cancelJob,
 
         applications,
 

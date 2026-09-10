@@ -19,6 +19,7 @@ import {
   MessageSquare,
   CreditCard,
   Banknote,
+  XCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AttendanceQRModal } from '../../components/attendance/AttendanceQRModal';
@@ -42,6 +43,7 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     inviteWorkerToJob,
     attendanceRecords,
     recordAttendanceCheckIn,
+    cancelJob,
     t,
     language,
   } = useApp();
@@ -52,6 +54,8 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
   );
   const [viewMode, setViewMode] = useState<'cards' | 'compare'>('cards');
   const [invitedWorkerIds, setInvitedWorkerIds] = useState<string[]>([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Modal States
   const [selectedQRWorker, setSelectedQRWorker] = useState<User | null>(null);
@@ -150,10 +154,32 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
             </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-xs font-black text-[#2563EB] bg-[#EFF6FF] border border-[#DBEAFE] px-2.5 py-1 rounded-full">
-              {currentJob.workersConfirmed} / {currentJob.workersRequired} Confirmed
+          <div className="text-right flex items-center gap-2">
+            <span
+              className={`text-xs font-black px-2.5 py-1 rounded-full ${
+                currentJob.status === 'Cancelled' || currentJob.status === 'CANCELLED'
+                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                  : 'text-[#2563EB] bg-[#EFF6FF] border border-[#DBEAFE]'
+              }`}
+            >
+              {currentJob.status === 'Cancelled' || currentJob.status === 'CANCELLED'
+                ? 'CANCELLED'
+                : `${currentJob.workersConfirmed} / ${currentJob.workersRequired} Confirmed`}
             </span>
+
+            {currentJob.status !== 'Cancelled' &&
+              currentJob.status !== 'CANCELLED' &&
+              currentJob.status !== 'Finished' && (
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(true)}
+                  className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                  title="Cancel this job posting"
+                >
+                  <XCircle size={13} />
+                  <span>{t.cancelJob}</span>
+                </button>
+              )}
           </div>
         </div>
 
@@ -658,6 +684,59 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
             setSelectedQRWorker(null);
           }}
         />
+      )}
+
+      {/* Cancel Job Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl border border-[#E2E8F0] animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+              <XCircle size={26} />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-black text-[#111827]">{t.cancelJob}</h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                {t.cancelJobConfirm}
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] text-xs text-[#111827] space-y-1">
+              <div className="font-extrabold text-[#2563EB]">{currentJob.title}</div>
+              <div className="text-[11px] text-[#64748B]">
+                {currentJob.applicants.length} applicants • {currentJob.workersConfirmed} confirmed slots
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#64748B] font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                {t.backAction || 'Keep Job'}
+              </button>
+
+              <button
+                type="button"
+                disabled={isCancelling}
+                onClick={async () => {
+                  setIsCancelling(true);
+                  try {
+                    await cancelJob(currentJob.id, 'Employer cancelled via dashboard');
+                    setShowCancelModal(false);
+                  } finally {
+                    setIsCancelling(false);
+                  }
+                }}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : t.confirmAction}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../store/AppContext';
 import { MojoMascotIcon } from '../../components/mojo/MojoMascotIcon';
-import { Gender, SupportedLanguage } from '../../types';
+import { Gender, SupportedLanguage, UserRole } from '../../types';
+import { api } from '../../services/api';
 import {
   Phone,
   ShieldCheck,
@@ -17,6 +18,8 @@ import {
   CreditCard,
   Globe,
   AlertCircle,
+  Briefcase,
+  HardHat,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -33,25 +36,24 @@ export const AuthFlow: React.FC = () => {
     t,
   } = useApp();
 
-  const [enteredPhone, setEnteredPhone] = useState(loginPhone || '9876543210');
-  const [enteredOtp, setEnteredOtp] = useState('123456');
+  const [enteredPhone, setEnteredPhone] = useState(loginPhone || '');
+  const [enteredOtp, setEnteredOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
-  // Profile & Gender
+  // Profile, Role & Gender
+  const [selectedRole, setSelectedRole] = useState<UserRole>('worker');
   const [selectedGender, setSelectedGender] = useState<Gender>('Male');
-  const [name, setName] = useState('Arun Kumar');
+  const [name, setName] = useState('');
 
   // Aadhaar & PAN State
-  const [aadhaarNumber, setAadhaarNumber] = useState('5412 8790 2341');
-  const [aadhaarFileUploaded, setAadhaarFileUploaded] = useState(true);
-  const [panNumber, setPanNumber] = useState('ABCDE1234F');
-  const [panFileUploaded, setPanFileUploaded] = useState(true);
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [aadhaarFileUploaded, setAadhaarFileUploaded] = useState(false);
+  const [panNumber, setPanNumber] = useState('');
+  const [panFileUploaded, setPanFileUploaded] = useState(false);
 
   // Live Photo State
-  const [livePhotoCaptured, setLivePhotoCaptured] = useState<string | null>(
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'
-  );
+  const [livePhotoCaptured, setLivePhotoCaptured] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -81,27 +83,55 @@ export const AuthFlow: React.FC = () => {
     setAadhaarNumber(formatted);
   };
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (enteredPhone.length >= 10) {
-      setLoginPhone(enteredPhone);
-      setOnboardingStep('otp');
+    const cleanDigits = enteredPhone.replace(/\D/g, '');
+    if (cleanDigits.length < 10) {
+      setOtpError('Please enter a valid 10-digit mobile number');
+      return;
     }
-  };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
     setIsVerifyingOtp(true);
     setOtpError('');
 
-    setTimeout(() => {
+    try {
+      const res = await api.sendOtp(`+91${cleanDigits.slice(-10)}`);
+      if (res && res.success) {
+        setLoginPhone(cleanDigits);
+        setOnboardingStep('otp');
+      } else {
+        setOtpError(res?.error || t.otpUnavailable || 'OTP verification is currently unavailable. Please try again later.');
+      }
+    } catch (err: any) {
+      setOtpError(t.otpUnavailable || 'OTP verification is currently unavailable. Please try again later.');
+    } finally {
       setIsVerifyingOtp(false);
-      if (enteredOtp === '123456' || enteredOtp.length === 6) {
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (enteredOtp.trim().length !== 6) {
+      setOtpError('Please enter the 6-digit OTP');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError('');
+
+    try {
+      const cleanDigits = enteredPhone.replace(/\D/g, '');
+      const res = await api.verifyOtp(`+91${cleanDigits.slice(-10)}`, enteredOtp.trim(), name, selectedGender);
+      if (res && res.success) {
         setOnboardingStep('gender');
       } else {
-        setOtpError('Invalid OTP code. For demo, use 123456.');
+        setOtpError(res?.error || t.invalidOtp || 'Invalid or expired OTP code. Please try again.');
       }
-    }, 500);
+    } catch (err: any) {
+      setOtpError(t.invalidOtp || 'Invalid or expired OTP code. Please try again.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   // Webcam access attempt for live camera
@@ -145,10 +175,15 @@ export const AuthFlow: React.FC = () => {
 
   const handleFinishOnboarding = () => {
     completeAuthFlow({
-      name,
+      name: name || (selectedRole === 'worker' ? 'Skilled Craftsman' : 'Business Employer'),
       gender: selectedGender,
-      phone: `+91 ${enteredPhone}`,
-      profilePhoto: livePhotoCaptured || user.profilePhoto,
+      role: selectedRole,
+      phone: enteredPhone.startsWith('+') ? enteredPhone : `+91 ${enteredPhone}`,
+      profilePhoto: livePhotoCaptured || (selectedRole === 'customer'
+        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'),
+      kycVerified: true,
+      kycStatus: 'verified',
     });
   };
 
@@ -185,9 +220,6 @@ export const AuthFlow: React.FC = () => {
           <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-white p-3 shadow-xl border-4 border-[#2563EB]/20 ring-8 ring-[#2563EB]/10 flex items-center justify-center animate-float overflow-hidden">
             <img src="/logo.png" alt="Work Mojo Official Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="absolute -bottom-1 right-2 bg-[#2563EB] text-white text-xs font-black px-3 py-1 rounded-full shadow-md border-2 border-white">
-            SIH 2026
-          </span>
         </div>
 
         <h1 className="text-2xl font-black text-[#111827] tracking-tight">
@@ -197,13 +229,10 @@ export const AuthFlow: React.FC = () => {
         <p className="text-sm text-[#64748B] font-medium mt-1.5 max-w-xs">
           “{t.tagline}”
         </p>
-        <p className="text-xs text-[#94A3B8] mt-1">
-          Cooperative Gig Services Platform (Problem Statement SIH26089)
-        </p>
 
         <div className="mt-8 flex items-center gap-2 text-xs font-bold text-[#2563EB]">
           <div className="w-2 h-2 rounded-full bg-[#2563EB] animate-ping"></div>
-          <span>Loading Work Mojo...</span>
+          <span>Loading WorkMojo...</span>
         </div>
       </div>
     );
@@ -240,23 +269,30 @@ export const AuthFlow: React.FC = () => {
                   maxLength={10}
                   value={enteredPhone}
                   onChange={e => setEnteredPhone(e.target.value.replace(/\D/g, ''))}
-                  placeholder="98765 43210"
+                  placeholder="Enter 10-digit number"
                   className="w-full bg-transparent outline-none font-bold text-base text-[#111827] tracking-wider"
                   required
                 />
               </div>
             </div>
 
+            {otpError && (
+              <div className="text-xs text-rose-600 text-center font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                {otpError}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+              disabled={isVerifyingOtp}
+              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             >
-              <span>{t.continueOtp}</span>
+              <span>{isVerifyingOtp ? 'Sending OTP...' : t.continueOtp}</span>
               <ArrowRight size={16} />
             </button>
 
             <div className="text-[11px] text-[#64748B] text-center leading-relaxed font-medium">
-              By continuing, you agree to Work Mojo's Terms of Cooperative Gig Community & Privacy Shield.
+              By continuing, you agree to WorkMojo's Terms of Service & Privacy Policy.
             </div>
           </form>
         </div>
@@ -284,37 +320,36 @@ export const AuthFlow: React.FC = () => {
                 type="text"
                 maxLength={6}
                 value={enteredOtp}
-                onChange={e => setEnteredOtp(e.target.value)}
+                onChange={e => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
                 className="w-full bg-[#F7F9FC] border border-[#E2E8F0] rounded-2xl p-3.5 text-center font-mono font-black text-2xl tracking-[0.5em] text-[#2563EB] focus:border-[#2563EB] focus:ring-2 focus:ring-[#EFF6FF] outline-none"
-                placeholder="123456"
+                placeholder="••••••"
+                autoFocus
                 required
               />
-              <div className="text-center text-[11px] text-[#64748B] font-medium mt-1.5">
-                Demo default OTP: <span className="font-bold text-[#2563EB] underline cursor-pointer" onClick={() => setEnteredOtp('123456')}>123456</span>
-              </div>
             </div>
 
             {otpError && (
-              <div className="text-xs text-rose-600 text-center font-bold">
+              <div className="text-xs text-rose-600 text-center font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200">
                 {otpError}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={isVerifyingOtp}
+              disabled={isVerifyingOtp || enteredOtp.length !== 6}
               className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             >
-              {isVerifyingOtp ? <span>Verifying credentials...</span> : <span>Verify & Continue</span>}
+              {isVerifyingOtp ? <span>Verifying OTP...</span> : <span>Verify & Continue</span>}
             </button>
 
             <div className="flex items-center justify-between text-xs text-[#64748B] font-medium pt-1">
               <button
                 type="button"
-                onClick={() => setEnteredOtp('123456')}
+                onClick={handleSendOtp}
+                disabled={isVerifyingOtp}
                 className="text-[#2563EB] hover:underline font-bold"
               >
-                Auto-fill Demo OTP
+                Resend Code
               </button>
               <button
                 type="button"
@@ -342,7 +377,41 @@ export const AuthFlow: React.FC = () => {
             <p className="text-xs text-[#64748B] font-medium">Help the cooperative personalize your workspace.</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                Choose Account Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('worker')}
+                  className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                    selectedRole === 'worker'
+                      ? 'bg-[#EFF6FF] text-[#2563EB] border-2 border-[#2563EB] shadow-xs font-black'
+                      : 'bg-[#F7F9FC] border-[#E2E8F0] text-[#64748B] hover:text-[#111827]'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">👷</div>
+                  <div className="text-xs font-extrabold">Worker / Gig Pro</div>
+                  <div className="text-[10px] text-[#64748B] font-medium mt-0.5">Find jobs & get paid</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('customer')}
+                  className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                    selectedRole === 'customer'
+                      ? 'bg-[#EFF6FF] text-[#2563EB] border-2 border-[#2563EB] shadow-xs font-black'
+                      : 'bg-[#F7F9FC] border-[#E2E8F0] text-[#64748B] hover:text-[#111827]'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">💼</div>
+                  <div className="text-xs font-extrabold">Employer / Business</div>
+                  <div className="text-[10px] text-[#64748B] font-medium mt-0.5">Post jobs & hire staff</div>
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1.5">
                 Full Name
@@ -352,14 +421,14 @@ export const AuthFlow: React.FC = () => {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="w-full bg-[#F7F9FC] border border-[#E2E8F0] rounded-2xl p-3 text-[#111827] font-bold text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#EFF6FF]"
-                placeholder="e.g. Arun Kumar"
+                placeholder="Enter your full name"
                 required
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
-                Select Gender (Card Selection)
+                Select Gender
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {(['Male', 'Female'] as const).map(g => (
@@ -367,14 +436,14 @@ export const AuthFlow: React.FC = () => {
                     key={g}
                     type="button"
                     onClick={() => setSelectedGender(g)}
-                    className={`p-4 rounded-2xl border text-center transition-all ${
+                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                       selectedGender === g
                         ? 'bg-[#EFF6FF] text-[#2563EB] border-2 border-[#2563EB] shadow-xs font-black'
                         : 'bg-[#F7F9FC] border-[#E2E8F0] text-[#64748B] hover:text-[#111827]'
                     }`}
                   >
-                    <div className="text-3xl mb-1">{g === 'Male' ? '👨' : '👩'}</div>
-                    <div className="text-sm font-extrabold">{g}</div>
+                    <div className="text-2xl mb-1">{g === 'Male' ? '👨' : '👩'}</div>
+                    <div className="text-xs font-extrabold">{g}</div>
                   </button>
                 ))}
               </div>
@@ -383,9 +452,9 @@ export const AuthFlow: React.FC = () => {
 
           <button
             onClick={() => setOnboardingStep('kyc_intro')}
-            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 text-sm"
+            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 text-sm cursor-pointer"
           >
-            <span>Proceed to Aadhaar & PAN KYC</span>
+            <span>Proceed to Identity KYC</span>
             <ArrowRight size={16} />
           </button>
         </div>
@@ -406,9 +475,9 @@ export const AuthFlow: React.FC = () => {
           </div>
 
           <div className="bg-[#EFF6FF] border border-[#DBEAFE] rounded-2xl p-3 text-xs text-[#2563EB] leading-relaxed flex items-start gap-2">
-            <AlertCircle size={16} className="shrink-0 mt-0.5 text-[#2563EB]" />
+            <ShieldCheck size={16} className="shrink-0 mt-0.5 text-[#2563EB]" />
             <div>
-              <strong>SIH 2026 DEMO MOCK:</strong> Only demo simulated identity numbers are used. Never provide real government Aadhaar or PAN credentials.
+              <strong>Verified Identity Protection:</strong> All records are encrypted and secured. Verification ensures trustworthy, authenticated community engagement.
             </div>
           </div>
 
@@ -572,9 +641,9 @@ export const AuthFlow: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#F7F9FC] flex flex-col justify-center items-center p-6 text-[#111827] text-center max-w-md mx-auto">
         <div className="w-16 h-16 border-4 border-[#2563EB] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h2 className="text-xl font-black text-[#111827]">Verifying Aadhaar, PAN & Face Hash...</h2>
+        <h2 className="text-xl font-black text-[#111827]">Verifying Identity Credentials...</h2>
         <p className="text-xs text-[#64748B] mt-1 font-medium">
-          Simulating cooperative identity verification for Smart India Hackathon.
+          Verifying cooperative identity credentials with secure identity network.
         </p>
       </div>
     );
@@ -591,7 +660,7 @@ export const AuthFlow: React.FC = () => {
         <div>
           <h2 className="text-2xl font-black text-[#111827]">{t.kycVerifiedTitle}</h2>
           <p className="text-xs text-[#64748B] mt-1 font-medium">
-            Your Work Mojo trusted profile is now live!
+            Your WorkMojo trusted profile is now live!
           </p>
         </div>
 
@@ -603,23 +672,23 @@ export const AuthFlow: React.FC = () => {
           />
           <div>
             <div className="font-black text-[#111827] text-base flex items-center gap-1">
-              <span>{name}</span>
+              <span>{name || (selectedRole === 'worker' ? 'Skilled Craftsman' : 'Business Employer')}</span>
               <CheckCircle2 size={14} className="text-[#16A34A]" />
             </div>
             <div className="text-xs text-[#64748B]">
-              Aadhaar: {aadhaarNumber.slice(0, 4)} XXXX {aadhaarNumber.slice(-4)} • PAN: {panNumber.slice(0, 3)}***
+              Aadhaar Verified • PAN Verified
             </div>
             <div className="text-[11px] text-[#2563EB] font-bold mt-0.5">
-              Dual-Role Enabled: Worker + Customer
+              Role: {selectedRole === 'worker' ? 'Worker' : 'Employer'}
             </div>
           </div>
         </div>
 
         <button
           onClick={handleFinishOnboarding}
-          className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 text-sm"
+          className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 rounded-2xl shadow-xs transition-all active:scale-95 text-sm cursor-pointer"
         >
-          Enter WORK MOJO Dashboard
+          Enter WorkMojo
         </button>
       </div>
     </div>

@@ -363,7 +363,7 @@ export const PaymentsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Role Switcher for SIH Presentation */}
+        {/* Quick Role Switcher */}
         <div className="flex bg-[#F1F5F9] p-1 rounded-xl border border-[#E2E8F0] text-xs font-black">
           <button
             onClick={() => setViewRole('worker')}

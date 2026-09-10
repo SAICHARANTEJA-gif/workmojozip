@@ -19,6 +19,7 @@ import {
   FastForward,
   CreditCard,
   Banknote,
+  XCircle,
 } from 'lucide-react';
 
 interface CustomerOngoingProps {
@@ -33,6 +34,7 @@ export const CustomerOngoingJobView: React.FC<CustomerOngoingProps> = ({
     allWorkers,
     simulateCompleteJob,
     rehireWorker,
+    cancelJob,
     user,
     payments,
     authorizeJobPayment,
@@ -47,6 +49,8 @@ export const CustomerOngoingJobView: React.FC<CustomerOngoingProps> = ({
 
   const [toast, setToast] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
+  const [cancellingJob, setCancellingJob] = useState<Job | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const activeJobs = jobs.filter(j => j.status === 'Ongoing' || j.workersConfirmed > 0);
   const finishedJobs = jobs.filter(j => j.status === 'Finished');
@@ -225,20 +229,29 @@ export const CustomerOngoingJobView: React.FC<CustomerOngoingProps> = ({
                 })}
               </div>
 
-              {/* Demo Fast-Forward Shift End Trigger */}
+              {/* Shift Actions */}
               <div className="flex items-center justify-between pt-1">
                 <div className="text-[11px] text-[#64748B]">
                   Agreed wage: <strong className="text-[#111827] font-bold">₹{job.wage}</strong>
                 </div>
 
-                <button
-                  onClick={() => handleFinishJob(job.id)}
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
-                  title="Simulates shift end"
-                >
-                  <FastForward size={13} />
-                  <span>Simulate Shift End</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCancellingJob(job)}
+                    className="border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-xs"
+                  >
+                    <XCircle size={13} />
+                    <span>{t.cancelJob}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleFinishJob(job.id)}
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
+                  >
+                    <CheckCircle2 size={13} />
+                    <span>Complete Shift</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -344,6 +357,61 @@ export const CustomerOngoingJobView: React.FC<CustomerOngoingProps> = ({
           receipt={activeReceipt}
           onClose={() => setActiveReceipt(null)}
         />
+      )}
+
+      {/* Cancel Job Confirmation Modal */}
+      {cancellingJob && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl border border-[#E2E8F0] animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+              <XCircle size={26} />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-black text-[#111827]">{t.cancelJob}</h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                {t.cancelJobConfirm}
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] text-xs text-[#111827] space-y-1">
+              <div className="font-extrabold text-[#2563EB]">{cancellingJob.title}</div>
+              <div className="text-[11px] text-[#64748B]">
+                {cancellingJob.confirmedWorkerIds.length} confirmed worker(s) will be notified immediately.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setCancellingJob(null)}
+                disabled={isCancelling}
+                className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#64748B] font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                {t.backAction || 'Keep Shift'}
+              </button>
+
+              <button
+                type="button"
+                disabled={isCancelling}
+                onClick={async () => {
+                  setIsCancelling(true);
+                  try {
+                    await cancelJob(cancellingJob.id, 'Employer cancelled active shift');
+                    setToast(t.jobCancelled);
+                    setTimeout(() => setToast(null), 3500);
+                    setCancellingJob(null);
+                  } finally {
+                    setIsCancelling(false);
+                  }
+                }}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : t.confirmAction}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

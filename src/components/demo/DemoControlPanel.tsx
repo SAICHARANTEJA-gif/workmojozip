@@ -73,7 +73,7 @@ export const DemoControlPanel: React.FC = () => {
   const handleTestAlert = () => {
     addNotification({
       recipientId: user.id,
-      title: '🚨 SIH Demo Alert',
+      title: '🚨 WorkMojo Priority Alert',
       message: 'New high-priority community repair gig just posted 1.2 km away paying ₹950!',
       type: 'alert_triggered',
       actionScreen: 'jobs',
@@ -95,10 +95,10 @@ export const DemoControlPanel: React.FC = () => {
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-1.5 bg-slate-900/95 hover:bg-slate-800 text-amber-400 border border-amber-500/50 text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-1 rounded-full shadow-xl backdrop-blur-md transition-all active:scale-95"
-          title="SIH 2026 Judge Demonstration Controls"
+          title="WorkMojo Operations Controls"
         >
           <Sliders size={12} className="text-amber-400" />
-          <span>Demo Deck</span>
+          <span>Ops Deck</span>
           {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
       </div>
@@ -109,7 +109,7 @@ export const DemoControlPanel: React.FC = () => {
           <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2.5">
             <div className="flex items-center gap-1.5">
               <Sparkles size={14} className="text-amber-400" />
-              <span className="font-bold text-xs text-amber-300">SIH 2026 Demonstration Deck</span>
+              <span className="font-bold text-xs text-amber-300">WorkMojo Operations Deck</span>
             </div>
             <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono">
               Role: {activeRole.toUpperCase()}
@@ -124,7 +124,7 @@ export const DemoControlPanel: React.FC = () => {
                 <div>
                   <div className="font-bold text-[11px] text-white">System Architecture</div>
                   <div className="text-[9px] text-slate-400">
-                    {systemMode === 'production' ? 'Live Node.js/Express API (Port 5000)' : 'SIH Demo Offline Sandbox'}
+                    {systemMode === 'production' ? 'Live Node.js/Express API (Port 5000)' : 'WorkMojo Local Offline Sandbox'}
                   </div>
                 </div>
               </div>
@@ -134,7 +134,7 @@ export const DemoControlPanel: React.FC = () => {
                   showToast(
                     systemMode === 'demo'
                       ? '🌐 Switched to LIVE API Mode (Express backend connected)'
-                      : '⚡ Switched to SIH Demo Mode (Safe offline in-memory)'
+                      : '⚡ Switched to Local Offline Mode (In-memory storage)'
                   );
                 }}
                 className={`text-[10px] font-black px-2 py-1 rounded-lg border transition-all ${

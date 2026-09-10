@@ -340,52 +340,116 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // ============================================================================
-// 2. AUTHENTICATION ROUTES (Phase 18)
+// 2. AUTHENTICATION ROUTES
 // ============================================================================
-app.post('/api/v1/auth/send-otp', (req: Request, res: Response) => {
+app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
   const { phone } = req.body;
   if (!phone) {
     return res.status(400).json({ error: 'Mobile number is required' });
   }
 
-  // Real OTP generation simulation
-  const mockOtp = '123456';
-  res.json({
-    success: true,
-    message: `OTP sent to ${phone}`,
-    demoOtp: mockOtp, // For SIH presentation convenience
+  const rawDigits = phone.replace(/\D/g, '');
+  if (rawDigits.length < 10) {
+    return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+  }
+
+  const cleanPhone = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: cleanPhone,
+      });
+      if (error) {
+        console.warn('[AUTH] Supabase SMS error:', error.message);
+        return res.status(503).json({
+          success: false,
+          error: 'OTP verification is currently unavailable. Please try again later.',
+        });
+      }
+      return res.json({
+        success: true,
+        message: `Verification code sent to ${cleanPhone}`,
+      });
+    } catch (err: any) {
+      console.warn('[AUTH] Send OTP exception:', err.message);
+      return res.status(503).json({
+        success: false,
+        error: 'OTP verification is currently unavailable. Please try again later.',
+      });
+    }
+  }
+
+  // Graceful fallback when external SMS provider is unconfigured (Never fake/default OTP)
+  return res.status(503).json({
+    success: false,
+    error: 'OTP verification is currently unavailable. Please try again later.',
   });
 });
 
-app.post('/api/v1/auth/verify-otp', (req: Request, res: Response) => {
-  const { phone, otp, name, gender } = req.body;
+app.post('/api/v1/auth/verify-otp', async (req: Request, res: Response) => {
+  const { phone, otp, name, gender, role } = req.body;
   if (!phone || !otp) {
     return res.status(400).json({ error: 'Phone and OTP are required' });
   }
 
-  if (otp !== '123456' && otp.length !== 6) {
-    return res.status(401).json({ error: 'Invalid verification OTP' });
+  const rawDigits = phone.replace(/\D/g, '');
+  const cleanPhone = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: cleanPhone,
+        token: otp.trim(),
+        type: 'sms',
+      });
+
+      if (error || !data.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid or expired OTP code. Please try again.',
+        });
+      }
+
+      // Check existing user or initialize profile
+      let user = db.users.find(u => u.phone === cleanPhone);
+      if (!user) {
+        user = {
+          id: data.user.id || `u-${Date.now()}`,
+          phone: cleanPhone,
+          name: name || 'User',
+          gender: gender || 'Male',
+          role: role || 'worker',
+          kycVerified: false, // Strict: Never auto-verify KYC on login
+          profilePhoto: role === 'customer'
+            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
+        };
+        db.users.push(user);
+        try {
+          await supabase.from('users').upsert([user]);
+        } catch (_) {}
+      }
+
+      const token = data.session?.access_token || `wm_auth_token_${user.id}_${Date.now()}`;
+      return res.json({
+        success: true,
+        token,
+        user,
+      });
+    } catch (err: any) {
+      console.warn('[AUTH] Verify OTP exception:', err.message);
+      return res.status(503).json({
+        success: false,
+        error: 'OTP verification is currently unavailable. Please try again later.',
+      });
+    }
   }
 
-  let user = db.users.find(u => u.phone === phone);
-  if (!user) {
-    user = {
-      id: `u-${Date.now()}`,
-      phone,
-      name: name || 'Demo User',
-      gender: gender || 'Male',
-      role: 'worker',
-      kycVerified: true,
-      profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-    };
-    db.users.push(user);
-  }
-
-  const token = `wm_auth_token_${user.id}_${Date.now()}`;
-  res.json({
-    success: true,
-    token,
-    user,
+  // Without SMS provider, reject gracefully without fake validation
+  return res.status(503).json({
+    success: false,
+    error: 'OTP verification is currently unavailable. Please try again later.',
   });
 });
 
@@ -784,6 +848,12 @@ app.post('/api/v1/jobs/:id/apply', (req: Request, res: Response) => {
   const job = db.jobs.find(j => j.id === id);
   if (!job) return res.status(404).json({ error: 'Job not found' });
 
+  if (job.status === 'CANCELLED' || job.status === 'Cancelled') {
+    return res.status(400).json({
+      error: 'This job has been cancelled by the employer and is no longer accepting applications.',
+    });
+  }
+
   if (job.workersConfirmed >= job.workersRequired) {
     // Join Waiting List
     if (!job.waitingList.includes(workerId)) {
@@ -816,6 +886,10 @@ app.post('/api/v1/jobs/:id/confirm-worker', (req: Request, res: Response) => {
   const job = db.jobs.find(j => j.id === id);
   if (!job) return res.status(404).json({ error: 'Job not found' });
 
+  if (job.status === 'CANCELLED' || job.status === 'Cancelled') {
+    return res.status(400).json({ error: 'Cannot confirm workers for a cancelled job.' });
+  }
+
   if (!job.confirmedWorkerIds.includes(workerId)) {
     job.confirmedWorkerIds.push(workerId);
     job.workersConfirmed = job.confirmedWorkerIds.length;
@@ -840,6 +914,75 @@ app.post('/api/v1/jobs/:id/confirm-worker', (req: Request, res: Response) => {
 
   res.json({
     success: true,
+    job,
+  });
+});
+
+// Cancel Job (Employer Authorization Enforced)
+app.post('/api/v1/jobs/:id/cancel', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { employerId, reason } = req.body;
+
+  const job = db.jobs.find(j => j.id === id);
+  if (!job) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+
+  // Authorization check: Only job owner can cancel
+  const jobOwnerId = job.customerId || job.employerId || job.employer_id;
+  if (employerId && jobOwnerId && employerId !== jobOwnerId) {
+    return res.status(403).json({
+      error: 'Unauthorized: Only the employer who posted this job can cancel it.',
+    });
+  }
+
+  // Cannot cancel if already finished
+  if (job.status === 'Finished' || job.status === 'Completed') {
+    return res.status(400).json({ error: 'Completed jobs cannot be cancelled.' });
+  }
+
+  if (job.status === 'CANCELLED' || job.status === 'Cancelled') {
+    return res.status(400).json({ error: 'Job is already cancelled.' });
+  }
+
+  // Mark status as CANCELLED (Never delete)
+  job.status = 'CANCELLED';
+  job.cancelledAt = new Date().toISOString();
+  job.cancellationReason = reason || 'Cancelled by employer';
+
+  // Persist to Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase
+        .from('jobs')
+        .update({
+          status: 'CANCELLED',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+    } catch (sbErr) {
+      console.warn('[Supabase] Warning updating cancelled job status:', sbErr);
+    }
+  }
+
+  // Notify all applicants and confirmed workers
+  const notifyUserIds = Array.from(new Set([...(job.applicants || []), ...(job.confirmedWorkerIds || [])]));
+  notifyUserIds.forEach(workerId => {
+    db.notifications.push({
+      id: `notif-${Date.now()}-${workerId}`,
+      recipientId: workerId,
+      title: 'Job Cancelled by Employer',
+      message: `The job "${job.title}" has been cancelled by the employer. Any allocated slots have been released.`,
+      type: 'job_update',
+      actionJobId: job.id,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  });
+
+  res.json({
+    success: true,
+    message: 'Job cancelled successfully. All applicants and workers have been notified.',
     job,
   });
 });

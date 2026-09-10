@@ -50,7 +50,8 @@ export type JobStatus =
   | 'Confirmed'
   | 'Ongoing'
   | 'Finished'
-  | 'Cancelled';
+  | 'Cancelled'
+  | 'CANCELLED';
 
 export type ApplicationStatus =
   | 'applied'
@@ -97,6 +98,7 @@ export interface User {
   role: UserRole;
   alternateRoles?: UserRole[];
   kycStatus: KycStatus;
+  kycVerified?: boolean;
   rating: number;
   completedJobs: number;
   jobsPosted: number;

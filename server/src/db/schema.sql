@@ -1,6 +1,5 @@
 -- ============================================================================
 -- WORK MOJO — Cooperative Gig Services Platform
--- Smart India Hackathon 2026 | Problem Statement SIH26089
 -- PostgreSQL / Supabase Relational Database Schema (16 Tables)
 -- ============================================================================
 
@@ -89,7 +88,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     landmark VARCHAR(150),
     exact_lat NUMERIC(9,6),
     exact_lng NUMERIC(9,6),
-    status VARCHAR(30) DEFAULT 'Open' CHECK (status IN ('Open', 'Filled', 'Ongoing', 'Finished', 'Cancelled')),
+    status VARCHAR(30) DEFAULT 'Open' CHECK (status IN ('Open', 'Filled', 'Ongoing', 'Finished', 'Cancelled', 'CANCELLED')),
     recurring VARCHAR(20) DEFAULT 'none' CHECK (recurring IN ('none', 'daily', 'weekly', 'monthly')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

@@ -24,6 +24,8 @@ import {
   Wallet,
   Sun,
   Moon,
+  Camera,
+  AlertCircle,
 } from 'lucide-react';
 import { UserAvatar } from '../../components/common/UserAvatar';
 
@@ -34,6 +36,7 @@ export const ProfileAndSettingsView: React.FC = () => {
     toggleRole,
     deleteAccount,
     changePhoneNumber,
+    updateUserProfile,
     language,
     setLanguage,
     blockedUsers,
@@ -50,11 +53,50 @@ export const ProfileAndSettingsView: React.FC = () => {
     'menu' | 'change_phone' | 'language' | 'help' | 'blocked' | 'delete_confirm' | 'payment_preference'
   >('menu');
 
+  // Profile photo upload state
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoSuccess, setPhotoSuccess] = useState<string | null>(null);
+
   // Change phone state
   const [newPhoneInput, setNewPhoneInput] = useState('');
   const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState('123456');
+  const [otpCode, setOtpCode] = useState('');
   const [phoneSuccess, setPhoneSuccess] = useState(false);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoError(null);
+    setPhotoSuccess(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate MIME type: JPEG, PNG, WebP
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setPhotoError('Only JPEG, PNG, or WebP formats are supported.');
+      return;
+    }
+
+    // Validate size: 5MB maximum
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setPhotoError('Image size exceeds 5MB limit. Please upload a smaller photo.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (result) {
+        updateUserProfile({ profilePhoto: result });
+        setPhotoSuccess('Profile photo updated successfully!');
+        setTimeout(() => setPhotoSuccess(null), 3000);
+      }
+    };
+    reader.onerror = () => {
+      setPhotoError(t.uploadFailed || 'Failed to read photo file.');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const languages: Array<{ code: SupportedLanguage; label: string; native: string }> = [
     { code: 'en', label: 'English', native: 'English' },
@@ -72,7 +114,7 @@ export const ProfileAndSettingsView: React.FC = () => {
 
   const handleVerifyPhoneOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode === '123456' || otpCode.length === 6) {
+    if (otpCode.length === 6) {
       changePhoneNumber(`+91 ${newPhoneInput}`);
       setPhoneSuccess(true);
       setTimeout(() => {
@@ -110,7 +152,7 @@ export const ProfileAndSettingsView: React.FC = () => {
         <div className="h-1 w-full bg-gradient-to-r from-[#2563EB] via-[#F5A900] to-[#2563EB] rounded-t-3xl -mt-5 -mx-5 mb-4" />
 
         <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 group">
             <UserAvatar
               src={user.profilePhoto}
               name={user.name}
@@ -119,6 +161,20 @@ export const ProfileAndSettingsView: React.FC = () => {
               showAvailability={true}
               availability={user.availability}
             />
+            <label
+              htmlFor="profile-photo-upload-input"
+              className="absolute -bottom-1 -right-1 p-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-full shadow-md cursor-pointer border-2 border-white transition-transform active:scale-90"
+              title={t.uploadProfilePhoto || "Upload Profile Photo"}
+            >
+              <Camera size={14} />
+              <input
+                id="profile-photo-upload-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+            </label>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -145,6 +201,19 @@ export const ProfileAndSettingsView: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {photoError && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold p-2.5 rounded-xl flex items-center gap-2 animate-in fade-in">
+            <AlertCircle size={15} className="shrink-0" />
+            <span>{photoError}</span>
+          </div>
+        )}
+        {photoSuccess && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold p-2.5 rounded-xl flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 size={15} className="shrink-0" />
+            <span>{photoSuccess}</span>
+          </div>
+        )}
 
         {/* Role Toggle Card */}
         <div className="flex items-center justify-between p-3.5 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs transition-colors">
@@ -263,9 +332,6 @@ export const ProfileAndSettingsView: React.FC = () => {
                 className="w-full p-2.5 rounded-xl border border-[#E2E8F0] bg-[#F7F9FC] text-[#111827] font-mono font-bold text-center tracking-widest text-base focus:border-[#2563EB] focus:ring-2 focus:ring-[#EFF6FF] outline-none"
                 required
               />
-              <div className="text-[11px] text-[#2563EB] font-bold text-center">
-                Demo OTP: 123456
-              </div>
               <button
                 type="submit"
                 className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3 rounded-xl shadow-xs transition-all active:scale-95"

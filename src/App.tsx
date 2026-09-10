@@ -4,7 +4,6 @@ import { AuthFlow } from './screens/auth/AuthFlow';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
 import { FloatingMojoAssistant } from './components/mojo/FloatingMojoAssistant';
-import { DemoControlPanel } from './components/demo/DemoControlPanel';
 
 // Worker Screens
 import { WorkerHome } from './screens/worker/WorkerHome';
@@ -36,6 +35,7 @@ import { Job, User } from './types';
 
 export const App: React.FC = () => {
   const {
+    user,
     isAuthenticated,
     onboardingStep,
     activeRole,
@@ -86,8 +86,8 @@ export const App: React.FC = () => {
     setActiveScreen('applicants');
   };
 
-  // If user is undergoing onboarding or not authenticated, render AuthFlow
-  if (!isAuthenticated || onboardingStep !== 'app') {
+  // If user is undergoing onboarding or not authenticated or KYC incomplete, render AuthFlow
+  if (!isAuthenticated || !user.kycVerified || onboardingStep !== 'app') {
     return <AuthFlow />;
   }
 
@@ -97,9 +97,6 @@ export const App: React.FC = () => {
       <div className="w-full max-w-md min-h-screen flex flex-col relative shadow-xl overflow-x-hidden bg-white text-[#111827] border-x border-[#E2E8F0]">
         {/* Persistent Top Header */}
         <Header />
-
-        {/* SIH Judge Demo Control Panel Trigger */}
-        <DemoControlPanel />
 
         {/* Dynamic Screen Routing */}
         <main className="flex-1 overflow-y-auto">

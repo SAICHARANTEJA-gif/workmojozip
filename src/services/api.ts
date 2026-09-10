@@ -110,6 +110,15 @@ export const api = {
     return await res.json();
   },
 
+  cancelJob: async (jobId: string, employerId?: string, reason?: string) => {
+    const res = await fetch(`${API_BASE_URL}/jobs/${jobId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employerId, reason }),
+    });
+    return await res.json();
+  },
+
   // Attendance
   getAttendance: async (jobId: string) => {
     const res = await fetch(`${API_BASE_URL}/attendance/${jobId}`);

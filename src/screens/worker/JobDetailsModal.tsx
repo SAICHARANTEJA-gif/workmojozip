@@ -199,7 +199,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
                   {t.transparentAiMatch}: {matchResult.score}%
                 </span>
               </div>
-              <span className="text-[10px] text-[#2563EB] font-bold">SIH Cooperative Metric</span>
+              <span className="text-[10px] text-[#2563EB] font-bold">WorkMojo Cooperative Metric</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-[11px] text-[#111827] mb-2.5">
