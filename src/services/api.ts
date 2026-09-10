@@ -98,13 +98,55 @@ export const api = {
     return await res.json();
   },
 
-  applyForJob: async (jobId: string, workerId: string) => {
-    const res = await fetch(`${API_BASE_URL}/jobs/${jobId}/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workerId }),
-    });
-    return await res.json();
+  applyForJob: async (jobId: string, workerPayload: any) => {
+    try {
+      const payload = typeof workerPayload === 'string'
+        ? { workerId: workerPayload }
+        : workerPayload;
+
+      const res = await fetch(`${API_BASE_URL}/jobs/${jobId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || `Server responded with HTTP ${res.status}`,
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Network error occurred while applying.',
+      };
+    }
+  },
+
+  getJobApplications: async (jobId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobs/${jobId}/applications`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          count: 0,
+          applications: [],
+          error: data.error || `Server error ${res.status}`,
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        count: 0,
+        applications: [],
+        error: err.message || 'Network error fetching applications.',
+      };
+    }
   },
 
   confirmWorker: async (jobId: string, workerId: string) => {

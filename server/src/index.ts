@@ -705,46 +705,68 @@ app.get('/api/v1/jobs', async (req: Request, res: Response) => {
     // If Supabase is connected, query jobs and merge seamlessly
     if (isSupabaseConfigured()) {
       try {
+        // Query applications from Supabase to reconstruct real job applicants
+        const appMap = new Map<string, string[]>();
+        try {
+          const { data: appRows } = await supabase.from('applications').select('job_id, worker_id, status');
+          if (Array.isArray(appRows)) {
+            for (const ar of appRows) {
+              if (ar.status === 'applied') {
+                const list = appMap.get(String(ar.job_id)) || [];
+                if (!list.includes(String(ar.worker_id))) list.push(String(ar.worker_id));
+                appMap.set(String(ar.job_id), list);
+              }
+            }
+          }
+        } catch (_) {}
+
         const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
         if (error) {
           console.error('[Supabase] Error reading jobs table:', error.message);
         } else if (data && data.length > 0) {
-          const sbJobs = data.map((row: any) => ({
-            id: String(row.id),
-            customerId: String(row.employer_id || 'cust-kumar'),
-            customerName: row.customer_name || 'Verified Employer',
-            customerPhoto: row.customer_photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80',
-            customerRating: Number(row.customer_rating) || 4.8,
-            customerKyc: row.customer_kyc !== undefined ? Boolean(row.customer_kyc) : true,
-            businessName: row.business_name || `${row.title} Services`,
-            title: row.title,
-            category: row.category,
-            description: row.description || '',
-            wage: Number(row.wage) || 500,
-            startTime: row.start_time || '09:00 AM',
-            endTime: row.end_time || '05:00 PM',
-            duration: row.duration || '8 hours',
-            urgency: row.urgency || 'Today',
-            approximateArea: row.approximate_area || '',
-            approximateDistanceKm: Number(row.approximate_distance_km) || 2.5,
-            exactLocation: {
+          const sbJobs = data.map((row: any) => {
+            const jobIdStr = String(row.id);
+            const remoteApplicants = appMap.get(jobIdStr) || [];
+            const rowApplicants = Array.isArray(row.applicants) ? row.applicants : [];
+            const mergedApplicants = Array.from(new Set([...remoteApplicants, ...rowApplicants]));
+
+            return {
+              id: jobIdStr,
+              customerId: String(row.employer_id || 'cust-kumar'),
+              customerName: row.customer_name || 'Verified Employer',
+              customerPhoto: row.customer_photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80',
+              customerRating: Number(row.customer_rating) || 4.8,
+              customerKyc: row.customer_kyc !== undefined ? Boolean(row.customer_kyc) : true,
+              businessName: row.business_name || `${row.title} Services`,
+              title: row.title,
+              category: row.category,
+              description: row.description || '',
+              wage: Number(row.wage) || 500,
+              startTime: row.start_time || '09:00 AM',
+              endTime: row.end_time || '05:00 PM',
+              duration: row.duration || '8 hours',
+              urgency: row.urgency || 'Today',
               approximateArea: row.approximate_area || '',
-              exactAddress: row.exact_address || '',
-              landmark: row.landmark || '',
-              lat: Number(row.exact_lat) || 12.934,
-              lng: Number(row.exact_lng) || 77.625,
-            },
-            workersRequired: Number(row.workers_required) || 1,
-            workersConfirmed: Number(row.workers_confirmed) || 0,
-            selectionMode: row.selection_mode || 'manual',
-            status: row.status || 'Posted',
-            applicants: Array.isArray(row.applicants) ? row.applicants : [],
-            confirmedWorkerIds: Array.isArray(row.confirmed_worker_ids) ? row.confirmed_worker_ids : [],
-            waitingList: Array.isArray(row.waiting_list) ? row.waiting_list : [],
-            recurring: row.recurring || 'none',
-            createdAt: row.created_at || new Date().toISOString(),
-            updatedAt: row.updated_at || new Date().toISOString(),
-          }));
+              approximateDistanceKm: Number(row.approximate_distance_km) || 2.5,
+              exactLocation: {
+                approximateArea: row.approximate_area || '',
+                exactAddress: row.exact_address || '',
+                landmark: row.landmark || '',
+                lat: Number(row.exact_lat) || 12.934,
+                lng: Number(row.exact_lng) || 77.625,
+              },
+              workersRequired: Number(row.workers_required) || 1,
+              workersConfirmed: Number(row.workers_confirmed) || 0,
+              selectionMode: row.selection_mode || 'manual',
+              status: row.status || 'Posted',
+              applicants: mergedApplicants,
+              confirmedWorkerIds: Array.isArray(row.confirmed_worker_ids) ? row.confirmed_worker_ids : [],
+              waitingList: Array.isArray(row.waiting_list) ? row.waiting_list : [],
+              recurring: row.recurring || 'none',
+              createdAt: row.created_at || new Date().toISOString(),
+              updatedAt: row.updated_at || new Date().toISOString(),
+            };
+          });
           // Supabase jobs take precedence for persistent truth
           combinedJobs = [...sbJobs, ...combinedJobs];
         }
@@ -881,40 +903,253 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
 });
 
 // Apply for Job
-app.post('/api/v1/jobs/:id/apply', (req: Request, res: Response) => {
+app.post('/api/v1/jobs/:id/apply', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { workerId } = req.body;
+  const {
+    workerId,
+    workerName,
+    workerPhone,
+    workerPhoto,
+    workerRating,
+    workerReliability,
+    workerSkills,
+    matchScore,
+  } = req.body;
 
-  const job = db.jobs.find(j => j.id === id);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!id || !workerId) {
+    return res.status(400).json({ success: false, error: 'Both job ID and worker ID are required.' });
+  }
+
+  // 1. Locate Job in memory or Supabase
+  let job = db.jobs.find(j => j.id === id);
+  if (!job && isSupabaseConfigured()) {
+    try {
+      const { data: sbJob } = await supabase.from('jobs').select('*').eq('id', id).single();
+      if (sbJob) {
+        job = {
+          id: String(sbJob.id),
+          title: sbJob.title,
+          category: sbJob.category,
+          wage: Number(sbJob.wage),
+          startTime: sbJob.start_time,
+          duration: sbJob.duration,
+          urgency: sbJob.urgency,
+          workersRequired: Number(sbJob.workers_required) || 1,
+          workersConfirmed: Number(sbJob.workers_confirmed) || 0,
+          approximateArea: sbJob.approximate_area,
+          status: sbJob.status,
+          applicants: [],
+          confirmedWorkerIds: [],
+          waitingList: [],
+        };
+        db.jobs.unshift(job);
+      }
+    } catch (err: any) {
+      console.warn('[Jobs] Error querying job from Supabase:', err.message);
+    }
+  }
+
+  if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
 
   if (job.status === 'CANCELLED' || job.status === 'Cancelled') {
     return res.status(400).json({
+      success: false,
       error: 'This job has been cancelled by the employer and is no longer accepting applications.',
     });
   }
 
-  if (job.workersConfirmed >= job.workersRequired) {
-    // Join Waiting List
-    if (!job.waitingList.includes(workerId)) {
-      job.waitingList.push(workerId);
+  const isWaitingList = job.workersConfirmed >= job.workersRequired || job.status === 'Filled';
+  const targetStatus = isWaitingList ? 'waiting_list' : 'applied';
+
+  // 2. Persist application to Supabase applications table using server-side client
+  let supabasePersisted = false;
+  let supabaseError: string | null = null;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const appRecord: any = {
+        job_id: id,
+        worker_id: String(workerId),
+        status: targetStatus,
+        match_score: Number(matchScore) || 85,
+        created_at: new Date().toISOString(),
+      };
+
+      if (workerName) appRecord.worker_name = workerName;
+      if (workerPhone) appRecord.worker_phone = workerPhone;
+      if (workerPhoto) appRecord.worker_photo = workerPhoto;
+      if (workerRating !== undefined) appRecord.worker_rating = Number(workerRating);
+      if (workerReliability !== undefined) appRecord.worker_reliability = Number(workerReliability);
+      if (Array.isArray(workerSkills)) appRecord.worker_skills = workerSkills;
+
+      const { error } = await supabase
+        .from('applications')
+        .upsert(appRecord, { onConflict: 'job_id,worker_id' });
+
+      if (error) {
+        supabaseError = `${error.code}: ${error.message}`;
+        console.error('[Supabase] Applications upsert error:', error.message, error.details || error.hint);
+
+        // Fallback for metadata columns if migration 20260912 has not yet been applied
+        if (error.code === '42703' || error.code === 'PGRST204' || String(error.message).includes('Could not find')) {
+          delete appRecord.worker_name;
+          delete appRecord.worker_phone;
+          delete appRecord.worker_photo;
+          delete appRecord.worker_rating;
+          delete appRecord.worker_reliability;
+          delete appRecord.worker_skills;
+          const retry = await supabase.from('applications').upsert(appRecord, { onConflict: 'job_id,worker_id' });
+          if (!retry.error) {
+            supabasePersisted = true;
+            supabaseError = null;
+            console.log('[Supabase] Application persisted with core columns for worker:', workerId);
+          } else {
+            supabaseError = `${retry.error.code}: ${retry.error.message}`;
+            console.error('[Supabase] Application retry error:', retry.error.message);
+          }
+        }
+      } else {
+        supabasePersisted = true;
+        console.log('[Supabase] Application successfully persisted:', { job_id: id, worker_id: workerId });
+      }
+    } catch (sbErr: any) {
+      supabaseError = sbErr.message;
+      console.error('[Supabase] Exception persisting application:', sbErr.message);
     }
-    return res.json({
-      success: true,
-      status: 'waiting_list',
-      position: job.waitingList.indexOf(workerId) + 1,
-      message: 'Job is filled. Successfully joined waiting list!',
+  }
+
+  // If Supabase is configured and the database insert failed, return HTTP 500
+  // Do NOT tell the frontend the application succeeded when database persistence failed!
+  if (isSupabaseConfigured() && !supabasePersisted) {
+    return res.status(500).json({
+      success: false,
+      error: `Failed to persist application to database: ${supabaseError}`,
     });
   }
 
-  if (!job.applicants.includes(workerId)) {
-    job.applicants.push(workerId);
+  // 3. Keep in-memory structures synchronized after verified persistence
+  if (isWaitingList) {
+    if (!job.waitingList.includes(workerId)) {
+      job.waitingList.push(workerId);
+    }
+  } else {
+    if (!job.applicants.includes(workerId)) {
+      job.applicants.push(workerId);
+    }
+  }
+
+  const existingApp = db.applications.find(a => a.jobId === id && a.workerId === workerId);
+  if (!existingApp) {
+    db.applications.push({
+      id: `app-${id}-${workerId}`,
+      jobId: id,
+      workerId,
+      workerName: workerName || 'Verified Worker',
+      workerPhone: workerPhone || '',
+      workerPhoto: workerPhoto || '',
+      workerRating: Number(workerRating) || 4.8,
+      workerReliability: Number(workerReliability) || 95,
+      workerSkills: Array.isArray(workerSkills) ? workerSkills : ['Labour'],
+      matchScore: Number(matchScore) || 85,
+      status: targetStatus,
+      createdAt: new Date().toISOString(),
+    });
   }
 
   res.json({
     success: true,
-    status: 'applied',
-    message: 'Application submitted successfully!',
+    status: targetStatus,
+    position: isWaitingList ? job.waitingList.indexOf(workerId) + 1 : undefined,
+    persistedToSupabase: supabasePersisted,
+    message: isWaitingList
+      ? 'Job is filled. Successfully joined waiting list!'
+      : 'Application submitted successfully!',
+  });
+});
+
+// GET Applications for a specific Job (Employer view, server-side service-role access)
+app.get('/api/v1/jobs/:id/applications', async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  let applicationsList: any[] = [];
+
+  // 1. Fetch persistent applications from Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('job_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[Supabase] Error fetching applications for job:', id, error.message);
+      } else if (Array.isArray(data)) {
+        applicationsList = data.map((row: any) => {
+          const userProfile = db.users.find(u => u.id === row.worker_id);
+          const workerProf = db.workerProfiles.find(p => p.userId === row.worker_id);
+
+          return {
+            id: row.id || `app-${row.job_id}-${row.worker_id}`,
+            jobId: String(row.job_id),
+            workerId: String(row.worker_id),
+            status: row.status || 'applied',
+            matchScore: Number(row.match_score) || 85,
+            workerName: row.worker_name || userProfile?.name || 'Verified Worker',
+            workerPhoto: row.worker_photo || userProfile?.profilePhoto || '',
+            // Worker phone is safely handled; masked for privacy in general listings
+            workerPhone: row.worker_phone || userProfile?.phone || '',
+            workerRating: Number(row.worker_rating || workerProf?.rating || 4.8),
+            workerReliability: Number(row.worker_reliability || workerProf?.reliabilityScore || 95),
+            workerSkills: Array.isArray(row.worker_skills) && row.worker_skills.length > 0
+              ? row.worker_skills
+              : (workerProf?.skills || ['Labour']),
+            createdAt: row.created_at || new Date().toISOString(),
+          };
+        });
+      }
+    } catch (sbErr: any) {
+      console.warn('[Supabase] Exception fetching applications:', sbErr.message);
+    }
+  }
+
+  // 2. Merge in-memory applications for this job
+  const memApps = db.applications.filter(a => a.jobId === id);
+  for (const ma of memApps) {
+    if (!applicationsList.some(a => a.workerId === ma.workerId)) {
+      applicationsList.push(ma);
+    }
+  }
+
+  // 3. Reconcile with in-memory job.applicants if not yet listed
+  const job = db.jobs.find(j => j.id === id);
+  if (job && Array.isArray(job.applicants)) {
+    for (const wId of job.applicants) {
+      if (!applicationsList.some(a => a.workerId === wId)) {
+        const u = db.users.find(user => user.id === wId);
+        const p = db.workerProfiles.find(prof => prof.userId === wId);
+        applicationsList.push({
+          id: `app-${id}-${wId}`,
+          jobId: id,
+          workerId: wId,
+          status: 'applied',
+          matchScore: 85,
+          workerName: u?.name || 'Verified Worker',
+          workerPhoto: u?.profilePhoto || '',
+          workerPhone: u?.phone || '',
+          workerRating: p?.rating || 4.8,
+          workerReliability: p?.reliabilityScore || 95,
+          workerSkills: p?.skills || ['Labour'],
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    count: applicationsList.length,
+    applications: applicationsList,
   });
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../store/AppContext';
 import { Job, User } from '../../types';
 import { calculateMatchScore, rankApplicants } from '../../services/matchingService';
@@ -44,6 +44,7 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     attendanceRecords,
     recordAttendanceCheckIn,
     cancelJob,
+    fetchJobApplications,
     t,
     language,
   } = useApp();
@@ -56,11 +57,34 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
   const [invitedWorkerIds, setInvitedWorkerIds] = useState<string[]>([]);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [remoteApplications, setRemoteApplications] = useState<any[]>([]);
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
 
   // Modal States
   const [selectedQRWorker, setSelectedQRWorker] = useState<User | null>(null);
 
   const currentJob = jobs.find(j => j.id === selectedJobId) || jobs[0];
+
+  // Fetch persistent remote applications from backend / Supabase
+  useEffect(() => {
+    let active = true;
+    if (currentJob?.id) {
+      setIsLoadingApplications(true);
+      fetchJobApplications(currentJob.id)
+        .then(apps => {
+          if (active) {
+            setRemoteApplications(apps || []);
+            setIsLoadingApplications(false);
+          }
+        })
+        .catch(() => {
+          if (active) setIsLoadingApplications(false);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [currentJob?.id, fetchJobApplications]);
 
   if (!currentJob) {
     return (
@@ -70,10 +94,64 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     );
   }
 
-  // Get applicants and confirmed workers for current job
-  const applicantWorkers = allWorkers.filter(w =>
-    currentJob.applicants.includes(w.id)
-  );
+  // Synthesize applicant workers: combine in-memory allWorkers and remote application records
+  const applicantWorkers = useMemo(() => {
+    const list: User[] = [];
+    const seenIds = new Set<string>();
+
+    // 1. From allWorkers where id is in currentJob.applicants
+    allWorkers
+      .filter(w => currentJob.applicants.includes(w.id))
+      .forEach(w => {
+        if (!seenIds.has(w.id)) {
+          seenIds.add(w.id);
+          list.push(w);
+        }
+      });
+
+    // 2. From remote applications for this job
+    for (const app of remoteApplications) {
+      if (app.status === 'applied' && !seenIds.has(app.workerId)) {
+        seenIds.add(app.workerId);
+        const existing = allWorkers.find(w => w.id === app.workerId);
+        if (existing) {
+          list.push(existing);
+        } else {
+          list.push({
+            id: app.workerId,
+            name: app.workerName || 'Verified Worker',
+            phone: app.workerPhone || '+91 98765 43210',
+            profilePhoto: app.workerPhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+            gender: 'Other',
+            role: 'worker',
+            alternateRoles: ['worker'],
+            kycStatus: 'verified',
+            kycVerified: true,
+            rating: Number(app.workerRating) || 4.8,
+            completedJobs: 14,
+            jobsPosted: 0,
+            skills: Array.isArray(app.workerSkills) && app.workerSkills.length > 0 ? app.workerSkills : ['Labour'],
+            experience: '2 years',
+            availability: 'Available',
+            preferredCategories: [],
+            preferredDistance: 5,
+            preferredWage: 500,
+            preferredWorkingTimes: ['Morning'],
+            languages: ['English', 'Hindi'],
+            reliabilityScore: Number(app.workerReliability) || 95,
+            cancellationCount: 0,
+            savedJobIds: [],
+            paymentPreference: 'ONLINE',
+            bio: 'Verified gig worker on WorkMojo.',
+            createdAt: app.createdAt || new Date().toISOString(),
+          });
+        }
+      }
+    }
+
+    return list;
+  }, [allWorkers, currentJob.applicants, remoteApplications]);
+
   const confirmedWorkers = allWorkers.filter(w =>
     currentJob.confirmedWorkerIds.includes(w.id)
   );

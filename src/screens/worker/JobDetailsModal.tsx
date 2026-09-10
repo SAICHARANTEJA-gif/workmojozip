@@ -35,6 +35,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
   const { user, savedJobIds, toggleSaveJob, applyToJob, cancelConfirmedJob, t, language } = useApp();
   const [isApplying, setIsApplying] = useState(false);
   const [justApplied, setJustApplied] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   const isSaved = savedJobIds.includes(job.id);
   const matchResult = calculateMatchScore(user, job);
@@ -44,20 +45,28 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
   const waitingPos = isWaitingList ? job.waitingList.indexOf(user.id) + 1 : null;
   const isFull = job.workersConfirmed >= job.workersRequired || job.status === 'Filled';
 
-  const handleApply = () => {
+  const handleApply = async () => {
     setIsApplying(true);
-    setTimeout(() => {
-      const result = applyToJob(job.id);
+    setApplyError(null);
+    try {
+      const result = await applyToJob(job.id);
       setIsApplying(false);
-      setJustApplied(true);
-      if (!result.isWaitingList) {
-        try {
-          confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-        } catch {
-          // ignore
+      if (result.success) {
+        setJustApplied(true);
+        if (!result.isWaitingList) {
+          try {
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+          } catch {
+            // ignore
+          }
         }
+      } else {
+        setApplyError(result.error || 'Failed to submit application. Please try again.');
       }
-    }, 700);
+    } catch (err: any) {
+      setIsApplying(false);
+      setApplyError(err.message || 'An error occurred while submitting your application.');
+    }
   };
 
   return (
@@ -271,6 +280,13 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
 
         {/* Footer Action CTA */}
         <div className="p-4 border-t border-[#E2E8F0] bg-white">
+          {applyError && (
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2 mb-2 animate-in fade-in">
+              <AlertTriangle size={15} className="shrink-0 text-rose-600" />
+              <span>{applyError}</span>
+            </div>
+          )}
+
           {isConfirmed ? (
             <div className="space-y-2">
               <button

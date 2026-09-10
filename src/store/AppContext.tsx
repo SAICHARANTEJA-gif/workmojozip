@@ -65,10 +65,11 @@ interface AppContextType {
   allCustomers: User[];
   savedJobIds: string[];
   toggleSaveJob: (jobId: string) => void;
-  applyToJob: (jobId: string) => { success: boolean; isWaitingList: boolean; position?: number };
+  applyToJob: (jobId: string) => Promise<{ success: boolean; isWaitingList: boolean; position?: number; error?: string }>;
   cancelConfirmedJob: (jobId: string) => void;
   createJob: (jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>) => Promise<Job>;
   refreshJobs: () => Promise<Job[] | null>;
+  fetchJobApplications: (jobId: string) => Promise<any[]>;
   isSyncingJobs: boolean;
   confirmWorkerForJob: (jobId: string, workerId: string) => void;
   autoSelectWorkersForJob: (jobId: string) => void;
@@ -428,9 +429,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           // Remote jobs (from Supabase PostgreSQL & Render backend) have priority for cross-device consistency
           for (const sj of res.jobs) {
+            const existing = prevJobs.find(p => p.id === sj.id);
+            const mergedApplicants = Array.from(new Set([...(sj.applicants || []), ...(existing?.applicants || [])]));
+            const mergedConfirmed = Array.from(new Set([...(sj.confirmedWorkerIds || []), ...(existing?.confirmedWorkerIds || [])]));
+            const mergedWaiting = Array.from(new Set([...(sj.waitingList || []), ...(existing?.waitingList || [])]));
+
+            const mergedJob: Job = {
+              ...sj,
+              applicants: mergedApplicants,
+              confirmedWorkerIds: mergedConfirmed,
+              waitingList: mergedWaiting,
+            };
+
             const sig = `${sj.title.trim().toLowerCase()}_${sj.category}_${sj.wage}_${sj.startTime}_${sj.approximateArea}`;
             if (!map.has(sj.id) && !seenSignatures.has(sig)) {
-              map.set(sj.id, sj);
+              map.set(sj.id, mergedJob);
               seenSignatures.add(sig);
             }
           }
@@ -608,13 +621,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  // Apply to Job with Waiting List Logic
-  const applyToJob = (jobId: string): { success: boolean; isWaitingList: boolean; position?: number } => {
-    let isWaiting = false;
-    let position = 0;
-
+  // Apply to Job with Server/Supabase Persistence
+  const applyToJob = async (
+    jobId: string
+  ): Promise<{ success: boolean; isWaitingList: boolean; position?: number; error?: string }> => {
     const currentJob = jobs.find(j => j.id === jobId);
-    if (currentJob && (currentJob.status === 'Cancelled' || currentJob.status === 'CANCELLED')) {
+    if (!currentJob) {
+      return { success: false, isWaitingList: false, error: 'Job not found.' };
+    }
+
+    if (currentJob.status === 'Cancelled' || currentJob.status === 'CANCELLED') {
       addNotification({
         recipientId: user.id,
         title: 'Job Not Available',
@@ -622,25 +638,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         type: 'alert_triggered',
         targetJobId: jobId,
       });
-      return { success: false, isWaitingList: false };
+      return { success: false, isWaitingList: false, error: 'This job has been cancelled by the employer.' };
     }
 
+    const match = calculateMatchScore(user, currentJob);
+
+    // 1. Dispatch application payload to Express backend for Supabase persistence
+    const appPayload = {
+      workerId: user.id,
+      workerName: user.name || 'Verified Worker',
+      workerPhone: user.phone || '',
+      workerPhoto: user.profilePhoto || '',
+      workerRating: user.rating || 4.8,
+      workerReliability: user.reliabilityScore || 95,
+      workerSkills: user.skills || [],
+      matchScore: match.score,
+    };
+
+    const res = await api.applyForJob(jobId, appPayload);
+
+    // If server/database write failed, do NOT mark worker as applied!
+    if (!res || !res.success) {
+      const errMsg = res?.error || 'Failed to submit application. Please check your connection and try again.';
+      addNotification({
+        recipientId: user.id,
+        title: 'Application Failed',
+        message: errMsg,
+        type: 'alert_triggered',
+        targetJobId: jobId,
+      });
+      return { success: false, isWaitingList: false, error: errMsg };
+    }
+
+    const isWaiting = res.status === 'waiting_list';
+    const position = res.position;
+
+    // 2. Only after verified backend persistence, commit the applied status locally
     setJobs(prevJobs => {
       return prevJobs.map(job => {
         if (job.id !== jobId) return job;
 
-        // Check if job is filled or all positions confirmed
-        if (job.workersConfirmed >= job.workersRequired || job.status === 'Filled') {
-          isWaiting = true;
+        if (isWaiting) {
           const nextWaitingList = job.waitingList.includes(user.id)
             ? job.waitingList
             : [...job.waitingList, user.id];
-          position = nextWaitingList.indexOf(user.id) + 1;
+          const pos = position || (nextWaitingList.indexOf(user.id) + 1);
 
           addNotification({
             recipientId: user.id,
-            title: `Waiting List (#${position})`,
-            message: `You are #${position} on the waiting list for ${job.title}. If a confirmed worker cancels, you'll be automatically promoted!`,
+            title: `Waiting List (#${pos})`,
+            message: `You are #${pos} on the waiting list for ${job.title}. If a confirmed worker cancels, you'll be automatically promoted!`,
             type: 'alert_triggered',
             targetJobId: job.id,
             actionScreen: 'job_details',
@@ -689,6 +736,71 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return { success: true, isWaitingList: isWaiting, position };
   };
+
+  // Fetch Remote Applications for a selected Job
+  const fetchJobApplications = useCallback(async (jobId: string): Promise<any[]> => {
+    try {
+      const res = await api.getJobApplications(jobId);
+      if (res && res.success && Array.isArray(res.applications)) {
+        // Hydrate allWorkers with any remote worker profiles returned
+        setAllWorkers(prevWorkers => {
+          const map = new Map<string, User>();
+          prevWorkers.forEach(w => map.set(w.id, w));
+
+          for (const app of res.applications) {
+            if (!map.has(app.workerId) && app.workerId !== 'guest') {
+              map.set(app.workerId, {
+                id: app.workerId,
+                name: app.workerName || 'Verified Worker',
+                phone: app.workerPhone || '+91 98765 43210',
+                profilePhoto: app.workerPhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+                gender: 'Other',
+                role: 'worker',
+                alternateRoles: ['worker'],
+                kycStatus: 'verified',
+                kycVerified: true,
+                rating: Number(app.workerRating) || 4.8,
+                completedJobs: 14,
+                jobsPosted: 0,
+                skills: Array.isArray(app.workerSkills) && app.workerSkills.length > 0 ? app.workerSkills : ['Labour'],
+                experience: '2 years',
+                availability: 'Available',
+                preferredCategories: [],
+                preferredDistance: 5,
+                preferredWage: 500,
+                preferredWorkingTimes: ['Morning'],
+                languages: ['English', 'Hindi'],
+                reliabilityScore: Number(app.workerReliability) || 95,
+                cancellationCount: 0,
+                savedJobIds: [],
+                paymentPreference: 'ONLINE',
+                bio: 'Verified gig worker on WorkMojo.',
+                createdAt: app.createdAt || new Date().toISOString(),
+              });
+            }
+          }
+          return Array.from(map.values());
+        });
+
+        // Also ensure current job in memory includes all remote applicant IDs
+        setJobs(prevJobs =>
+          prevJobs.map(j => {
+            if (j.id !== jobId) return j;
+            const remoteApplicantIds = res.applications
+              .filter((a: any) => a.status === 'applied')
+              .map((a: any) => a.workerId);
+            const merged = Array.from(new Set([...j.applicants, ...remoteApplicantIds]));
+            return { ...j, applicants: merged };
+          })
+        );
+
+        return res.applications;
+      }
+    } catch (err) {
+      console.warn('[AppContext] Error fetching applications for job:', jobId, err);
+    }
+    return [];
+  }, []);
 
   // Confirm Worker (Manual or Auto Selection)
   const confirmWorkerForJob = (jobId: string, workerId: string) => {
@@ -1677,6 +1789,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         rehireWorker,
         cancelJob,
         refreshJobs: refreshJobsFromServer,
+        fetchJobApplications,
         isSyncingJobs,
 
         applications,
