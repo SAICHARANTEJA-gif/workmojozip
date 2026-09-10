@@ -36,3 +36,10 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Python & ML
+.venv
+*/.venv
+__pycache__
+*.pyc
+*.joblib

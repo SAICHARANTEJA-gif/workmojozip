@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { isSupabaseConfigured, supabase } from './db/supabaseClient';
 import { processAiChat } from './aiService';
+import { predictWorkerJobMatch, rankWorkersForJob, getMLDiagnostics } from './ml/mlMatchingService';
 
 dotenv.config();
 
@@ -465,6 +466,169 @@ app.post('/api/v1/workers/invite', (req: Request, res: Response) => {
     success: true,
     message: 'Worker invitation dispatched successfully!',
   });
+});
+
+// ============================================================================
+// 3B. WORKER–JOB MATCHING ML API (Random Forest Ensemble)
+// ============================================================================
+
+// Model training diagnostics
+app.get('/api/v1/match/diagnostics', (req: Request, res: Response) => {
+  try {
+    const diagnostics = getMLDiagnostics();
+    res.json({
+      success: true,
+      diagnostics,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Single worker-job match prediction
+app.post('/api/v1/match/predict', (req: Request, res: Response) => {
+  try {
+    const { worker, job } = req.body;
+    if (!worker || !job) {
+      return res.status(400).json({ success: false, error: 'Worker and Job objects are required.' });
+    }
+    const match = predictWorkerJobMatch(worker, job);
+    res.json({
+      success: true,
+      match,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Rank multiple workers for a job
+app.post('/api/v1/match/rank', (req: Request, res: Response) => {
+  try {
+    const { workers, job } = req.body;
+    if (!Array.isArray(workers) || !job) {
+      return res.status(400).json({ success: false, error: 'Workers array and Job object are required.' });
+    }
+    const ranked = rankWorkersForJob(workers, job);
+    res.json({
+      success: true,
+      count: ranked.length,
+      rankedWorkers: ranked,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Fetch job and rank candidate workers from Supabase
+app.get('/api/v1/match/jobs/:jobId/candidates', async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+
+    // 1. Locate Job (Supabase or in-memory db)
+    let targetJob = db.jobs.find(j => j.id === jobId);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: jobRow } = await supabase.from('jobs').select('*').eq('id', jobId).single();
+        if (jobRow) {
+          targetJob = {
+            id: jobRow.id,
+            employerId: jobRow.employer_id,
+            title: jobRow.title,
+            category: jobRow.category,
+            wage: Number(jobRow.wage),
+            startTime: jobRow.start_time,
+            approximateArea: jobRow.approximate_area,
+            approximateDistanceKm: Number(jobRow.approximate_distance_km) || 2.5,
+            workersRequired: jobRow.workers_required || 1,
+            workersConfirmed: jobRow.workers_confirmed || 0,
+            status: jobRow.status || 'Posted',
+            applicants: [],
+          };
+        }
+      } catch (err) {
+        console.warn('[Supabase] Job fetch warning:', err);
+      }
+    }
+
+    if (!targetJob) {
+      return res.status(404).json({ success: false, error: `Job with ID "${jobId}" not found.` });
+    }
+
+    // 2. Fetch Eligible Workers (Supabase + local store fallback)
+    let candidateWorkers: any[] = [];
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: sbUsers, error: usersErr } = await supabase
+          .from('users')
+          .select('*, worker_profiles(*)')
+          .in('role', ['worker', 'both']);
+
+        if (!usersErr && sbUsers && sbUsers.length > 0) {
+          candidateWorkers = sbUsers.map((u: any) => {
+            const prof = Array.isArray(u.worker_profiles) && u.worker_profiles.length > 0
+              ? u.worker_profiles[0]
+              : u.worker_profiles || {};
+            return {
+              id: u.id,
+              name: u.name,
+              phone: u.phone,
+              role: u.role,
+              profilePhoto: u.profile_photo,
+              kycVerified: u.kyc_verified,
+              skills: prof.skills || ['Labour'],
+              categories: prof.categories || ['Labour'],
+              experienceJobs: prof.experience_jobs || 12,
+              rating: Number(prof.rating) || 4.8,
+              reliabilityScore: prof.reliability_score || 95,
+              minDailyWage: Number(prof.min_daily_wage) || 600,
+              availability: prof.availability || 'Available',
+              approxArea: prof.approx_area || 'Hyderabad',
+              approxDistanceKm: 2.5,
+            };
+          });
+        }
+      } catch (sbErr) {
+        console.warn('[Supabase] Workers fetch warning:', sbErr);
+      }
+    }
+
+    // Fallback/merge with local db workers if needed for full coverage
+    if (candidateWorkers.length === 0) {
+      candidateWorkers = db.users
+        .filter(u => u.role === 'worker' || u.role === 'both')
+        .map(u => {
+          const profile = db.workerProfiles.find(p => p.userId === u.id) || {
+            skills: ['Labour'],
+            categories: ['Labour'],
+            experienceJobs: 12,
+            rating: 4.8,
+            reliabilityScore: 95,
+            minDailyWage: 600,
+            availability: 'Available',
+            approxArea: 'Hyderabad',
+            approxDistanceKm: 2.5,
+          };
+          return { ...u, ...profile };
+        });
+    }
+
+    // 3. Run ML Random Forest Ranking
+    const ranked = rankWorkersForJob(candidateWorkers, targetJob);
+
+    res.json({
+      success: true,
+      jobId: targetJob.id,
+      jobTitle: targetJob.title,
+      jobCategory: targetJob.category,
+      count: ranked.length,
+      candidates: ranked,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ============================================================================

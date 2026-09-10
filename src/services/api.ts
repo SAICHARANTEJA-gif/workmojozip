@@ -198,4 +198,49 @@ export const api = {
       };
     }
   },
+
+  // Machine Learning: Worker–Job Matching API (Random Forest)
+  getMLDiagnostics: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/match/diagnostics`);
+      return await res.json();
+    } catch {
+      return { success: false, mode: 'offline_fallback' };
+    }
+  },
+
+  predictMatch: async (worker: any, job: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/match/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker, job }),
+      });
+      return await res.json();
+    } catch {
+      return { success: false, mode: 'offline_fallback' };
+    }
+  },
+
+  rankWorkersForJob: async (workers: any[], job: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/match/rank`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workers, job }),
+      });
+      return await res.json();
+    } catch {
+      return { success: false, mode: 'offline_fallback' };
+    }
+  },
+
+  getJobCandidates: async (jobId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/match/jobs/${jobId}/candidates`);
+      return await res.json();
+    } catch {
+      return { success: false, mode: 'offline_fallback' };
+    }
+  },
 };

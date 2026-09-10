@@ -358,3 +358,4 @@ export const WorkerProfileModal: React.FC<WorkerProfileModalProps> = ({
     </div>
   );
 };
+

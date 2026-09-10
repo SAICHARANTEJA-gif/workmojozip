@@ -4,7 +4,7 @@
   "description": "Production Node.js + Express API Backend for WORK MOJO",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs=require('fs'); fs.mkdirSync('dist/ml', {recursive:true}); fs.copyFileSync('ml/model_random_forest.json', 'dist/ml/model_random_forest.json'); fs.mkdirSync('dist/src/ml', {recursive:true}); fs.copyFileSync('ml/model_random_forest.json', 'dist/src/ml/model_random_forest.json');\"",
     "postinstall": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts"

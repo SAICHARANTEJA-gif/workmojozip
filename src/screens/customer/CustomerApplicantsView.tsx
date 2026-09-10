@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../store/AppContext';
 import { Job, User } from '../../types';
-import { calculateMatchScore } from '../../services/matchingService';
+import { calculateMatchScore, rankApplicants } from '../../services/matchingService';
 import {
   Users,
   ShieldCheck,
@@ -39,6 +39,7 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     allWorkers,
     confirmWorkerForJob,
     autoSelectWorkersForJob,
+    inviteWorkerToJob,
     attendanceRecords,
     recordAttendanceCheckIn,
     t,
@@ -50,6 +51,7 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     initialJobId || jobs[0]?.id || ''
   );
   const [viewMode, setViewMode] = useState<'cards' | 'compare'>('cards');
+  const [invitedWorkerIds, setInvitedWorkerIds] = useState<string[]>([]);
 
   // Modal States
   const [selectedQRWorker, setSelectedQRWorker] = useState<User | null>(null);
@@ -99,6 +101,19 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
     } catch {
       // ignore
     }
+  };
+
+  // Top ML-ranked eligible candidates from Supabase / allWorkers
+  const recommendedCandidates = useMemo(() => {
+    const unconfirmed = allWorkers.filter(
+      w => !currentJob.confirmedWorkerIds.includes(w.id) && !currentJob.applicants.includes(w.id)
+    );
+    return rankApplicants(unconfirmed, currentJob).slice(0, 4);
+  }, [allWorkers, currentJob]);
+
+  const handleInviteWorker = (workerId: string) => {
+    inviteWorkerToJob(workerId, currentJob.id);
+    setInvitedWorkerIds(prev => (prev.includes(workerId) ? prev : [...prev, workerId]));
   };
 
   const slotsRemaining = Math.max(0, currentJob.workersRequired - currentJob.workersConfirmed);
@@ -414,9 +429,20 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1 shrink-0">
-                      <Sparkles size={12} className="text-[#2563EB]" />
-                      <span>{match.score}% {t.matchScore}</span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div className="bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1">
+                        <Sparkles size={12} className="text-[#2563EB]" />
+                        <span>{match.score}% {t.matchScore}</span>
+                      </div>
+                      {typeof match.mlProbability === 'number' && (
+                        <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border ${
+                          match.isMatch
+                            ? 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]'
+                            : 'bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]'
+                        }`}>
+                          RF ML: {Math.round(match.mlProbability * 100)}% Match
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -459,6 +485,127 @@ export const CustomerApplicantsView: React.FC<CustomerApplicantsProps> = ({
               ))
             )}
           </div>
+
+          {/* Machine Learning: Recommended Workers for this Job */}
+          {recommendedCandidates.length > 0 && (
+            <div className="space-y-2 pt-3 border-t border-[#E2E8F0]">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-bold text-[#111827] uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-[#F5A900]" />
+                  <span>ML Recommended Workers ({recommendedCandidates.length})</span>
+                </div>
+                <span className="text-[10px] font-bold text-[#16A34A] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
+                  Random Forest (100 Trees)
+                </span>
+              </div>
+
+              {recommendedCandidates.map(({ worker, match }) => {
+                const isInvited = invitedWorkerIds.includes(worker.id);
+                return (
+                  <div
+                    key={worker.id}
+                    className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-xs hover:border-[#2563EB] space-y-3 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => onSelectWorker?.(worker)}
+                        title="View Worker Profile"
+                      >
+                        <UserAvatar
+                          src={worker.profilePhoto}
+                          name={worker.name}
+                          role="worker"
+                          size="md"
+                        />
+                        <div>
+                          <div className="flex items-center gap-1.5 font-black text-sm text-[#111827] hover:text-[#2563EB] transition-colors">
+                            <span>{worker.name}</span>
+                            <span className="text-xs">
+                              {getCategoryEmoji(worker.preferredCategories?.[0] || worker.skills?.[0])}
+                            </span>
+                            <ShieldCheck size={15} className="text-[#16A34A]" />
+                          </div>
+                          <div className="text-xs font-bold text-[#64748B] mt-0.5">
+                            {worker.skills.slice(0, 2).join(', ')} • {worker.experience}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1 flex-wrap">
+                            <span className="flex items-center gap-0.5 text-[#F59E0B] font-bold">
+                              <Star size={11} className="fill-[#F59E0B] text-[#F59E0B]" />
+                              {worker.rating}★
+                            </span>
+                            <span>• {worker.completedJobs} jobs done</span>
+                            <span className="text-[#16A34A] font-bold">
+                              • {worker.reliabilityScore}% {t.reliable}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1">
+                          <Sparkles size={12} className="text-[#F5A900]" />
+                          <span>{match.score}% {t.matchScore}</span>
+                        </div>
+                        {typeof match.mlProbability === 'number' && (
+                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]">
+                            RF Prob: {(match.mlProbability * 100).toFixed(0)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0] flex flex-wrap gap-1.5 text-[11px] text-[#111827]">
+                      {match.reasons.map((r, i) => (
+                        <span key={i} className="flex items-center gap-1">
+                          <CheckCircle2 size={11} className="text-[#16A34A]" />
+                          <span>{r}</span>
+                          {i < match.reasons.length - 1 && <span className="text-[#CBD5E1]">•</span>}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-[#64748B] font-semibold">
+                        {worker.locationArea || 'Near You'}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onSelectWorker?.(worker)}
+                          className="bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] font-bold px-3 py-2 rounded-xl text-xs transition-all active:scale-95 border border-[#DBEAFE] cursor-pointer"
+                        >
+                          Profile
+                        </button>
+
+                        <button
+                          onClick={() => handleInviteWorker(worker.id)}
+                          disabled={isInvited}
+                          className={`font-black px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer ${
+                            isInvited
+                              ? 'bg-[#F0FDF4] text-[#16A34A] border border-[#BBF7D0]'
+                              : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'
+                          }`}
+                        >
+                          {isInvited ? (
+                            <>
+                              <CheckCircle2 size={13} />
+                              <span>Invited</span>
+                            </>
+                          ) : (
+                            <>
+                              <Users size={13} />
+                              <span>Invite to Job</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Waiting List Candidates */}
           {waitingListWorkers.length > 0 && (

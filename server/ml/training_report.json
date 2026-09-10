@@ -1,0 +1,29 @@
+{
+  "dataset_rows": 1000,
+  "train_rows": 800,
+  "test_rows": 200,
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_precision": 1.0,
+    "test_recall": 1.0,
+    "test_f1": 1.0,
+    "confusion_matrix": {
+      "tn": 181,
+      "fp": 0,
+      "fn": 0,
+      "tp": 19
+    }
+  },
+  "feature_importances": {
+    "skill_match": 0.863,
+    "worker_skill_code": 0.0483,
+    "required_skill_code": 0.0218,
+    "job_type_code": 0.018,
+    "rating": 0.0151,
+    "experience_years": 0.0105,
+    "distance_km": 0.0104,
+    "availability_code": 0.0086,
+    "location_code": 0.0043
+  },
+  "status": "SUCCESS"
+}

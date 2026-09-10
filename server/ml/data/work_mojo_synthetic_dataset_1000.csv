@@ -1,0 +1,1001 @@
+worker_id,worker_skill,experience_years,worker_location,distance_km,availability,rating,job_type,required_skill,match_score,match_label
+W0001,Electrician,8,Secunderabad,6.5,Busy,4.3,Plumber,Plumber,0.344,0
+W0002,Technician,1,Hyderabad,1.2,Busy,3.1,Driver,Driver,0.292,0
+W0003,Domestic Helper,20,Vijayawada,17.7,Available Morning,3.1,Painter,Painter,0.37,0
+W0004,Plumber,13,Guntur,8.8,Busy,3.0,Carpenter,Carpenter,0.32,0
+W0005,Electrician,12,Hyderabad,2.9,Available Evening,4.0,Electrician,Electrician,0.957,1
+W0006,Caregiver,3,Vijayawada,24.3,Available Morning,2.7,Domestic Helper,Domestic Helper,0.24,0
+W0007,Technician,18,Hanamkonda,5.2,Available,2.6,Gardener,Gardener,0.46,0
+W0008,Cleaner,7,Guntur,21.7,Available Morning,3.2,Electrician,Electrician,0.31,0
+W0009,Carpenter,11,Secunderabad,5.6,Available Evening,4.3,Gardener,Gardener,0.491,0
+W0010,Technician,17,Vijayawada,18.4,Busy,3.7,Carpenter,Carpenter,0.257,0
+W0011,Domestic Helper,10,Hyderabad,21.1,Available,3.1,Painter,Painter,0.343,0
+W0012,Gardener,8,Tirupati,2.1,Available Evening,3.0,Driver,Driver,0.473,0
+W0013,Driver,4,Vijayawada,7.0,Busy,4.4,Caregiver,Caregiver,0.302,0
+W0014,Technician,18,Warangal,10.3,Busy,5.0,Driver,Driver,0.348,0
+W0015,Domestic Helper,2,Warangal,19.0,Available,2.9,Caregiver,Caregiver,0.276,0
+W0016,Driver,2,Hyderabad,9.9,Available Morning,3.8,Technician,Technician,0.367,0
+W0017,Electrician,8,Visakhapatnam,19.3,Available Evening,2.8,Domestic Helper,Domestic Helper,0.332,0
+W0018,Carpenter,0,Warangal,23.9,Available Evening,4.9,Caregiver,Caregiver,0.257,0
+W0019,Domestic Helper,20,Warangal,7.8,Busy,2.9,Electrician,Electrician,0.326,0
+W0020,Domestic Helper,0,Guntur,15.2,Available Morning,2.5,Domestic Helper,Domestic Helper,0.728,1
+W0021,Cleaner,1,Tirupati,6.4,Available,2.7,Painter,Painter,0.363,0
+W0022,Electrician,4,Warangal,3.6,Available Morning,4.9,Domestic Helper,Domestic Helper,0.459,0
+W0023,Cleaner,19,Hanamkonda,10.9,Busy,4.8,Domestic Helper,Domestic Helper,0.339,0
+W0024,Cleaner,20,Hanamkonda,9.6,Available Morning,2.8,Driver,Driver,0.429,0
+W0025,Electrician,0,Hyderabad,14.9,Busy,4.0,Gardener,Gardener,0.191,0
+W0026,Electrician,7,Secunderabad,2.2,Available,4.6,Plumber,Plumber,0.494,0
+W0027,Domestic Helper,8,Tirupati,16.9,Busy,3.8,Painter,Painter,0.251,0
+W0028,Painter,13,Guntur,5.2,Available,4.1,Caregiver,Caregiver,0.49,0
+W0029,Driver,14,Secunderabad,21.7,Available,4.2,Driver,Driver,0.81,1
+W0030,Plumber,10,Hanamkonda,20.1,Available,3.1,Driver,Driver,0.351,0
+W0031,Domestic Helper,4,Secunderabad,10.8,Available Evening,3.7,Caregiver,Caregiver,0.378,0
+W0032,Caregiver,3,Hanamkonda,1.7,Available,4.9,Domestic Helper,Domestic Helper,0.464,0
+W0033,Carpenter,15,Warangal,12.3,Available Morning,4.8,Driver,Driver,0.448,0
+W0034,Driver,12,Tirupati,7.0,Available Morning,3.2,Plumber,Plumber,0.458,0
+W0035,Carpenter,9,Hyderabad,5.8,Available,3.9,Painter,Painter,0.472,0
+W0036,Gardener,1,Secunderabad,14.8,Busy,2.6,Plumber,Plumber,0.174,0
+W0037,Carpenter,19,Hanamkonda,2.2,Busy,3.5,Electrician,Electrician,0.382,0
+W0038,Technician,1,Guntur,15.7,Available Morning,4.1,Technician,Technician,0.766,1
+W0039,Cleaner,10,Vijayawada,6.3,Available Morning,2.8,Painter,Painter,0.456,0
+W0040,Caregiver,2,Hanamkonda,0.7,Available,2.7,Gardener,Gardener,0.418,0
+W0041,Domestic Helper,4,Guntur,23.4,Available,4.7,Cleaner,Cleaner,0.297,0
+W0042,Cleaner,14,Hyderabad,20.9,Available Evening,4.0,Carpenter,Carpenter,0.363,0
+W0043,Domestic Helper,3,Secunderabad,23.5,Busy,3.2,Cleaner,Cleaner,0.136,0
+W0044,Domestic Helper,8,Hanamkonda,7.4,Busy,4.3,Carpenter,Carpenter,0.337,0
+W0045,Cleaner,15,Visakhapatnam,6.7,Available,2.7,Domestic Helper,Domestic Helper,0.45,0
+W0046,Cleaner,0,Vijayawada,8.7,Busy,4.1,Plumber,Plumber,0.242,0
+W0047,Carpenter,17,Warangal,17.8,Available,2.8,Caregiver,Caregiver,0.364,0
+W0048,Domestic Helper,11,Hyderabad,14.8,Busy,3.6,Plumber,Plumber,0.284,0
+W0049,Cleaner,1,Secunderabad,22.5,Busy,4.2,Gardener,Gardener,0.144,0
+W0050,Gardener,13,Hanamkonda,24.4,Busy,4.8,Domestic Helper,Domestic Helper,0.231,0
+W0051,Carpenter,13,Visakhapatnam,1.1,Available Evening,4.5,Carpenter,Carpenter,0.981,1
+W0052,Painter,5,Hyderabad,19.8,Available,3.5,Cleaner,Cleaner,0.312,0
+W0053,Caregiver,6,Hanamkonda,20.5,Available Morning,3.4,Painter,Painter,0.314,0
+W0054,Painter,6,Vijayawada,10.3,Available Evening,4.7,Plumber,Plumber,0.422,0
+W0055,Gardener,12,Secunderabad,17.1,Available Evening,4.8,Domestic Helper,Domestic Helper,0.409,0
+W0056,Cleaner,18,Visakhapatnam,24.1,Available Evening,2.6,Carpenter,Carpenter,0.309,0
+W0057,Gardener,13,Hanamkonda,15.4,Available,3.5,Gardener,Gardener,0.847,1
+W0058,Cleaner,13,Secunderabad,0.5,Busy,3.4,Plumber,Plumber,0.394,0
+W0059,Gardener,10,Vijayawada,16.8,Available,4.3,Technician,Technician,0.402,0
+W0060,Domestic Helper,13,Hanamkonda,8.5,Available Evening,3.9,Cleaner,Cleaner,0.46,0
+W0061,Driver,5,Hyderabad,15.6,Available Evening,3.5,Driver,Driver,0.795,1
+W0062,Cleaner,6,Tirupati,11.0,Available Evening,3.7,Cleaner,Cleaner,0.846,1
+W0063,Painter,15,Vijayawada,19.9,Busy,4.1,Domestic Helper,Domestic Helper,0.253,0
+W0064,Domestic Helper,10,Hanamkonda,2.8,Busy,4.2,Technician,Technician,0.392,0
+W0065,Painter,0,Secunderabad,1.6,Available Morning,4.0,Carpenter,Carpenter,0.417,0
+W0066,Caregiver,20,Hanamkonda,14.6,Available Morning,3.7,Driver,Driver,0.407,0
+W0067,Carpenter,3,Tirupati,19.6,Busy,2.9,Plumber,Plumber,0.161,0
+W0068,Plumber,7,Tirupati,23.0,Available,3.6,Domestic Helper,Domestic Helper,0.308,0
+W0069,Domestic Helper,19,Visakhapatnam,8.3,Available Morning,4.0,Domestic Helper,Domestic Helper,0.914,1
+W0070,Domestic Helper,5,Hanamkonda,18.7,Available Morning,3.6,Caregiver,Caregiver,0.322,0
+W0071,Cleaner,15,Vijayawada,15.9,Available Evening,3.6,Domestic Helper,Domestic Helper,0.395,0
+W0072,Painter,10,Hanamkonda,8.3,Available,2.8,Cleaner,Cleaner,0.44,0
+W0073,Driver,6,Tirupati,2.1,Available Morning,3.3,Carpenter,Carpenter,0.459,0
+W0074,Driver,6,Hyderabad,20.9,Available Morning,4.8,Plumber,Plumber,0.339,0
+W0075,Technician,15,Visakhapatnam,0.6,Available Evening,3.2,Driver,Driver,0.509,0
+W0076,Driver,17,Vijayawada,20.1,Busy,3.7,Domestic Helper,Domestic Helper,0.243,0
+W0077,Driver,0,Tirupati,10.0,Available Morning,4.3,Caregiver,Caregiver,0.356,0
+W0078,Carpenter,17,Hyderabad,1.2,Available Morning,4.0,Technician,Technician,0.52,0
+W0079,Electrician,4,Visakhapatnam,21.7,Busy,2.6,Driver,Driver,0.148,0
+W0080,Gardener,14,Visakhapatnam,8.5,Available Morning,3.2,Painter,Painter,0.446,0
+W0081,Cleaner,15,Guntur,1.0,Available,5.0,Electrician,Electrician,0.542,0
+W0082,Painter,20,Hanamkonda,1.5,Available,4.9,Electrician,Electrician,0.536,0
+W0083,Plumber,4,Hanamkonda,6.3,Available Morning,4.2,Technician,Technician,0.424,0
+W0084,Caregiver,11,Warangal,4.6,Available,4.4,Cleaner,Cleaner,0.501,0
+W0085,Cleaner,18,Visakhapatnam,1.1,Available Evening,3.9,Electrician,Electrician,0.519,0
+W0086,Driver,2,Vijayawada,15.0,Busy,2.8,Painter,Painter,0.186,0
+W0087,Technician,18,Guntur,19.7,Available Evening,3.8,Electrician,Electrician,0.368,0
+W0088,Electrician,20,Secunderabad,8.9,Available Morning,4.6,Domestic Helper,Domestic Helper,0.471,0
+W0089,Driver,20,Visakhapatnam,22.3,Available Morning,4.3,Gardener,Gardener,0.358,0
+W0090,Carpenter,20,Vijayawada,7.1,Available Morning,3.7,Domestic Helper,Domestic Helper,0.467,0
+W0091,Gardener,2,Tirupati,7.3,Available Morning,3.1,Painter,Painter,0.374,0
+W0092,Technician,12,Warangal,8.7,Available Morning,4.6,Technician,Technician,0.922,1
+W0093,Caregiver,11,Vijayawada,20.0,Available Evening,3.2,Painter,Painter,0.354,0
+W0094,Domestic Helper,16,Visakhapatnam,23.7,Available,3.1,Plumber,Plumber,0.322,0
+W0095,Caregiver,7,Hyderabad,17.4,Available Morning,3.6,Domestic Helper,Domestic Helper,0.353,0
+W0096,Electrician,7,Guntur,10.4,Busy,3.3,Cleaner,Cleaner,0.283,0
+W0097,Caregiver,16,Tirupati,8.9,Available Evening,3.4,Domestic Helper,Domestic Helper,0.447,0
+W0098,Cleaner,8,Warangal,6.1,Busy,3.3,Cleaner,Cleaner,0.777,1
+W0099,Painter,15,Hanamkonda,7.3,Available Evening,5.0,Painter,Painter,0.942,1
+W0100,Cleaner,11,Warangal,4.9,Available,4.3,Painter,Painter,0.497,0
+W0101,Cleaner,1,Tirupati,14.1,Busy,4.1,Plumber,Plumber,0.209,0
+W0102,Electrician,18,Warangal,7.5,Available Morning,3.6,Plumber,Plumber,0.462,0
+W0103,Plumber,15,Secunderabad,3.3,Available,3.5,Cleaner,Cleaner,0.494,0
+W0104,Technician,4,Hanamkonda,4.2,Available Evening,2.7,Plumber,Plumber,0.41,0
+W0105,Electrician,13,Visakhapatnam,15.4,Busy,4.4,Domestic Helper,Domestic Helper,0.295,0
+W0106,Caregiver,9,Hyderabad,21.6,Available Morning,3.3,Caregiver,Caregiver,0.783,1
+W0107,Technician,6,Warangal,15.8,Available Evening,4.2,Electrician,Electrician,0.368,0
+W0108,Painter,17,Tirupati,2.3,Available,3.5,Carpenter,Carpenter,0.502,0
+W0109,Cleaner,7,Tirupati,7.6,Available Evening,4.3,Plumber,Plumber,0.445,0
+W0110,Electrician,8,Hanamkonda,19.8,Busy,3.6,Painter,Painter,0.224,0
+W0111,Carpenter,4,Vijayawada,2.2,Busy,4.5,Cleaner,Cleaner,0.342,0
+W0112,Caregiver,14,Tirupati,17.4,Available Morning,4.9,Electrician,Electrician,0.409,0
+W0113,Caregiver,19,Vijayawada,1.5,Available Morning,4.3,Electrician,Electrician,0.524,0
+W0114,Plumber,7,Vijayawada,24.1,Available,5.0,Electrician,Electrician,0.327,0
+W0115,Technician,5,Warangal,12.0,Available Morning,4.8,Plumber,Plumber,0.4,0
+W0116,Technician,20,Visakhapatnam,20.4,Available,3.7,Driver,Driver,0.361,0
+W0117,Gardener,3,Tirupati,21.5,Available Evening,3.5,Gardener,Gardener,0.728,1
+W0118,Cleaner,17,Guntur,1.4,Available,3.3,Driver,Driver,0.505,0
+W0119,Electrician,16,Tirupati,20.7,Available,4.1,Driver,Driver,0.366,0
+W0120,Driver,6,Hyderabad,13.2,Available Morning,4.1,Plumber,Plumber,0.386,0
+W0121,Painter,17,Tirupati,3.7,Available Evening,3.6,Cleaner,Cleaner,0.492,0
+W0122,Electrician,20,Vijayawada,15.4,Busy,4.3,Plumber,Plumber,0.293,0
+W0123,Domestic Helper,17,Secunderabad,10.5,Busy,5.0,Plumber,Plumber,0.346,0
+W0124,Caregiver,20,Vijayawada,20.9,Available Morning,4.8,Electrician,Electrician,0.379,0
+W0125,Domestic Helper,13,Warangal,21.0,Available Morning,3.1,Cleaner,Cleaner,0.344,0
+W0126,Driver,19,Vijayawada,13.0,Busy,4.7,Painter,Painter,0.32,0
+W0127,Driver,16,Vijayawada,7.0,Available,3.2,Gardener,Gardener,0.458,0
+W0128,Technician,15,Guntur,21.7,Available Morning,3.8,Technician,Technician,0.802,1
+W0129,Gardener,17,Hanamkonda,9.7,Available Evening,4.7,Domestic Helper,Domestic Helper,0.466,0
+W0130,Technician,7,Tirupati,21.5,Available Morning,2.6,Driver,Driver,0.3,0
+W0131,Driver,20,Warangal,24.5,Available Morning,4.9,Driver,Driver,0.802,1
+W0132,Domestic Helper,10,Tirupati,21.8,Available Morning,2.7,Technician,Technician,0.33,0
+W0133,Plumber,13,Vijayawada,21.8,Busy,2.7,Carpenter,Carpenter,0.21,0
+W0134,Gardener,12,Visakhapatnam,16.4,Available Evening,4.6,Technician,Technician,0.411,0
+W0135,Gardener,17,Vijayawada,1.4,Available,3.1,Caregiver,Caregiver,0.501,0
+W0136,Painter,13,Vijayawada,24.5,Available,3.6,Electrician,Electrician,0.326,0
+W0137,Plumber,10,Visakhapatnam,20.0,Available Evening,3.4,Plumber,Plumber,0.808,1
+W0138,Carpenter,16,Secunderabad,10.6,Busy,2.9,Painter,Painter,0.303,0
+W0139,Technician,19,Warangal,17.2,Available Morning,4.8,Driver,Driver,0.408,0
+W0140,Painter,20,Tirupati,6.7,Available Evening,4.2,Caregiver,Caregiver,0.48,0
+W0141,Cleaner,5,Vijayawada,2.3,Available Evening,5.0,Domestic Helper,Domestic Helper,0.482,0
+W0142,Driver,14,Tirupati,21.2,Busy,5.0,Cleaner,Cleaner,0.26,0
+W0143,Electrician,12,Vijayawada,14.5,Available Evening,5.0,Painter,Painter,0.434,0
+W0144,Plumber,8,Tirupati,0.7,Available,4.8,Driver,Driver,0.52,0
+W0145,Cleaner,19,Vijayawada,20.1,Busy,4.1,Painter,Painter,0.251,0
+W0146,Carpenter,20,Hyderabad,16.3,Available Evening,4.5,Electrician,Electrician,0.41,0
+W0147,Technician,4,Visakhapatnam,2.7,Available Evening,3.3,Gardener,Gardener,0.434,0
+W0148,Carpenter,4,Vijayawada,19.8,Available Evening,3.8,Painter,Painter,0.308,0
+W0149,Carpenter,15,Guntur,24.2,Available Evening,4.4,Cleaner,Cleaner,0.344,0
+W0150,Electrician,2,Visakhapatnam,3.9,Busy,4.7,Caregiver,Caregiver,0.313,0
+W0151,Domestic Helper,2,Secunderabad,19.9,Available,3.2,Gardener,Gardener,0.275,0
+W0152,Caregiver,8,Hanamkonda,14.8,Available Evening,2.8,Gardener,Gardener,0.368,0
+W0153,Caregiver,19,Hanamkonda,22.2,Available Evening,4.8,Plumber,Plumber,0.368,0
+W0154,Electrician,9,Hyderabad,16.4,Available,2.8,Caregiver,Caregiver,0.365,0
+W0155,Cleaner,3,Guntur,2.9,Busy,3.5,Caregiver,Caregiver,0.307,0
+W0156,Domestic Helper,18,Secunderabad,18.7,Busy,4.7,Driver,Driver,0.274,0
+W0157,Caregiver,13,Guntur,23.5,Available Evening,2.6,Technician,Technician,0.314,0
+W0158,Painter,14,Guntur,23.8,Available Evening,2.7,Caregiver,Caregiver,0.314,0
+W0159,Domestic Helper,1,Tirupati,10.3,Busy,4.9,Gardener,Gardener,0.256,0
+W0160,Electrician,20,Guntur,16.2,Available,2.6,Painter,Painter,0.372,0
+W0161,Painter,18,Hanamkonda,5.5,Busy,4.0,Carpenter,Carpenter,0.366,0
+W0162,Gardener,19,Vijayawada,0.6,Busy,5.0,Carpenter,Carpenter,0.425,0
+W0163,Carpenter,0,Hanamkonda,3.7,Available Evening,4.5,Electrician,Electrician,0.41,0
+W0164,Technician,0,Visakhapatnam,4.8,Available,2.8,Gardener,Gardener,0.368,0
+W0165,Domestic Helper,2,Secunderabad,12.2,Available Evening,3.8,Electrician,Electrician,0.348,0
+W0166,Caregiver,7,Vijayawada,23.7,Available,4.3,Domestic Helper,Domestic Helper,0.316,0
+W0167,Caregiver,1,Secunderabad,25.0,Available Morning,3.6,Plumber,Plumber,0.232,0
+W0168,Caregiver,2,Secunderabad,22.5,Available Evening,4.0,Caregiver,Caregiver,0.72,1
+W0169,Carpenter,19,Vijayawada,16.0,Available Evening,3.5,Cleaner,Cleaner,0.392,0
+W0170,Caregiver,19,Hanamkonda,11.0,Available,4.6,Domestic Helper,Domestic Helper,0.454,0
+W0171,Driver,7,Secunderabad,10.6,Available Morning,3.5,Caregiver,Caregiver,0.405,0
+W0172,Gardener,10,Tirupati,16.8,Available Evening,4.9,Driver,Driver,0.414,0
+W0173,Electrician,2,Guntur,2.8,Available,4.4,Electrician,Electrician,0.886,1
+W0174,Carpenter,1,Visakhapatnam,14.9,Available Evening,4.2,Domestic Helper,Domestic Helper,0.325,0
+W0175,Gardener,1,Hanamkonda,24.2,Available Evening,3.4,Driver,Driver,0.234,0
+W0176,Carpenter,7,Guntur,21.3,Available Evening,4.6,Caregiver,Caregiver,0.342,0
+W0177,Electrician,18,Hyderabad,6.0,Available Morning,4.6,Cleaner,Cleaner,0.494,0
+W0178,Technician,0,Guntur,4.9,Available Evening,4.8,Cleaner,Cleaner,0.407,0
+W0179,Plumber,4,Hyderabad,14.4,Available Morning,2.7,Carpenter,Carpenter,0.329,0
+W0180,Electrician,6,Guntur,9.7,Available Morning,3.4,Domestic Helper,Domestic Helper,0.4,0
+W0181,Cleaner,18,Hyderabad,15.1,Available,2.9,Gardener,Gardener,0.387,0
+W0182,Electrician,14,Visakhapatnam,16.7,Available Morning,4.0,Cleaner,Cleaner,0.396,0
+W0183,Cleaner,16,Tirupati,3.3,Available Morning,2.8,Painter,Painter,0.48,0
+W0184,Domestic Helper,1,Vijayawada,5.9,Available,2.5,Cleaner,Cleaner,0.363,0
+W0185,Painter,8,Visakhapatnam,7.6,Available,2.5,Carpenter,Carpenter,0.419,0
+W0186,Carpenter,12,Guntur,13.5,Busy,3.8,Carpenter,Carpenter,0.748,1
+W0187,Electrician,1,Guntur,11.2,Available Morning,4.8,Driver,Driver,0.366,0
+W0188,Technician,18,Visakhapatnam,10.4,Available Morning,3.2,Driver,Driver,0.431,0
+W0189,Plumber,5,Guntur,20.1,Available Morning,4.6,Gardener,Gardener,0.331,0
+W0190,Electrician,3,Visakhapatnam,6.5,Available Morning,3.8,Driver,Driver,0.404,0
+W0191,Cleaner,7,Secunderabad,8.7,Busy,2.7,Gardener,Gardener,0.284,0
+W0192,Domestic Helper,6,Warangal,22.7,Available Evening,3.4,Domestic Helper,Domestic Helper,0.746,1
+W0193,Painter,4,Secunderabad,6.8,Busy,4.0,Electrician,Electrician,0.296,0
+W0194,Carpenter,14,Guntur,19.0,Available Morning,4.2,Caregiver,Caregiver,0.382,0
+W0195,Gardener,14,Vijayawada,2.2,Available Morning,4.1,Carpenter,Carpenter,0.514,0
+W0196,Technician,11,Hyderabad,12.9,Available Evening,3.7,Plumber,Plumber,0.421,0
+W0197,Plumber,9,Visakhapatnam,2.4,Available,4.0,Gardener,Gardener,0.501,0
+W0198,Caregiver,17,Hanamkonda,23.9,Available,3.6,Technician,Technician,0.331,0
+W0199,Gardener,15,Guntur,12.8,Available,3.6,Technician,Technician,0.42,0
+W0200,Electrician,20,Tirupati,4.7,Busy,4.3,Domestic Helper,Domestic Helper,0.378,0
+W0201,Domestic Helper,19,Visakhapatnam,4.4,Available Evening,4.8,Domestic Helper,Domestic Helper,0.961,1
+W0202,Driver,19,Secunderabad,1.8,Available Evening,2.7,Gardener,Gardener,0.49,0
+W0203,Domestic Helper,9,Warangal,6.7,Busy,3.3,Driver,Driver,0.332,0
+W0204,Gardener,20,Secunderabad,17.6,Available Morning,2.8,Cleaner,Cleaner,0.365,0
+W0205,Cleaner,12,Secunderabad,16.3,Available Evening,4.5,Domestic Helper,Domestic Helper,0.41,0
+W0206,Driver,11,Hanamkonda,0.9,Available Evening,3.0,Domestic Helper,Domestic Helper,0.503,0
+W0207,Gardener,6,Vijayawada,6.1,Busy,2.9,Caregiver,Caregiver,0.299,0
+W0208,Electrician,17,Warangal,21.0,Available,4.2,Domestic Helper,Domestic Helper,0.366,0
+W0209,Technician,4,Hyderabad,4.5,Busy,4.3,Driver,Driver,0.32,0
+W0210,Driver,7,Tirupati,24.3,Available Evening,4.4,Gardener,Gardener,0.314,0
+W0211,Painter,7,Hanamkonda,8.1,Available Morning,4.8,Domestic Helper,Domestic Helper,0.451,0
+W0212,Gardener,14,Visakhapatnam,11.8,Available Evening,4.4,Technician,Technician,0.444,0
+W0213,Carpenter,19,Tirupati,3.9,Available Evening,2.6,Painter,Painter,0.471,0
+W0214,Gardener,3,Warangal,17.9,Available,3.2,Domestic Helper,Domestic Helper,0.301,0
+W0215,Cleaner,16,Hanamkonda,4.1,Available Morning,2.7,Caregiver,Caregiver,0.471,0
+W0216,Caregiver,0,Hanamkonda,10.7,Available Morning,3.8,Gardener,Gardener,0.34,0
+W0217,Driver,11,Guntur,6.0,Available Evening,4.8,Electrician,Electrician,0.498,0
+W0218,Carpenter,1,Warangal,7.5,Available Morning,4.2,Carpenter,Carpenter,0.834,1
+W0219,Caregiver,19,Hanamkonda,0.6,Available,2.5,Caregiver,Caregiver,0.945,1
+W0220,Carpenter,19,Hanamkonda,13.4,Available,4.4,Domestic Helper,Domestic Helper,0.431,0
+W0221,Cleaner,1,Tirupati,6.3,Available Morning,2.7,Electrician,Electrician,0.364,0
+W0222,Technician,0,Vijayawada,16.0,Busy,4.3,Domestic Helper,Domestic Helper,0.188,0
+W0223,Driver,19,Secunderabad,9.1,Available Morning,3.0,Plumber,Plumber,0.437,0
+W0224,Domestic Helper,2,Tirupati,23.9,Available,3.5,Gardener,Gardener,0.249,0
+W0225,Plumber,11,Secunderabad,6.7,Available,3.4,Driver,Driver,0.464,0
+W0226,Gardener,20,Guntur,3.0,Available Evening,2.8,Painter,Painter,0.482,0
+W0227,Domestic Helper,20,Tirupati,4.8,Available Morning,5.0,Gardener,Gardener,0.512,0
+W0228,Carpenter,2,Hanamkonda,18.0,Available Morning,2.6,Carpenter,Carpenter,0.728,1
+W0229,Plumber,1,Tirupati,8.2,Available Evening,3.8,Painter,Painter,0.37,0
+W0230,Cleaner,20,Hyderabad,5.2,Available Evening,4.7,Plumber,Plumber,0.502,0
+W0231,Gardener,3,Tirupati,20.1,Available Morning,4.7,Cleaner,Cleaner,0.313,0
+W0232,Driver,5,Vijayawada,12.7,Available Morning,3.4,Gardener,Gardener,0.366,0
+W0233,Electrician,2,Guntur,11.0,Busy,3.9,Driver,Driver,0.24,0
+W0234,Electrician,10,Visakhapatnam,16.7,Available Evening,3.6,Electrician,Electrician,0.838,1
+W0235,Carpenter,11,Visakhapatnam,11.5,Available Evening,4.0,Caregiver,Caregiver,0.438,0
+W0236,Cleaner,2,Warangal,16.9,Available Morning,3.4,Plumber,Plumber,0.303,0
+W0237,Plumber,19,Secunderabad,17.1,Available Morning,2.6,Carpenter,Carpenter,0.365,0
+W0238,Painter,11,Tirupati,9.9,Available,4.0,Gardener,Gardener,0.451,0
+W0239,Gardener,14,Visakhapatnam,19.2,Busy,3.8,Gardener,Gardener,0.702,1
+W0240,Gardener,7,Tirupati,24.0,Available,4.3,Cleaner,Cleaner,0.314,0
+W0241,Domestic Helper,17,Hanamkonda,3.4,Available Evening,4.3,Driver,Driver,0.509,0
+W0242,Technician,15,Tirupati,5.4,Busy,4.6,Cleaner,Cleaner,0.379,0
+W0243,Carpenter,2,Secunderabad,20.4,Available Evening,4.2,Caregiver,Caregiver,0.291,0
+W0244,Domestic Helper,9,Warangal,22.3,Busy,4.3,Domestic Helper,Domestic Helper,0.678,1
+W0245,Gardener,7,Hanamkonda,3.5,Busy,4.5,Domestic Helper,Domestic Helper,0.362,0
+W0246,Caregiver,11,Warangal,14.1,Available Evening,3.7,Plumber,Plumber,0.411,0
+W0247,Technician,2,Visakhapatnam,8.1,Available Morning,3.8,Electrician,Electrician,0.381,0
+W0248,Technician,4,Guntur,24.3,Available,3.6,Electrician,Electrician,0.268,0
+W0249,Carpenter,20,Hyderabad,14.9,Busy,3.6,Domestic Helper,Domestic Helper,0.283,0
+W0250,Electrician,4,Hanamkonda,8.0,Busy,3.3,Domestic Helper,Domestic Helper,0.272,0
+W0251,Gardener,9,Vijayawada,21.2,Available Evening,3.0,Domestic Helper,Domestic Helper,0.33,0
+W0252,Carpenter,19,Warangal,13.6,Busy,4.0,Cleaner,Cleaner,0.301,0
+W0253,Carpenter,19,Hyderabad,8.8,Available,4.6,Technician,Technician,0.472,0
+W0254,Electrician,20,Visakhapatnam,19.4,Available Evening,4.1,Plumber,Plumber,0.377,0
+W0255,Technician,15,Vijayawada,22.3,Available Evening,4.1,Plumber,Plumber,0.354,0
+W0256,Caregiver,12,Warangal,7.8,Available,4.2,Painter,Painter,0.472,0
+W0257,Caregiver,15,Guntur,11.9,Available Evening,4.0,Driver,Driver,0.435,0
+W0258,Gardener,12,Secunderabad,3.7,Available Evening,3.8,Gardener,Gardener,0.946,1
+W0259,Gardener,14,Secunderabad,3.5,Available Morning,3.1,Painter,Painter,0.484,0
+W0260,Plumber,12,Warangal,21.7,Available Morning,3.1,Cleaner,Cleaner,0.338,0
+W0261,Gardener,10,Tirupati,5.2,Busy,3.7,Technician,Technician,0.362,0
+W0262,Caregiver,15,Hanamkonda,1.1,Available Morning,3.8,Cleaner,Cleaner,0.517,0
+W0263,Painter,11,Tirupati,1.7,Available Evening,3.7,Technician,Technician,0.51,0
+W0264,Cleaner,0,Vijayawada,21.3,Available Morning,2.8,Domestic Helper,Domestic Helper,0.236,0
+W0265,Gardener,11,Hanamkonda,1.6,Available,3.9,Driver,Driver,0.515,0
+W0266,Gardener,9,Vijayawada,2.3,Available Morning,4.4,Domestic Helper,Domestic Helper,0.51,0
+W0267,Technician,3,Guntur,3.7,Available,3.5,Technician,Technician,0.87,1
+W0268,Domestic Helper,4,Hyderabad,5.4,Available Morning,3.8,Gardener,Gardener,0.423,0
+W0269,Plumber,10,Warangal,20.2,Available Morning,2.9,Carpenter,Carpenter,0.346,0
+W0270,Gardener,10,Tirupati,4.5,Available Evening,4.0,Technician,Technician,0.494,0
+W0271,Technician,15,Secunderabad,20.5,Available Evening,3.3,Cleaner,Cleaner,0.352,0
+W0272,Driver,9,Vijayawada,20.0,Available,4.0,Technician,Technician,0.36,0
+W0273,Technician,7,Visakhapatnam,18.2,Available Morning,2.9,Technician,Technician,0.782,1
+W0274,Carpenter,1,Tirupati,14.5,Available,3.0,Painter,Painter,0.304,0
+W0275,Gardener,4,Tirupati,10.6,Busy,3.5,Driver,Driver,0.255,0
+W0276,Plumber,16,Tirupati,5.6,Available Evening,5.0,Carpenter,Carpenter,0.505,0
+W0277,Domestic Helper,10,Guntur,23.9,Available Morning,4.8,Driver,Driver,0.355,0
+W0278,Domestic Helper,20,Hanamkonda,20.2,Available Evening,4.0,Gardener,Gardener,0.368,0
+W0279,Painter,17,Hanamkonda,7.8,Available Evening,4.4,Cleaner,Cleaner,0.476,0
+W0280,Caregiver,15,Visakhapatnam,9.0,Available Evening,3.2,Gardener,Gardener,0.442,0
+W0281,Driver,4,Secunderabad,7.6,Available Evening,4.9,Gardener,Gardener,0.427,0
+W0282,Gardener,20,Vijayawada,6.8,Available Morning,3.0,Caregiver,Caregiver,0.456,0
+W0283,Domestic Helper,4,Hanamkonda,3.2,Busy,3.1,Cleaner,Cleaner,0.306,0
+W0284,Painter,3,Warangal,10.6,Available Morning,2.8,Plumber,Plumber,0.351,0
+W0285,Plumber,5,Hanamkonda,10.5,Available Morning,3.7,Domestic Helper,Domestic Helper,0.39,0
+W0286,Cleaner,9,Hanamkonda,16.3,Available,4.1,Gardener,Gardener,0.392,0
+W0287,Domestic Helper,5,Hyderabad,10.7,Busy,4.8,Plumber,Plumber,0.29,0
+W0288,Driver,5,Hyderabad,23.4,Available Evening,4.7,Caregiver,Caregiver,0.307,0
+W0289,Cleaner,19,Tirupati,3.1,Available Evening,3.2,Technician,Technician,0.489,0
+W0290,Carpenter,14,Tirupati,7.2,Available,3.3,Domestic Helper,Domestic Helper,0.458,0
+W0291,Cleaner,0,Hanamkonda,18.5,Available Evening,3.9,Carpenter,Carpenter,0.28,0
+W0292,Carpenter,20,Secunderabad,22.5,Available Morning,3.8,Technician,Technician,0.346,0
+W0293,Driver,5,Hanamkonda,24.6,Available Morning,3.3,Electrician,Electrician,0.269,0
+W0294,Plumber,12,Vijayawada,6.3,Available Evening,4.9,Cleaner,Cleaner,0.498,0
+W0295,Technician,0,Hyderabad,6.9,Available Evening,4.2,Technician,Technician,0.829,1
+W0296,Electrician,9,Vijayawada,4.4,Available Evening,4.2,Caregiver,Caregiver,0.489,0
+W0297,Gardener,7,Tirupati,5.9,Busy,3.7,Technician,Technician,0.327,0
+W0298,Technician,13,Hanamkonda,17.7,Available Morning,4.4,Gardener,Gardener,0.396,0
+W0299,Painter,2,Secunderabad,13.4,Available Evening,2.7,Technician,Technician,0.317,0
+W0300,Plumber,16,Tirupati,5.5,Busy,2.9,Domestic Helper,Domestic Helper,0.344,0
+W0301,Electrician,18,Tirupati,12.5,Available Morning,4.5,Painter,Painter,0.44,0
+W0302,Carpenter,13,Vijayawada,11.7,Available,3.9,Domestic Helper,Domestic Helper,0.434,0
+W0303,Plumber,8,Hyderabad,20.5,Busy,3.9,Driver,Driver,0.224,0
+W0304,Driver,2,Secunderabad,13.8,Available,4.8,Gardener,Gardener,0.356,0
+W0305,Caregiver,9,Visakhapatnam,10.5,Busy,4.4,Plumber,Plumber,0.324,0
+W0306,Gardener,14,Warangal,21.8,Available Morning,3.4,Driver,Driver,0.344,0
+W0307,Gardener,5,Hanamkonda,24.8,Available Morning,3.8,Electrician,Electrician,0.278,0
+W0308,Plumber,9,Hanamkonda,11.8,Available Morning,3.8,Plumber,Plumber,0.872,1
+W0309,Painter,11,Secunderabad,4.3,Busy,4.8,Caregiver,Caregiver,0.392,0
+W0310,Plumber,19,Secunderabad,19.3,Available,3.1,Driver,Driver,0.358,0
+W0311,Electrician,1,Hyderabad,11.4,Available,3.1,Technician,Technician,0.331,0
+W0312,Driver,7,Vijayawada,13.7,Available,2.9,Caregiver,Caregiver,0.368,0
+W0313,Painter,10,Warangal,14.6,Available Evening,3.1,Technician,Technician,0.395,0
+W0314,Domestic Helper,13,Warangal,7.9,Available,3.9,Painter,Painter,0.465,0
+W0315,Driver,15,Visakhapatnam,1.6,Available Evening,4.9,Domestic Helper,Domestic Helper,0.535,0
+W0316,Domestic Helper,13,Tirupati,10.5,Available Evening,3.4,Gardener,Gardener,0.434,0
+W0317,Painter,9,Hyderabad,21.5,Busy,4.5,Painter,Painter,0.688,1
+W0318,Domestic Helper,13,Vijayawada,14.2,Busy,3.5,Driver,Driver,0.286,0
+W0319,Painter,20,Secunderabad,2.4,Available Morning,4.6,Gardener,Gardener,0.523,0
+W0320,Domestic Helper,1,Hanamkonda,7.1,Available,4.7,Painter,Painter,0.397,0
+W0321,Technician,6,Hyderabad,12.2,Available Evening,3.3,Domestic Helper,Domestic Helper,0.378,0
+W0322,Painter,3,Hanamkonda,18.8,Available Morning,4.8,Painter,Painter,0.776,1
+W0323,Driver,17,Guntur,8.4,Available Evening,3.5,Painter,Painter,0.453,0
+W0324,Cleaner,11,Tirupati,13.1,Available Morning,3.7,Cleaner,Cleaner,0.869,1
+W0325,Gardener,11,Hanamkonda,8.2,Available,3.9,Painter,Painter,0.462,0
+W0326,Carpenter,8,Hanamkonda,14.1,Available Morning,3.2,Plumber,Plumber,0.381,0
+W0327,Gardener,12,Guntur,14.5,Busy,3.7,Painter,Painter,0.288,0
+W0328,Cleaner,20,Guntur,18.6,Available Morning,2.9,Caregiver,Caregiver,0.359,0
+W0329,Carpenter,17,Secunderabad,12.5,Available,3.8,Carpenter,Carpenter,0.876,1
+W0330,Plumber,13,Warangal,3.9,Busy,2.7,Plumber,Plumber,0.803,1
+W0331,Plumber,16,Tirupati,11.7,Available,4.0,Painter,Painter,0.436,0
+W0332,Caregiver,0,Vijayawada,13.5,Available Morning,2.5,Plumber,Plumber,0.292,0
+W0333,Domestic Helper,0,Warangal,12.8,Available Morning,4.5,Cleaner,Cleaner,0.338,0
+W0334,Electrician,16,Vijayawada,4.1,Busy,4.0,Electrician,Electrician,0.827,1
+W0335,Gardener,12,Hanamkonda,2.4,Available Morning,3.6,Cleaner,Cleaner,0.503,0
+W0336,Painter,2,Visakhapatnam,16.5,Available,2.7,Cleaner,Cleaner,0.292,0
+W0337,Driver,15,Secunderabad,1.9,Available,4.3,Domestic Helper,Domestic Helper,0.521,0
+W0338,Caregiver,20,Hyderabad,19.7,Available,4.7,Driver,Driver,0.386,0
+W0339,Painter,18,Vijayawada,12.1,Available,4.8,Painter,Painter,0.899,1
+W0340,Domestic Helper,1,Hanamkonda,4.9,Available Evening,2.5,Technician,Technician,0.371,0
+W0341,Technician,12,Hanamkonda,23.3,Available Evening,2.9,Carpenter,Carpenter,0.322,0
+W0342,Technician,17,Secunderabad,8.6,Busy,4.5,Driver,Driver,0.351,0
+W0343,Domestic Helper,1,Guntur,2.9,Busy,4.6,Gardener,Gardener,0.309,0
+W0344,Technician,19,Vijayawada,10.2,Available Evening,2.6,Technician,Technician,0.87,1
+W0345,Caregiver,7,Visakhapatnam,9.2,Available Morning,3.6,Caregiver,Caregiver,0.868,1
+W0346,Electrician,9,Warangal,20.1,Available,2.7,Technician,Technician,0.333,0
+W0347,Driver,12,Vijayawada,8.3,Available,2.7,Carpenter,Carpenter,0.438,0
+W0348,Caregiver,8,Tirupati,3.0,Available,3.0,Gardener,Gardener,0.466,0
+W0349,Domestic Helper,16,Secunderabad,10.5,Available,2.7,Domestic Helper,Domestic Helper,0.87,1
+W0350,Technician,10,Visakhapatnam,21.7,Available,3.2,Technician,Technician,0.79,1
+W0351,Electrician,7,Warangal,14.5,Busy,4.2,Domestic Helper,Domestic Helper,0.268,0
+W0352,Carpenter,9,Visakhapatnam,7.1,Busy,2.7,Cleaner,Cleaner,0.317,0
+W0353,Cleaner,9,Hanamkonda,12.4,Available,3.4,Driver,Driver,0.409,0
+W0354,Caregiver,19,Hyderabad,5.3,Available,2.8,Technician,Technician,0.464,0
+W0355,Driver,19,Visakhapatnam,9.8,Available Evening,3.6,Gardener,Gardener,0.444,0
+W0356,Technician,9,Warangal,8.4,Busy,3.7,Carpenter,Carpenter,0.327,0
+W0357,Driver,9,Hanamkonda,18.5,Available Morning,4.9,Gardener,Gardener,0.39,0
+W0358,Gardener,8,Hanamkonda,20.5,Available Morning,3.4,Driver,Driver,0.334,0
+W0359,Technician,5,Tirupati,17.2,Available,4.9,Domestic Helper,Domestic Helper,0.36,0
+W0360,Painter,9,Visakhapatnam,20.9,Available,4.5,Caregiver,Caregiver,0.363,0
+W0361,Caregiver,20,Visakhapatnam,7.9,Available Evening,4.1,Carpenter,Carpenter,0.469,0
+W0362,Driver,14,Visakhapatnam,24.8,Available Morning,4.0,Electrician,Electrician,0.332,0
+W0363,Domestic Helper,11,Hanamkonda,17.7,Available,2.8,Plumber,Plumber,0.364,0
+W0364,Gardener,20,Guntur,15.5,Available Morning,4.9,Carpenter,Carpenter,0.424,0
+W0365,Driver,0,Hanamkonda,2.9,Busy,3.8,Electrician,Electrician,0.283,0
+W0366,Caregiver,12,Hyderabad,11.8,Busy,3.4,Gardener,Gardener,0.304,0
+W0367,Caregiver,9,Warangal,10.7,Available,2.8,Electrician,Electrician,0.41,0
+W0368,Gardener,10,Guntur,11.7,Busy,3.8,Cleaner,Cleaner,0.312,0
+W0369,Caregiver,14,Vijayawada,18.2,Available Morning,3.3,Electrician,Electrician,0.37,0
+W0370,Plumber,0,Warangal,21.3,Available,4.2,Electrician,Electrician,0.264,0
+W0371,Painter,5,Tirupati,14.0,Available Evening,3.9,Domestic Helper,Domestic Helper,0.366,0
+W0372,Painter,20,Hanamkonda,5.0,Available Morning,3.5,Driver,Driver,0.48,0
+W0373,Caregiver,13,Secunderabad,10.0,Busy,3.0,Technician,Technician,0.31,0
+W0374,Technician,17,Secunderabad,5.1,Available Evening,3.0,Electrician,Electrician,0.469,0
+W0375,Cleaner,16,Visakhapatnam,24.2,Available Evening,4.0,Caregiver,Caregiver,0.336,0
+W0376,Technician,11,Vijayawada,9.1,Available Morning,4.0,Electrician,Electrician,0.457,0
+W0377,Technician,2,Vijayawada,17.0,Available Evening,2.8,Technician,Technician,0.74,1
+W0378,Electrician,11,Warangal,17.5,Available Morning,3.5,Carpenter,Carpenter,0.38,0
+W0379,Technician,13,Tirupati,5.1,Busy,3.9,Driver,Driver,0.367,0
+W0380,Cleaner,5,Guntur,8.2,Available Morning,4.0,Carpenter,Carpenter,0.414,0
+W0381,Plumber,4,Tirupati,5.3,Available Morning,4.9,Caregiver,Caregiver,0.446,0
+W0382,Driver,13,Secunderabad,17.9,Available Morning,3.7,Caregiver,Caregiver,0.381,0
+W0383,Technician,7,Vijayawada,7.7,Available Evening,3.1,Plumber,Plumber,0.42,0
+W0384,Carpenter,18,Secunderabad,18.7,Available Morning,3.9,Caregiver,Caregiver,0.378,0
+W0385,Technician,8,Hyderabad,19.5,Available Evening,3.9,Electrician,Electrician,0.352,0
+W0386,Caregiver,6,Hanamkonda,24.7,Available,4.3,Domestic Helper,Domestic Helper,0.298,0
+W0387,Cleaner,14,Secunderabad,6.9,Available,3.6,Plumber,Plumber,0.467,0
+W0388,Painter,18,Warangal,17.4,Available Morning,2.9,Painter,Painter,0.819,1
+W0389,Painter,1,Warangal,14.5,Available Evening,4.0,Painter,Painter,0.774,1
+W0390,Gardener,9,Visakhapatnam,14.5,Available,2.8,Cleaner,Cleaner,0.38,0
+W0391,Plumber,20,Guntur,3.6,Busy,3.1,Cleaner,Cleaner,0.363,0
+W0392,Painter,15,Visakhapatnam,4.0,Available Evening,4.1,Driver,Driver,0.5,0
+W0393,Caregiver,20,Vijayawada,20.0,Available,3.5,Electrician,Electrician,0.36,0
+W0394,Gardener,15,Secunderabad,8.5,Available,4.7,Caregiver,Caregiver,0.476,0
+W0395,Caregiver,2,Visakhapatnam,20.0,Available Morning,3.0,Gardener,Gardener,0.27,0
+W0396,Painter,8,Warangal,8.4,Available Evening,3.3,Caregiver,Caregiver,0.429,0
+W0397,Technician,10,Tirupati,22.4,Available,2.6,Caregiver,Caregiver,0.323,0
+W0398,Plumber,5,Visakhapatnam,11.3,Available,5.0,Electrician,Electrician,0.41,0
+W0399,Painter,20,Guntur,7.9,Available Evening,2.7,Carpenter,Carpenter,0.441,0
+W0400,Cleaner,11,Vijayawada,16.8,Busy,2.6,Electrician,Electrician,0.248,0
+W0401,Painter,20,Tirupati,2.7,Available,2.5,Driver,Driver,0.478,0
+W0402,Electrician,18,Guntur,6.0,Available Morning,2.5,Carpenter,Carpenter,0.452,0
+W0403,Electrician,4,Secunderabad,12.2,Busy,3.5,Driver,Driver,0.242,0
+W0404,Electrician,11,Warangal,22.1,Busy,3.5,Gardener,Gardener,0.223,0
+W0405,Carpenter,16,Hanamkonda,14.3,Busy,3.6,Electrician,Electrician,0.288,0
+W0406,Carpenter,19,Secunderabad,17.3,Busy,2.7,Driver,Driver,0.246,0
+W0407,Carpenter,18,Guntur,18.4,Available Evening,4.9,Electrician,Electrician,0.401,0
+W0408,Carpenter,8,Vijayawada,16.3,Busy,3.9,Painter,Painter,0.258,0
+W0409,Plumber,6,Vijayawada,13.2,Busy,4.4,Cleaner,Cleaner,0.272,0
+W0410,Plumber,15,Secunderabad,10.0,Busy,3.7,Painter,Painter,0.324,0
+W0411,Domestic Helper,11,Visakhapatnam,23.4,Busy,3.5,Plumber,Plumber,0.213,0
+W0412,Gardener,5,Secunderabad,19.2,Available,2.5,Domestic Helper,Domestic Helper,0.296,0
+W0413,Plumber,6,Visakhapatnam,1.5,Available,4.9,Cleaner,Cleaner,0.496,0
+W0414,Domestic Helper,20,Visakhapatnam,18.0,Available Morning,3.6,Cleaner,Cleaner,0.378,0
+W0415,Electrician,17,Secunderabad,15.6,Available Evening,2.7,Domestic Helper,Domestic Helper,0.379,0
+W0416,Domestic Helper,4,Secunderabad,13.6,Available Morning,4.0,Painter,Painter,0.361,0
+W0417,Cleaner,7,Secunderabad,1.9,Available,4.8,Driver,Driver,0.501,0
+W0418,Caregiver,19,Warangal,1.8,Busy,2.8,Technician,Technician,0.372,0
+W0419,Plumber,15,Warangal,23.8,Available Evening,2.9,Carpenter,Carpenter,0.318,0
+W0420,Cleaner,0,Secunderabad,8.7,Available Morning,3.2,Electrician,Electrician,0.344,0
+W0421,Cleaner,20,Hyderabad,2.4,Available Morning,3.8,Technician,Technician,0.507,0
+W0422,Caregiver,5,Secunderabad,9.5,Available Evening,4.4,Technician,Technician,0.412,0
+W0423,Painter,0,Tirupati,1.6,Available,3.1,Domestic Helper,Domestic Helper,0.399,0
+W0424,Gardener,4,Visakhapatnam,4.9,Available,3.9,Driver,Driver,0.429,0
+W0425,Painter,7,Secunderabad,10.7,Available Evening,3.2,Gardener,Gardener,0.398,0
+W0426,Technician,3,Hyderabad,12.8,Available,2.9,Gardener,Gardener,0.336,0
+W0427,Driver,14,Tirupati,21.7,Available Evening,3.3,Electrician,Electrician,0.342,0
+W0428,Plumber,6,Hanamkonda,7.6,Available Evening,4.3,Gardener,Gardener,0.435,0
+W0429,Caregiver,18,Hanamkonda,24.3,Busy,4.3,Gardener,Gardener,0.222,0
+W0430,Carpenter,13,Hyderabad,1.1,Available Evening,4.1,Plumber,Plumber,0.523,0
+W0431,Gardener,12,Hanamkonda,21.3,Available Evening,2.8,Plumber,Plumber,0.336,0
+W0432,Driver,1,Secunderabad,24.3,Busy,4.3,Caregiver,Caregiver,0.132,0
+W0433,Plumber,16,Secunderabad,10.6,Available Evening,3.6,Painter,Painter,0.437,0
+W0434,Technician,16,Hyderabad,3.8,Available Morning,2.7,Electrician,Electrician,0.474,0
+W0435,Driver,7,Visakhapatnam,7.6,Available Evening,4.8,Carpenter,Carpenter,0.455,0
+W0436,Gardener,14,Warangal,7.2,Available,4.9,Gardener,Gardener,0.94,1
+W0437,Technician,4,Visakhapatnam,3.1,Available Morning,3.7,Electrician,Electrician,0.439,0
+W0438,Electrician,11,Tirupati,24.1,Busy,3.6,Domestic Helper,Domestic Helper,0.209,0
+W0439,Cleaner,2,Hyderabad,4.4,Available Evening,4.6,Electrician,Electrician,0.427,0
+W0440,Painter,4,Visakhapatnam,2.7,Busy,4.9,Gardener,Gardener,0.346,0
+W0441,Domestic Helper,9,Visakhapatnam,6.9,Busy,2.6,Plumber,Plumber,0.317,0
+W0442,Caregiver,17,Warangal,6.6,Available Morning,2.8,Domestic Helper,Domestic Helper,0.453,0
+W0443,Electrician,1,Visakhapatnam,20.8,Busy,2.8,Plumber,Plumber,0.13,0
+W0444,Gardener,18,Secunderabad,14.9,Available,2.6,Electrician,Electrician,0.383,0
+W0445,Painter,4,Tirupati,2.8,Available Evening,2.8,Caregiver,Caregiver,0.424,0
+W0446,Plumber,18,Visakhapatnam,11.1,Available Morning,3.7,Carpenter,Carpenter,0.435,0
+W0447,Driver,11,Tirupati,5.8,Busy,3.2,Carpenter,Carpenter,0.348,0
+W0448,Carpenter,19,Tirupati,15.7,Busy,4.1,Plumber,Plumber,0.286,0
+W0449,Driver,15,Visakhapatnam,2.0,Available Evening,3.5,Domestic Helper,Domestic Helper,0.504,0
+W0450,Painter,7,Guntur,16.0,Available,5.0,Domestic Helper,Domestic Helper,0.392,0
+W0451,Caregiver,15,Warangal,8.9,Available Evening,3.5,Domestic Helper,Domestic Helper,0.449,0
+W0452,Plumber,19,Tirupati,5.9,Available Evening,2.6,Gardener,Gardener,0.455,0
+W0453,Domestic Helper,18,Hanamkonda,25.0,Busy,2.8,Gardener,Gardener,0.186,0
+W0454,Cleaner,1,Visakhapatnam,19.2,Busy,3.9,Domestic Helper,Domestic Helper,0.164,0
+W0455,Gardener,5,Guntur,6.3,Available Evening,4.5,Carpenter,Carpenter,0.44,0
+W0456,Technician,11,Hanamkonda,23.7,Busy,3.9,Plumber,Plumber,0.218,0
+W0457,Caregiver,9,Hanamkonda,4.8,Available,2.7,Domestic Helper,Domestic Helper,0.456,0
+W0458,Technician,0,Hanamkonda,13.4,Available,3.3,Painter,Painter,0.309,0
+W0459,Carpenter,5,Warangal,23.0,Available Evening,2.6,Gardener,Gardener,0.268,0
+W0460,Technician,3,Guntur,21.2,Available Evening,4.9,Carpenter,Carpenter,0.308,0
+W0461,Driver,3,Warangal,8.7,Available Evening,2.8,Technician,Technician,0.366,0
+W0462,Driver,20,Warangal,8.3,Available Evening,3.1,Caregiver,Caregiver,0.446,0
+W0463,Driver,9,Visakhapatnam,3.6,Available,4.9,Cleaner,Cleaner,0.509,0
+W0464,Technician,5,Secunderabad,15.3,Busy,4.1,Plumber,Plumber,0.24,0
+W0465,Caregiver,10,Guntur,18.8,Busy,3.4,Carpenter,Carpenter,0.248,0
+W0466,Carpenter,20,Vijayawada,18.4,Available Evening,3.6,Electrician,Electrician,0.375,0
+W0467,Painter,2,Hyderabad,9.1,Available,4.3,Painter,Painter,0.833,1
+W0468,Driver,13,Visakhapatnam,24.2,Available Morning,3.7,Caregiver,Caregiver,0.33,0
+W0469,Gardener,12,Hanamkonda,3.0,Available Morning,4.5,Domestic Helper,Domestic Helper,0.516,0
+W0470,Carpenter,2,Guntur,20.1,Available,3.2,Caregiver,Caregiver,0.273,0
+W0471,Cleaner,2,Secunderabad,8.9,Available Morning,2.9,Electrician,Electrician,0.357,0
+W0472,Domestic Helper,10,Visakhapatnam,15.1,Available Morning,4.3,Electrician,Electrician,0.415,0
+W0473,Carpenter,13,Hanamkonda,4.3,Available,3.3,Technician,Technician,0.482,0
+W0474,Driver,17,Secunderabad,7.0,Available Evening,3.2,Domestic Helper,Domestic Helper,0.458,0
+W0475,Plumber,18,Guntur,14.0,Available Morning,2.9,Driver,Driver,0.396,0
+W0476,Plumber,2,Hyderabad,7.7,Available Morning,3.0,Driver,Driver,0.368,0
+W0477,Painter,20,Secunderabad,7.6,Available,3.7,Carpenter,Carpenter,0.463,0
+W0478,Cleaner,15,Visakhapatnam,12.5,Available Evening,2.7,Driver,Driver,0.404,0
+W0479,Carpenter,12,Tirupati,9.6,Available Morning,2.6,Gardener,Gardener,0.425,0
+W0480,Caregiver,7,Secunderabad,21.0,Available,2.9,Cleaner,Cleaner,0.31,0
+W0481,Electrician,17,Visakhapatnam,10.6,Busy,3.9,Gardener,Gardener,0.323,0
+W0482,Domestic Helper,17,Hanamkonda,17.3,Available Morning,3.9,Driver,Driver,0.39,0
+W0483,Caregiver,2,Warangal,10.2,Available,3.8,Cleaner,Cleaner,0.364,0
+W0484,Electrician,5,Hanamkonda,23.8,Busy,4.9,Caregiver,Caregiver,0.188,0
+W0485,Carpenter,13,Warangal,2.4,Available Morning,3.0,Plumber,Plumber,0.491,0
+W0486,Technician,10,Visakhapatnam,22.8,Available,2.7,Cleaner,Cleaner,0.322,0
+W0487,Domestic Helper,8,Visakhapatnam,13.2,Available,4.5,Gardener,Gardener,0.414,0
+W0488,Electrician,4,Secunderabad,4.1,Available,4.8,Driver,Driver,0.453,0
+W0489,Cleaner,11,Tirupati,22.0,Available Evening,3.5,Domestic Helper,Domestic Helper,0.344,0
+W0490,Technician,15,Visakhapatnam,1.4,Available Evening,3.5,Technician,Technician,0.959,1
+W0491,Plumber,10,Vijayawada,17.4,Available,4.4,Driver,Driver,0.399,0
+W0492,Gardener,10,Tirupati,20.5,Available Evening,3.3,Plumber,Plumber,0.352,0
+W0493,Electrician,4,Guntur,7.9,Available Morning,4.4,Painter,Painter,0.415,0
+W0494,Cleaner,19,Visakhapatnam,16.3,Busy,3.6,Driver,Driver,0.272,0
+W0495,Caregiver,11,Visakhapatnam,20.6,Busy,2.7,Domestic Helper,Domestic Helper,0.219,0
+W0496,Carpenter,18,Hanamkonda,1.2,Busy,4.7,Domestic Helper,Domestic Helper,0.414,0
+W0497,Plumber,1,Vijayawada,11.7,Available Evening,4.3,Painter,Painter,0.352,0
+W0498,Gardener,16,Hanamkonda,10.2,Available,4.2,Caregiver,Caregiver,0.452,0
+W0499,Gardener,19,Guntur,11.4,Available Morning,4.0,Caregiver,Caregiver,0.439,0
+W0500,Gardener,8,Visakhapatnam,18.8,Available,3.2,Carpenter,Carpenter,0.344,0
+W0501,Plumber,18,Hanamkonda,19.6,Busy,4.6,Carpenter,Carpenter,0.265,0
+W0502,Painter,20,Hyderabad,10.5,Available,4.7,Cleaner,Cleaner,0.46,0
+W0503,Caregiver,20,Vijayawada,4.7,Available,3.1,Carpenter,Carpenter,0.474,0
+W0504,Cleaner,12,Tirupati,21.4,Available Morning,3.1,Driver,Driver,0.341,0
+W0505,Cleaner,19,Guntur,10.2,Available,2.5,Domestic Helper,Domestic Helper,0.418,0
+W0506,Domestic Helper,19,Guntur,7.4,Available,3.7,Technician,Technician,0.465,0
+W0507,Cleaner,8,Hanamkonda,6.9,Available Evening,3.0,Gardener,Gardener,0.435,0
+W0508,Plumber,12,Tirupati,16.7,Busy,4.3,Technician,Technician,0.282,0
+W0509,Cleaner,13,Hanamkonda,10.4,Available,4.0,Cleaner,Cleaner,0.897,1
+W0510,Gardener,17,Guntur,16.1,Available Morning,4.8,Painter,Painter,0.417,0
+W0511,Domestic Helper,5,Tirupati,21.1,Busy,3.2,Cleaner,Cleaner,0.175,0
+W0512,Carpenter,17,Guntur,19.2,Busy,4.9,Cleaner,Cleaner,0.274,0
+W0513,Electrician,11,Guntur,6.0,Available Evening,3.6,Painter,Painter,0.474,0
+W0514,Gardener,18,Secunderabad,7.7,Available,3.7,Cleaner,Cleaner,0.462,0
+W0515,Caregiver,16,Visakhapatnam,3.4,Available Morning,3.8,Painter,Painter,0.499,0
+W0516,Plumber,4,Tirupati,24.8,Available Evening,3.5,Carpenter,Carpenter,0.262,0
+W0517,Carpenter,5,Warangal,19.6,Available Morning,3.3,Gardener,Gardener,0.309,0
+W0518,Gardener,0,Warangal,11.6,Busy,4.4,Plumber,Plumber,0.225,0
+W0519,Technician,15,Visakhapatnam,19.7,Available,2.8,Carpenter,Carpenter,0.348,0
+W0520,Driver,13,Hanamkonda,24.2,Available Morning,2.5,Driver,Driver,0.756,1
+W0521,Gardener,10,Hyderabad,19.0,Busy,2.5,Plumber,Plumber,0.228,0
+W0522,Painter,11,Vijayawada,8.1,Available,3.5,Painter,Painter,0.905,1
+W0523,Carpenter,1,Guntur,7.8,Available Evening,3.6,Electrician,Electrician,0.37,0
+W0524,Driver,10,Hanamkonda,24.9,Available Morning,3.4,Carpenter,Carpenter,0.319,0
+W0525,Carpenter,0,Hyderabad,6.1,Busy,3.0,Driver,Driver,0.241,0
+W0526,Technician,5,Vijayawada,3.5,Available,3.4,Domestic Helper,Domestic Helper,0.44,0
+W0527,Domestic Helper,1,Hyderabad,15.1,Available,4.2,Technician,Technician,0.323,0
+W0528,Plumber,13,Tirupati,11.4,Available,3.9,Electrician,Electrician,0.437,0
+W0529,Carpenter,20,Vijayawada,0.7,Available Morning,4.2,Painter,Painter,0.528,0
+W0530,Technician,4,Secunderabad,10.8,Available,3.8,Technician,Technician,0.83,1
+W0531,Cleaner,3,Hanamkonda,12.7,Busy,4.4,Electrician,Electrician,0.246,0
+W0532,Gardener,9,Tirupati,4.4,Available Morning,4.8,Driver,Driver,0.501,0
+W0533,Gardener,0,Tirupati,0.8,Available,4.8,Painter,Painter,0.44,0
+W0534,Carpenter,16,Hanamkonda,2.3,Available,4.8,Electrician,Electrician,0.528,0
+W0535,Caregiver,8,Hyderabad,11.9,Available,4.5,Cleaner,Cleaner,0.425,0
+W0536,Cleaner,10,Hyderabad,10.9,Available,2.7,Gardener,Gardener,0.417,0
+W0537,Plumber,20,Vijayawada,4.7,Available Evening,4.7,Carpenter,Carpenter,0.506,0
+W0538,Electrician,10,Tirupati,5.0,Available Morning,3.5,Gardener,Gardener,0.48,0
+W0539,Cleaner,15,Hyderabad,20.1,Busy,2.8,Driver,Driver,0.225,0
+W0540,Carpenter,13,Tirupati,22.8,Available Morning,4.5,Electrician,Electrician,0.358,0
+W0541,Carpenter,12,Warangal,19.6,Available,4.7,Technician,Technician,0.387,0
+W0542,Caregiver,3,Vijayawada,22.2,Available Morning,2.6,Caregiver,Caregiver,0.704,1
+W0543,Gardener,16,Guntur,19.3,Busy,4.9,Plumber,Plumber,0.274,0
+W0544,Domestic Helper,19,Visakhapatnam,2.8,Busy,3.7,Domestic Helper,Domestic Helper,0.832,1
+W0545,Carpenter,19,Tirupati,1.8,Busy,3.8,Domestic Helper,Domestic Helper,0.392,0
+W0546,Caregiver,2,Vijayawada,18.9,Available Evening,3.1,Carpenter,Carpenter,0.281,0
+W0547,Plumber,7,Hanamkonda,14.0,Available Morning,3.5,Domestic Helper,Domestic Helper,0.378,0
+W0548,Electrician,14,Tirupati,20.1,Available Morning,2.7,Caregiver,Caregiver,0.343,0
+W0549,Caregiver,3,Visakhapatnam,24.5,Available,2.8,Gardener,Gardener,0.24,0
+W0550,Plumber,17,Vijayawada,0.5,Available,4.5,Domestic Helper,Domestic Helper,0.536,0
+W0551,Domestic Helper,6,Guntur,16.5,Available Morning,4.9,Domestic Helper,Domestic Helper,0.826,1
+W0552,Plumber,14,Guntur,8.6,Available Morning,4.3,Painter,Painter,0.467,0
+W0553,Caregiver,3,Guntur,19.1,Busy,2.5,Electrician,Electrician,0.157,0
+W0554,Cleaner,16,Warangal,9.7,Available,2.6,Domestic Helper,Domestic Helper,0.424,0
+W0555,Caregiver,13,Visakhapatnam,3.1,Busy,3.0,Carpenter,Carpenter,0.365,0
+W0556,Painter,6,Hyderabad,18.1,Available,4.4,Caregiver,Caregiver,0.353,0
+W0557,Technician,14,Hyderabad,11.7,Busy,4.9,Electrician,Electrician,0.334,0
+W0558,Domestic Helper,17,Warangal,23.4,Available Morning,4.8,Plumber,Plumber,0.359,0
+W0559,Technician,4,Visakhapatnam,3.0,Available Evening,3.8,Carpenter,Carpenter,0.442,0
+W0560,Driver,7,Tirupati,7.2,Available Evening,4.9,Technician,Technician,0.46,0
+W0561,Carpenter,13,Guntur,15.3,Available Evening,4.6,Carpenter,Carpenter,0.87,1
+W0562,Domestic Helper,6,Warangal,5.6,Available Evening,4.2,Painter,Painter,0.449,0
+W0563,Carpenter,17,Guntur,17.5,Available Evening,4.3,Domestic Helper,Domestic Helper,0.396,0
+W0564,Domestic Helper,18,Vijayawada,14.5,Available Morning,4.2,Caregiver,Caregiver,0.418,0
+W0565,Driver,16,Hyderabad,3.1,Available Morning,2.9,Plumber,Plumber,0.483,0
+W0566,Painter,5,Hyderabad,24.6,Available Evening,2.9,Cleaner,Cleaner,0.261,0
+W0567,Cleaner,17,Hanamkonda,1.3,Available Morning,2.8,Painter,Painter,0.496,0
+W0568,Domestic Helper,7,Hyderabad,13.0,Available Evening,4.2,Driver,Driver,0.4,0
+W0569,Driver,13,Hyderabad,23.9,Available Evening,4.9,Driver,Driver,0.807,1
+W0570,Plumber,6,Guntur,15.7,Available Morning,4.6,Cleaner,Cleaner,0.376,0
+W0571,Technician,19,Warangal,5.3,Busy,3.2,Domestic Helper,Domestic Helper,0.352,0
+W0572,Electrician,5,Visakhapatnam,18.5,Available,3.4,Carpenter,Carpenter,0.32,0
+W0573,Cleaner,8,Tirupati,3.7,Available Evening,2.5,Domestic Helper,Domestic Helper,0.45,0
+W0574,Carpenter,4,Vijayawada,23.3,Available,4.4,Plumber,Plumber,0.292,0
+W0575,Caregiver,17,Warangal,9.3,Available Evening,3.8,Technician,Technician,0.452,0
+W0576,Domestic Helper,16,Hanamkonda,4.4,Available Morning,2.7,Electrician,Electrician,0.469,0
+W0577,Painter,10,Tirupati,9.3,Busy,4.9,Gardener,Gardener,0.354,0
+W0578,Domestic Helper,3,Hanamkonda,16.9,Available Morning,3.1,Plumber,Plumber,0.307,0
+W0579,Plumber,12,Vijayawada,22.9,Available,3.5,Gardener,Gardener,0.337,0
+W0580,Plumber,11,Vijayawada,13.1,Available Morning,3.7,Domestic Helper,Domestic Helper,0.419,0
+W0581,Painter,16,Hyderabad,2.5,Available,2.9,Gardener,Gardener,0.488,0
+W0582,Electrician,20,Hanamkonda,19.5,Available Morning,4.6,Painter,Painter,0.386,0
+W0583,Domestic Helper,20,Warangal,20.5,Available,4.4,Driver,Driver,0.374,0
+W0584,Plumber,10,Vijayawada,1.4,Available,2.6,Caregiver,Caregiver,0.491,0
+W0585,Domestic Helper,18,Tirupati,20.6,Available Evening,3.5,Electrician,Electrician,0.355,0
+W0586,Driver,10,Secunderabad,0.9,Available,3.8,Driver,Driver,0.969,1
+W0587,Technician,2,Vijayawada,9.3,Available,3.2,Plumber,Plumber,0.36,0
+W0588,Technician,9,Hyderabad,19.2,Available Morning,3.5,Electrician,Electrician,0.356,0
+W0589,Caregiver,17,Vijayawada,5.9,Available Morning,4.5,Carpenter,Carpenter,0.493,0
+W0590,Carpenter,20,Warangal,9.6,Available,3.9,Cleaner,Cleaner,0.451,0
+W0591,Electrician,0,Secunderabad,14.5,Available Morning,3.8,Plumber,Plumber,0.31,0
+W0592,Cleaner,11,Hanamkonda,5.7,Busy,2.9,Painter,Painter,0.342,0
+W0593,Technician,6,Tirupati,3.3,Available,4.6,Cleaner,Cleaner,0.476,0
+W0594,Domestic Helper,9,Tirupati,17.0,Available Evening,2.7,Electrician,Electrician,0.358,0
+W0595,Gardener,4,Secunderabad,16.9,Busy,2.8,Gardener,Gardener,0.641,1
+W0596,Painter,15,Warangal,11.5,Available Evening,4.2,Gardener,Gardener,0.442,0
+W0597,Technician,11,Guntur,20.3,Available Morning,2.9,Technician,Technician,0.796,1
+W0598,Painter,20,Guntur,11.2,Available Evening,2.8,Painter,Painter,0.866,1
+W0599,Caregiver,14,Secunderabad,9.3,Available Evening,3.7,Caregiver,Caregiver,0.9,1
+W0600,Carpenter,2,Hanamkonda,21.1,Busy,4.7,Technician,Technician,0.175,0
+W0601,Cleaner,2,Visakhapatnam,22.4,Available,4.5,Electrician,Electrician,0.281,0
+W0602,Technician,1,Warangal,14.0,Available Morning,4.1,Painter,Painter,0.33,0
+W0603,Gardener,7,Secunderabad,22.3,Available Evening,2.8,Driver,Driver,0.298,0
+W0604,Driver,16,Warangal,0.8,Busy,4.6,Gardener,Gardener,0.416,0
+W0605,Domestic Helper,14,Tirupati,4.4,Busy,4.3,Carpenter,Carpenter,0.381,0
+W0606,Gardener,7,Guntur,19.2,Busy,2.7,Plumber,Plumber,0.2,0
+W0607,Painter,6,Tirupati,13.2,Available Evening,3.5,Plumber,Plumber,0.374,0
+W0608,Plumber,20,Vijayawada,8.4,Available Evening,4.6,Plumber,Plumber,0.925,1
+W0609,Technician,18,Secunderabad,4.8,Available Morning,3.4,Domestic Helper,Domestic Helper,0.48,0
+W0610,Domestic Helper,12,Guntur,24.3,Busy,3.8,Cleaner,Cleaner,0.212,0
+W0611,Gardener,15,Warangal,22.2,Available,3.8,Caregiver,Caregiver,0.348,0
+W0612,Caregiver,7,Warangal,2.4,Available Evening,3.0,Carpenter,Carpenter,0.461,0
+W0613,Carpenter,19,Visakhapatnam,18.1,Available,4.2,Gardener,Gardener,0.389,0
+W0614,Gardener,15,Warangal,17.0,Available Morning,3.0,Electrician,Electrician,0.374,0
+W0615,Driver,7,Hyderabad,1.6,Busy,2.8,Plumber,Plumber,0.343,0
+W0616,Technician,1,Visakhapatnam,4.6,Busy,3.8,Carpenter,Carpenter,0.279,0
+W0617,Technician,20,Hanamkonda,1.0,Available Evening,4.9,Technician,Technician,0.99,1
+W0618,Caregiver,15,Visakhapatnam,21.7,Busy,3.0,Technician,Technician,0.216,0
+W0619,Technician,18,Vijayawada,20.6,Busy,4.1,Carpenter,Carpenter,0.247,0
+W0620,Carpenter,14,Visakhapatnam,15.1,Available,3.1,Gardener,Gardener,0.391,0
+W0621,Carpenter,0,Secunderabad,5.5,Available Morning,4.6,Electrician,Electrician,0.398,0
+W0622,Carpenter,19,Warangal,15.2,Available,2.7,Caregiver,Caregiver,0.382,0
+W0623,Technician,0,Guntur,22.5,Available Morning,3.8,Domestic Helper,Domestic Helper,0.246,0
+W0624,Plumber,13,Visakhapatnam,6.1,Available Morning,4.5,Domestic Helper,Domestic Helper,0.491,0
+W0625,Gardener,18,Hanamkonda,2.9,Busy,3.1,Technician,Technician,0.369,0
+W0626,Electrician,19,Hyderabad,22.0,Available Morning,3.1,Cleaner,Cleaner,0.336,0
+W0627,Plumber,16,Hanamkonda,3.4,Available,3.4,Technician,Technician,0.491,0
+W0628,Gardener,11,Vijayawada,3.1,Available Morning,4.1,Driver,Driver,0.507,0
+W0629,Cleaner,13,Visakhapatnam,14.3,Available Evening,5.0,Domestic Helper,Domestic Helper,0.436,0
+W0630,Painter,17,Tirupati,19.7,Available Morning,2.9,Driver,Driver,0.35,0
+W0631,Cleaner,18,Secunderabad,8.9,Available Morning,4.3,Cleaner,Cleaner,0.915,1
+W0632,Painter,5,Hyderabad,3.0,Available Morning,4.5,Caregiver,Caregiver,0.466,0
+W0633,Carpenter,20,Tirupati,0.6,Available,4.6,Driver,Driver,0.537,0
+W0634,Technician,2,Hyderabad,2.1,Busy,3.4,Driver,Driver,0.301,0
+W0635,Driver,19,Hyderabad,16.6,Available Evening,4.3,Driver,Driver,0.853,1
+W0636,Carpenter,14,Hanamkonda,0.8,Available Evening,3.0,Caregiver,Caregiver,0.504,0
+W0637,Technician,1,Secunderabad,9.3,Available,4.9,Carpenter,Carpenter,0.384,0
+W0638,Cleaner,11,Hyderabad,16.9,Available Morning,4.0,Driver,Driver,0.395,0
+W0639,Electrician,17,Vijayawada,7.5,Available Evening,3.4,Electrician,Electrician,0.908,1
+W0640,Painter,6,Vijayawada,11.6,Available Morning,3.9,Technician,Technician,0.395,0
+W0641,Carpenter,16,Guntur,3.1,Available,3.8,Driver,Driver,0.501,0
+W0642,Electrician,8,Visakhapatnam,22.0,Available Evening,4.2,Domestic Helper,Domestic Helper,0.338,0
+W0643,Technician,7,Hyderabad,19.1,Available Morning,4.2,Caregiver,Caregiver,0.351,0
+W0644,Caregiver,8,Hanamkonda,2.2,Busy,4.2,Electrician,Electrician,0.376,0
+W0645,Gardener,11,Vijayawada,13.2,Available,4.3,Driver,Driver,0.43,0
+W0646,Painter,2,Warangal,10.3,Available Evening,2.7,Cleaner,Cleaner,0.342,0
+W0647,Caregiver,11,Hanamkonda,5.9,Available Evening,3.0,Gardener,Gardener,0.463,0
+W0648,Caregiver,7,Hanamkonda,18.5,Available Evening,3.0,Painter,Painter,0.332,0
+W0649,Painter,11,Secunderabad,4.3,Available,2.8,Technician,Technician,0.472,0
+W0650,Caregiver,0,Guntur,19.2,Available,4.6,Technician,Technician,0.288,0
+W0651,Technician,15,Vijayawada,22.5,Available Evening,3.7,Gardener,Gardener,0.344,0
+W0652,Driver,18,Hyderabad,3.6,Available Morning,3.7,Painter,Painter,0.495,0
+W0653,Domestic Helper,12,Secunderabad,21.6,Busy,3.6,Gardener,Gardener,0.229,0
+W0654,Domestic Helper,10,Visakhapatnam,17.4,Available,4.2,Caregiver,Caregiver,0.395,0
+W0655,Technician,10,Vijayawada,9.4,Available Evening,3.0,Electrician,Electrician,0.435,0
+W0656,Painter,15,Tirupati,24.0,Available Evening,3.4,Cleaner,Cleaner,0.326,0
+W0657,Driver,13,Visakhapatnam,17.7,Available Evening,3.4,Painter,Painter,0.376,0
+W0658,Cleaner,5,Vijayawada,14.5,Busy,4.5,Caregiver,Caregiver,0.254,0
+W0659,Painter,13,Warangal,21.5,Busy,2.9,Domestic Helper,Domestic Helper,0.216,0
+W0660,Caregiver,5,Guntur,10.8,Busy,5.0,Plumber,Plumber,0.294,0
+W0661,Caregiver,8,Warangal,14.3,Available,3.5,Cleaner,Cleaner,0.386,0
+W0662,Plumber,8,Guntur,12.2,Available,3.6,Painter,Painter,0.404,0
+W0663,Cleaner,11,Visakhapatnam,14.2,Available Evening,3.4,Gardener,Gardener,0.404,0
+W0664,Electrician,19,Vijayawada,5.4,Busy,4.9,Gardener,Gardener,0.385,0
+W0665,Gardener,16,Visakhapatnam,12.4,Available Morning,4.7,Gardener,Gardener,0.895,1
+W0666,Technician,14,Guntur,16.0,Busy,4.7,Cleaner,Cleaner,0.296,0
+W0667,Driver,18,Guntur,10.4,Available,2.7,Technician,Technician,0.421,0
+W0668,Painter,10,Visakhapatnam,16.5,Available Evening,4.0,Gardener,Gardener,0.398,0
+W0669,Cleaner,11,Warangal,18.8,Available Morning,3.5,Caregiver,Caregiver,0.37,0
+W0670,Plumber,7,Visakhapatnam,16.7,Available,3.0,Carpenter,Carpenter,0.346,0
+W0671,Electrician,2,Hyderabad,23.5,Available Morning,3.9,Electrician,Electrician,0.71,1
+W0672,Driver,2,Visakhapatnam,3.0,Busy,2.7,Domestic Helper,Domestic Helper,0.28,0
+W0673,Cleaner,7,Warangal,18.6,Available Morning,4.1,Painter,Painter,0.353,0
+W0674,Domestic Helper,0,Guntur,1.4,Available Evening,4.7,Carpenter,Carpenter,0.433,0
+W0675,Caregiver,17,Warangal,23.4,Available Morning,2.8,Caregiver,Caregiver,0.769,1
+W0676,Technician,14,Vijayawada,16.0,Available Morning,3.8,Technician,Technician,0.848,1
+W0677,Gardener,17,Guntur,6.1,Available,3.6,Caregiver,Caregiver,0.473,0
+W0678,Driver,4,Warangal,7.9,Available,3.8,Cleaner,Cleaner,0.403,0
+W0679,Gardener,15,Tirupati,13.6,Available Morning,4.9,Cleaner,Cleaner,0.439,0
+W0680,Cleaner,13,Guntur,20.1,Busy,4.5,Plumber,Plumber,0.259,0
+W0681,Painter,17,Visakhapatnam,11.2,Busy,2.9,Driver,Driver,0.298,0
+W0682,Driver,8,Vijayawada,2.4,Busy,3.8,Painter,Painter,0.367,0
+W0683,Cleaner,8,Vijayawada,10.6,Available,3.0,Domestic Helper,Domestic Helper,0.405,0
+W0684,Electrician,19,Hyderabad,11.6,Available Morning,3.0,Caregiver,Caregiver,0.417,0
+W0685,Carpenter,17,Warangal,1.0,Available,3.2,Plumber,Plumber,0.506,0
+W0686,Caregiver,7,Guntur,2.7,Available,3.7,Plumber,Plumber,0.472,0
+W0687,Driver,15,Hyderabad,25.0,Available Morning,4.2,Cleaner,Cleaner,0.334,0
+W0688,Gardener,4,Tirupati,1.9,Available Morning,2.7,Electrician,Electrician,0.429,0
+W0689,Carpenter,8,Hanamkonda,20.5,Available,2.8,Painter,Painter,0.322,0
+W0690,Driver,7,Secunderabad,18.6,Available,3.0,Caregiver,Caregiver,0.331,0
+W0691,Domestic Helper,15,Warangal,10.0,Available Evening,4.8,Painter,Painter,0.466,0
+W0692,Plumber,16,Hanamkonda,3.5,Available Morning,4.1,Domestic Helper,Domestic Helper,0.504,0
+W0693,Gardener,6,Guntur,24.3,Busy,4.1,Plumber,Plumber,0.178,0
+W0694,Plumber,8,Hyderabad,14.8,Available Morning,4.5,Carpenter,Carpenter,0.402,0
+W0695,Plumber,15,Secunderabad,17.4,Busy,3.4,Technician,Technician,0.259,0
+W0696,Painter,15,Hyderabad,2.7,Available Evening,4.8,Carpenter,Carpenter,0.524,0
+W0697,Plumber,20,Hanamkonda,4.3,Available,2.8,Gardener,Gardener,0.472,0
+W0698,Gardener,20,Hyderabad,19.0,Available Morning,4.3,Domestic Helper,Domestic Helper,0.384,0
+W0699,Driver,4,Tirupati,6.6,Available,3.7,Gardener,Gardener,0.411,0
+W0700,Domestic Helper,17,Guntur,17.6,Busy,3.9,Cleaner,Cleaner,0.267,0
+W0701,Gardener,8,Warangal,21.8,Busy,2.7,Caregiver,Caregiver,0.19,0
+W0702,Caregiver,8,Visakhapatnam,13.8,Available Morning,2.5,Cleaner,Cleaner,0.37,0
+W0703,Carpenter,19,Secunderabad,21.5,Busy,3.3,Plumber,Plumber,0.224,0
+W0704,Domestic Helper,6,Warangal,13.3,Available Morning,4.4,Driver,Driver,0.392,0
+W0705,Technician,10,Secunderabad,10.5,Available Evening,2.8,Cleaner,Cleaner,0.422,0
+W0706,Plumber,5,Hanamkonda,21.9,Busy,2.8,Carpenter,Carpenter,0.161,0
+W0707,Electrician,18,Vijayawada,16.2,Available Morning,4.1,Plumber,Plumber,0.402,0
+W0708,Plumber,7,Hanamkonda,15.3,Available,2.5,Gardener,Gardener,0.348,0
+W0709,Caregiver,14,Visakhapatnam,20.1,Available,3.4,Electrician,Electrician,0.357,0
+W0710,Gardener,19,Vijayawada,7.0,Available,4.3,Plumber,Plumber,0.48,0
+W0711,Electrician,16,Hanamkonda,2.9,Busy,3.8,Painter,Painter,0.383,0
+W0712,Painter,7,Visakhapatnam,14.5,Busy,3.9,Domestic Helper,Domestic Helper,0.262,0
+W0713,Electrician,11,Warangal,17.0,Available Morning,4.7,Technician,Technician,0.408,0
+W0714,Carpenter,12,Tirupati,12.9,Busy,3.8,Domestic Helper,Domestic Helper,0.303,0
+W0715,Gardener,17,Visakhapatnam,24.8,Available Evening,4.6,Gardener,Gardener,0.794,1
+W0716,Driver,19,Vijayawada,6.4,Busy,3.4,Gardener,Gardener,0.347,0
+W0717,Gardener,14,Vijayawada,24.0,Available,4.3,Caregiver,Caregiver,0.344,0
+W0718,Technician,16,Hanamkonda,3.8,Available Evening,2.5,Plumber,Plumber,0.47,0
+W0719,Painter,0,Warangal,19.4,Available Evening,4.8,Gardener,Gardener,0.291,0
+W0720,Electrician,14,Hanamkonda,9.2,Busy,3.2,Plumber,Plumber,0.32,0
+W0721,Painter,9,Hanamkonda,2.8,Available Morning,3.9,Cleaner,Cleaner,0.496,0
+W0722,Electrician,15,Vijayawada,4.7,Available,4.0,Gardener,Gardener,0.492,0
+W0723,Plumber,12,Guntur,2.4,Available,4.8,Technician,Technician,0.527,0
+W0724,Gardener,13,Hanamkonda,23.3,Available,4.7,Driver,Driver,0.358,0
+W0725,Technician,20,Hyderabad,19.5,Available Morning,2.6,Plumber,Plumber,0.346,0
+W0726,Gardener,18,Visakhapatnam,4.2,Busy,2.9,Domestic Helper,Domestic Helper,0.354,0
+W0727,Caregiver,18,Visakhapatnam,12.9,Busy,3.6,Technician,Technician,0.299,0
+W0728,Carpenter,10,Vijayawada,2.5,Available,3.9,Carpenter,Carpenter,0.958,1
+W0729,Electrician,16,Tirupati,11.1,Busy,4.4,Driver,Driver,0.329,0
+W0730,Domestic Helper,15,Hanamkonda,10.2,Busy,3.9,Painter,Painter,0.326,0
+W0731,Painter,8,Secunderabad,19.5,Available Evening,4.2,Electrician,Electrician,0.358,0
+W0732,Electrician,13,Hyderabad,9.4,Busy,3.3,Driver,Driver,0.321,0
+W0733,Cleaner,11,Tirupati,15.6,Available Morning,4.1,Carpenter,Carpenter,0.407,0
+W0734,Plumber,6,Secunderabad,17.3,Busy,4.4,Painter,Painter,0.24,0
+W0735,Electrician,7,Vijayawada,23.7,Busy,4.7,Plumber,Plumber,0.204,0
+W0736,Plumber,3,Hanamkonda,8.0,Available Morning,2.6,Gardener,Gardener,0.368,0
+W0737,Domestic Helper,6,Warangal,13.9,Available Evening,3.9,Painter,Painter,0.377,0
+W0738,Plumber,18,Hyderabad,22.7,Available,3.1,Driver,Driver,0.33,0
+W0739,Cleaner,19,Hyderabad,7.1,Available Morning,4.1,Painter,Painter,0.475,0
+W0740,Electrician,8,Hyderabad,16.7,Available Evening,4.7,Driver,Driver,0.39,0
+W0741,Cleaner,7,Tirupati,24.5,Available,4.8,Driver,Driver,0.32,0
+W0742,Technician,2,Hyderabad,5.1,Available Morning,3.9,Domestic Helper,Domestic Helper,0.407,0
+W0743,Plumber,16,Warangal,8.0,Available Morning,3.5,Painter,Painter,0.456,0
+W0744,Plumber,11,Vijayawada,9.2,Available Evening,3.1,Gardener,Gardener,0.438,0
+W0745,Plumber,12,Vijayawada,22.3,Available,4.9,Cleaner,Cleaner,0.37,0
+W0746,Painter,10,Visakhapatnam,22.5,Busy,2.7,Carpenter,Carpenter,0.204,0
+W0747,Domestic Helper,20,Warangal,17.3,Available Morning,3.1,Technician,Technician,0.374,0
+W0748,Driver,19,Warangal,8.6,Busy,3.0,Cleaner,Cleaner,0.321,0
+W0749,Technician,6,Warangal,21.6,Available Evening,4.2,Domestic Helper,Domestic Helper,0.321,0
+W0750,Driver,20,Secunderabad,23.4,Busy,3.3,Carpenter,Carpenter,0.209,0
+W0751,Carpenter,4,Visakhapatnam,18.3,Available Evening,4.7,Gardener,Gardener,0.338,0
+W0752,Driver,14,Hanamkonda,18.8,Available Evening,2.9,Cleaner,Cleaner,0.358,0
+W0753,Electrician,5,Hanamkonda,1.1,Available Evening,4.0,Carpenter,Carpenter,0.471,0
+W0754,Technician,7,Tirupati,17.3,Available Evening,2.7,Painter,Painter,0.336,0
+W0755,Carpenter,19,Visakhapatnam,12.0,Available Evening,3.0,Domestic Helper,Domestic Helper,0.414,0
+W0756,Caregiver,4,Hyderabad,4.5,Busy,2.6,Caregiver,Caregiver,0.736,1
+W0757,Cleaner,7,Secunderabad,18.7,Busy,4.4,Driver,Driver,0.238,0
+W0758,Carpenter,19,Hanamkonda,12.5,Available Evening,4.7,Caregiver,Caregiver,0.444,0
+W0759,Driver,1,Visakhapatnam,15.4,Available Morning,4.3,Driver,Driver,0.773,1
+W0760,Technician,19,Tirupati,13.6,Available,3.8,Technician,Technician,0.867,1
+W0761,Caregiver,7,Hyderabad,13.2,Available Morning,5.0,Plumber,Plumber,0.414,0
+W0762,Domestic Helper,16,Tirupati,19.2,Available,3.0,Driver,Driver,0.356,0
+W0763,Driver,9,Hyderabad,11.8,Available Morning,3.2,Cleaner,Cleaner,0.41,0
+W0764,Domestic Helper,14,Secunderabad,20.8,Available Morning,2.7,Carpenter,Carpenter,0.338,0
+W0765,Carpenter,17,Hyderabad,3.8,Available Morning,3.3,Technician,Technician,0.486,0
+W0766,Carpenter,18,Secunderabad,22.5,Busy,4.7,Caregiver,Caregiver,0.244,0
+W0767,Cleaner,20,Secunderabad,22.7,Busy,4.3,Gardener,Gardener,0.234,0
+W0768,Electrician,14,Visakhapatnam,16.0,Available,3.8,Electrician,Electrician,0.848,1
+W0769,Domestic Helper,5,Warangal,9.8,Available Morning,2.6,Technician,Technician,0.374,0
+W0770,Gardener,4,Hyderabad,4.5,Busy,2.9,Technician,Technician,0.292,0
+W0771,Driver,9,Warangal,18.4,Available Morning,3.2,Cleaner,Cleaner,0.357,0
+W0772,Electrician,6,Tirupati,0.6,Available Evening,2.5,Carpenter,Carpenter,0.455,0
+W0773,Caregiver,0,Tirupati,15.4,Available Morning,3.1,Domestic Helper,Domestic Helper,0.289,0
+W0774,Caregiver,14,Vijayawada,2.4,Available,3.1,Driver,Driver,0.493,0
+W0775,Technician,6,Guntur,1.7,Busy,2.6,Domestic Helper,Domestic Helper,0.328,0
+W0776,Plumber,1,Secunderabad,16.8,Available Evening,3.3,Carpenter,Carpenter,0.292,0
+W0777,Plumber,13,Warangal,24.8,Busy,4.2,Electrician,Electrician,0.216,0
+W0778,Caregiver,11,Guntur,23.3,Available,4.4,Technician,Technician,0.352,0
+W0779,Gardener,2,Warangal,19.1,Available,3.2,Driver,Driver,0.281,0
+W0780,Electrician,10,Hyderabad,13.4,Busy,4.2,Cleaner,Cleaner,0.307,0
+W0781,Electrician,20,Vijayawada,13.5,Available,3.7,Technician,Technician,0.416,0
+W0782,Driver,10,Tirupati,6.9,Available Evening,4.8,Technician,Technician,0.491,0
+W0783,Domestic Helper,15,Hanamkonda,20.3,Busy,4.3,Caregiver,Caregiver,0.254,0
+W0784,Plumber,0,Hanamkonda,11.9,Available,4.3,Electrician,Electrician,0.341,0
+W0785,Technician,13,Hanamkonda,1.6,Available Evening,3.9,Driver,Driver,0.515,0
+W0786,Plumber,9,Guntur,6.7,Available,3.3,Painter,Painter,0.452,0
+W0787,Plumber,10,Hanamkonda,8.9,Available,4.6,Electrician,Electrician,0.471,0
+W0788,Gardener,15,Tirupati,22.9,Available,4.1,Gardener,Gardener,0.799,1
+W0789,Carpenter,17,Visakhapatnam,22.5,Available Morning,4.5,Caregiver,Caregiver,0.36,0
+W0790,Plumber,9,Hyderabad,14.3,Available Evening,3.9,Domestic Helper,Domestic Helper,0.404,0
+W0791,Painter,10,Warangal,20.1,Available Evening,2.7,Technician,Technician,0.343,0
+W0792,Cleaner,10,Visakhapatnam,24.6,Busy,3.9,Plumber,Plumber,0.211,0
+W0793,Carpenter,3,Guntur,21.7,Available Evening,4.3,Technician,Technician,0.292,0
+W0794,Plumber,13,Vijayawada,2.6,Busy,3.4,Cleaner,Cleaner,0.377,0
+W0795,Painter,9,Hanamkonda,4.8,Available Evening,4.5,Domestic Helper,Domestic Helper,0.492,0
+W0796,Electrician,16,Warangal,1.1,Available Morning,4.8,Caregiver,Caregiver,0.537,0
+W0797,Painter,15,Warangal,18.4,Available Evening,4.4,Gardener,Gardener,0.391,0
+W0798,Electrician,4,Secunderabad,5.5,Available,3.6,Domestic Helper,Domestic Helper,0.418,0
+W0799,Plumber,1,Hyderabad,17.3,Available,3.3,Cleaner,Cleaner,0.288,0
+W0800,Electrician,9,Hanamkonda,1.1,Available Evening,4.1,Domestic Helper,Domestic Helper,0.513,0
+W0801,Gardener,6,Secunderabad,7.5,Available Evening,4.4,Painter,Painter,0.438,0
+W0802,Cleaner,5,Secunderabad,7.2,Available,4.9,Carpenter,Carpenter,0.44,0
+W0803,Painter,11,Vijayawada,14.0,Available Evening,2.9,Domestic Helper,Domestic Helper,0.396,0
+W0804,Technician,5,Hyderabad,2.2,Available Evening,3.9,Painter,Painter,0.46,0
+W0805,Carpenter,15,Hyderabad,22.6,Available,2.8,Plumber,Plumber,0.325,0
+W0806,Electrician,12,Vijayawada,4.9,Available Morning,4.0,Driver,Driver,0.491,0
+W0807,Gardener,17,Secunderabad,2.4,Available Morning,3.9,Painter,Painter,0.509,0
+W0808,Caregiver,14,Hanamkonda,8.1,Available Morning,3.7,Electrician,Electrician,0.459,0
+W0809,Carpenter,8,Guntur,22.9,Available Morning,3.0,Technician,Technician,0.307,0
+W0810,Gardener,15,Tirupati,1.2,Available Morning,2.8,Caregiver,Caregiver,0.496,0
+W0811,Caregiver,9,Visakhapatnam,19.3,Busy,3.8,Carpenter,Carpenter,0.242,0
+W0812,Electrician,17,Visakhapatnam,16.4,Available Evening,3.8,Gardener,Gardener,0.395,0
+W0813,Technician,7,Visakhapatnam,15.7,Busy,4.9,Driver,Driver,0.272,0
+W0814,Electrician,6,Visakhapatnam,20.4,Available Morning,4.5,Gardener,Gardener,0.337,0
+W0815,Technician,17,Secunderabad,17.5,Busy,4.2,Gardener,Gardener,0.274,0
+W0816,Technician,3,Secunderabad,15.0,Available Morning,3.3,Caregiver,Caregiver,0.326,0
+W0817,Caregiver,9,Visakhapatnam,23.9,Available,4.0,Carpenter,Carpenter,0.329,0
+W0818,Gardener,20,Warangal,16.7,Available,3.0,Caregiver,Caregiver,0.376,0
+W0819,Technician,4,Visakhapatnam,16.7,Available Morning,3.8,Plumber,Plumber,0.332,0
+W0820,Technician,14,Vijayawada,5.3,Available Evening,3.2,Technician,Technician,0.922,1
+W0821,Driver,2,Vijayawada,14.8,Available Morning,4.6,Gardener,Gardener,0.344,0
+W0822,Plumber,17,Guntur,24.2,Available,4.3,Gardener,Gardener,0.342,0
+W0823,Electrician,0,Visakhapatnam,6.3,Available Morning,4.1,Cleaner,Cleaner,0.382,0
+W0824,Driver,13,Hanamkonda,13.9,Busy,3.7,Driver,Driver,0.743,1
+W0825,Domestic Helper,11,Warangal,21.1,Busy,3.2,Driver,Driver,0.225,0
+W0826,Carpenter,2,Tirupati,16.4,Busy,4.3,Plumber,Plumber,0.205,0
+W0827,Driver,2,Visakhapatnam,3.9,Available Morning,4.7,Carpenter,Carpenter,0.433,0
+W0828,Technician,14,Hanamkonda,13.0,Available Morning,3.5,Carpenter,Carpenter,0.416,0
+W0829,Carpenter,19,Hanamkonda,0.7,Available Morning,4.6,Driver,Driver,0.536,0
+W0830,Domestic Helper,13,Hyderabad,23.2,Available Evening,2.6,Cleaner,Cleaner,0.316,0
+W0831,Technician,11,Secunderabad,3.3,Available Morning,4.9,Caregiver,Caregiver,0.522,0
+W0832,Carpenter,8,Secunderabad,11.9,Available,3.8,Domestic Helper,Domestic Helper,0.411,0
+W0833,Painter,20,Vijayawada,18.7,Available,4.2,Caregiver,Caregiver,0.384,0
+W0834,Technician,10,Tirupati,13.6,Available,3.7,Plumber,Plumber,0.415,0
+W0835,Technician,13,Hyderabad,9.1,Available Evening,3.2,Gardener,Gardener,0.441,0
+W0836,Technician,18,Hyderabad,6.9,Available Morning,3.9,Cleaner,Cleaner,0.473,0
+W0837,Cleaner,0,Secunderabad,7.5,Available,2.8,Technician,Technician,0.346,0
+W0838,Cleaner,4,Hyderabad,15.6,Available Evening,4.6,Cleaner,Cleaner,0.807,1
+W0839,Electrician,5,Guntur,22.8,Busy,4.1,Technician,Technician,0.18,0
+W0840,Carpenter,7,Secunderabad,12.4,Available,3.4,Cleaner,Cleaner,0.389,0
+W0841,Carpenter,4,Hanamkonda,21.0,Available Morning,4.4,Technician,Technician,0.31,0
+W0842,Caregiver,6,Vijayawada,14.7,Available Evening,2.6,Carpenter,Carpenter,0.344,0
+W0843,Electrician,5,Hanamkonda,11.9,Available Morning,3.3,Plumber,Plumber,0.371,0
+W0844,Driver,15,Tirupati,6.9,Available Morning,2.5,Driver,Driver,0.895,1
+W0845,Driver,16,Guntur,17.2,Available,2.7,Gardener,Gardener,0.366,0
+W0846,Driver,20,Secunderabad,21.5,Available Evening,3.2,Technician,Technician,0.342,0
+W0847,Cleaner,12,Hanamkonda,11.8,Busy,4.3,Technician,Technician,0.322,0
+W0848,Domestic Helper,5,Secunderabad,8.2,Available,4.2,Gardener,Gardener,0.418,0
+W0849,Plumber,3,Vijayawada,13.4,Available Morning,3.4,Driver,Driver,0.341,0
+W0850,Cleaner,1,Hanamkonda,1.1,Available,2.6,Painter,Painter,0.403,0
+W0851,Technician,3,Warangal,2.6,Busy,3.4,Electrician,Electrician,0.307,0
+W0852,Electrician,8,Vijayawada,7.7,Available,4.1,Carpenter,Carpenter,0.45,0
+W0853,Driver,8,Hyderabad,4.5,Available,3.2,Gardener,Gardener,0.458,0
+W0854,Driver,10,Vijayawada,24.9,Available Evening,4.9,Driver,Driver,0.799,1
+W0855,Carpenter,2,Warangal,12.5,Busy,4.0,Caregiver,Caregiver,0.23,0
+W0856,Caregiver,4,Secunderabad,13.7,Available Morning,3.0,Electrician,Electrician,0.34,0
+W0857,Caregiver,3,Vijayawada,1.4,Available,3.9,Cleaner,Cleaner,0.447,0
+W0858,Caregiver,15,Visakhapatnam,4.1,Available,4.8,Plumber,Plumber,0.513,0
+W0859,Cleaner,10,Tirupati,22.7,Available,3.8,Carpenter,Carpenter,0.344,0
+W0860,Caregiver,12,Hyderabad,21.2,Available,3.9,Driver,Driver,0.358,0
+W0861,Driver,3,Vijayawada,14.4,Available Evening,3.3,Caregiver,Caregiver,0.331,0
+W0862,Driver,20,Guntur,24.9,Available,3.4,Plumber,Plumber,0.319,0
+W0863,Electrician,9,Visakhapatnam,16.4,Busy,3.9,Caregiver,Caregiver,0.267,0
+W0864,Painter,12,Tirupati,22.5,Available Evening,3.7,Cleaner,Cleaner,0.344,0
+W0865,Painter,1,Secunderabad,5.2,Busy,3.7,Carpenter,Carpenter,0.272,0
+W0866,Domestic Helper,15,Hyderabad,13.6,Available Morning,4.9,Cleaner,Cleaner,0.439,0
+W0867,Plumber,1,Hanamkonda,8.8,Available,3.5,Gardener,Gardener,0.36,0
+W0868,Domestic Helper,17,Hyderabad,4.1,Busy,4.8,Caregiver,Caregiver,0.393,0
+W0869,Carpenter,20,Warangal,1.0,Available,3.1,Caregiver,Caregiver,0.504,0
+W0870,Plumber,20,Secunderabad,1.7,Available Evening,4.6,Carpenter,Carpenter,0.528,0
+W0871,Caregiver,5,Secunderabad,21.0,Available,4.5,Technician,Technician,0.322,0
+W0872,Electrician,19,Hanamkonda,20.1,Busy,2.7,Caregiver,Caregiver,0.223,0
+W0873,Driver,12,Hanamkonda,8.4,Busy,3.3,Gardener,Gardener,0.329,0
+W0874,Plumber,5,Visakhapatnam,8.7,Available,3.2,Technician,Technician,0.394,0
+W0875,Carpenter,17,Hyderabad,4.5,Busy,4.8,Gardener,Gardener,0.39,0
+W0876,Carpenter,20,Tirupati,15.5,Busy,2.5,Electrician,Electrician,0.256,0
+W0877,Electrician,0,Vijayawada,4.9,Available,4.3,Plumber,Plumber,0.397,0
+W0878,Driver,4,Visakhapatnam,5.6,Available Evening,3.8,Caregiver,Caregiver,0.421,0
+W0879,Painter,19,Secunderabad,17.4,Busy,4.3,Carpenter,Carpenter,0.277,0
+W0880,Cleaner,13,Secunderabad,0.6,Busy,3.0,Gardener,Gardener,0.385,0
+W0881,Technician,17,Hanamkonda,12.9,Available Morning,4.4,Gardener,Gardener,0.435,0
+W0882,Cleaner,6,Tirupati,3.3,Busy,4.2,Plumber,Plumber,0.348,0
+W0883,Caregiver,5,Guntur,16.9,Available,2.6,Carpenter,Carpenter,0.317,0
+W0884,Cleaner,13,Hyderabad,6.7,Available Morning,2.6,Painter,Painter,0.448,0
+W0885,Domestic Helper,5,Secunderabad,19.7,Available Morning,3.8,Carpenter,Carpenter,0.318,0
+W0886,Painter,18,Guntur,14.7,Available Morning,3.0,Caregiver,Caregiver,0.392,0
+W0887,Painter,10,Hanamkonda,6.1,Busy,4.3,Electrician,Electrician,0.367,0
+W0888,Driver,2,Visakhapatnam,12.0,Available Morning,2.6,Painter,Painter,0.326,0
+W0889,Carpenter,19,Tirupati,11.6,Available Morning,3.4,Painter,Painter,0.425,0
+W0890,Painter,8,Hyderabad,5.5,Busy,2.6,Gardener,Gardener,0.318,0
+W0891,Cleaner,3,Guntur,21.4,Available Morning,3.5,Carpenter,Carpenter,0.279,0
+W0892,Painter,19,Hanamkonda,4.3,Busy,3.9,Cleaner,Cleaner,0.374,0
+W0893,Electrician,16,Tirupati,12.5,Busy,4.0,Driver,Driver,0.31,0
+W0894,Cleaner,13,Visakhapatnam,18.5,Busy,3.1,Plumber,Plumber,0.244,0
+W0895,Technician,18,Hyderabad,23.7,Available,3.5,Painter,Painter,0.33,0
+W0896,Plumber,16,Secunderabad,1.3,Available Morning,3.7,Caregiver,Caregiver,0.514,0
+W0897,Caregiver,7,Visakhapatnam,2.5,Available,4.2,Caregiver,Caregiver,0.934,1
+W0898,Painter,11,Vijayawada,7.7,Available,2.5,Carpenter,Carpenter,0.438,0
+W0899,Carpenter,18,Tirupati,18.8,Available,4.9,Caregiver,Caregiver,0.398,0
+W0900,Carpenter,5,Hyderabad,19.9,Available Evening,4.1,Driver,Driver,0.323,0
+W0901,Electrician,10,Vijayawada,13.5,Available Evening,3.6,Driver,Driver,0.414,0
+W0902,Technician,18,Guntur,20.0,Available,4.1,Domestic Helper,Domestic Helper,0.372,0
+W0903,Plumber,11,Tirupati,22.3,Available,3.5,Domestic Helper,Domestic Helper,0.342,0
+W0904,Technician,11,Hanamkonda,9.5,Available,3.9,Plumber,Plumber,0.452,0
+W0905,Carpenter,7,Hanamkonda,13.7,Available Morning,4.3,Gardener,Gardener,0.396,0
+W0906,Painter,11,Secunderabad,22.5,Available Morning,3.2,Gardener,Gardener,0.334,0
+W0907,Gardener,14,Vijayawada,12.4,Available,3.7,Gardener,Gardener,0.875,1
+W0908,Caregiver,11,Tirupati,20.1,Available,3.0,Technician,Technician,0.349,0
+W0909,Electrician,12,Secunderabad,22.5,Available Evening,4.9,Electrician,Electrician,0.818,1
+W0910,Electrician,8,Hanamkonda,3.2,Busy,3.7,Carpenter,Carpenter,0.358,0
+W0911,Domestic Helper,9,Visakhapatnam,10.7,Busy,3.7,Plumber,Plumber,0.308,0
+W0912,Caregiver,9,Hanamkonda,5.1,Available,4.7,Plumber,Plumber,0.493,0
+W0913,Domestic Helper,13,Tirupati,14.7,Available Evening,3.7,Gardener,Gardener,0.406,0
+W0914,Caregiver,18,Vijayawada,3.7,Available Evening,2.9,Cleaner,Cleaner,0.478,0
+W0915,Painter,11,Vijayawada,24.3,Available,2.9,Caregiver,Caregiver,0.314,0
+W0916,Caregiver,19,Warangal,23.1,Available Evening,3.0,Carpenter,Carpenter,0.325,0
+W0917,Carpenter,7,Tirupati,3.4,Available Evening,3.9,Carpenter,Carpenter,0.921,1
+W0918,Cleaner,5,Guntur,5.5,Available,4.2,Gardener,Gardener,0.44,0
+W0919,Carpenter,14,Secunderabad,13.7,Busy,3.8,Gardener,Gardener,0.296,0
+W0920,Plumber,15,Warangal,19.3,Available Morning,4.8,Driver,Driver,0.392,0
+W0921,Plumber,16,Vijayawada,8.6,Available Evening,3.7,Domestic Helper,Domestic Helper,0.455,0
+W0922,Technician,18,Secunderabad,18.3,Available Morning,3.3,Carpenter,Carpenter,0.37,0
+W0923,Caregiver,4,Visakhapatnam,17.1,Available,3.3,Plumber,Plumber,0.319,0
+W0924,Technician,14,Hanamkonda,9.3,Available Evening,2.6,Painter,Painter,0.428,0
+W0925,Technician,7,Secunderabad,19.6,Available Evening,3.0,Domestic Helper,Domestic Helper,0.323,0
+W0926,Domestic Helper,2,Guntur,24.4,Available Morning,3.0,Caregiver,Caregiver,0.235,0
+W0927,Technician,16,Visakhapatnam,23.6,Available Evening,3.5,Technician,Technician,0.781,1
+W0928,Gardener,11,Tirupati,0.8,Available Evening,3.4,Driver,Driver,0.512,0
+W0929,Domestic Helper,6,Visakhapatnam,18.3,Available Morning,4.4,Electrician,Electrician,0.352,0
+W0930,Caregiver,5,Visakhapatnam,20.2,Available Morning,4.3,Cleaner,Cleaner,0.324,0
+W0931,Carpenter,19,Guntur,2.6,Busy,3.3,Technician,Technician,0.375,0
+W0932,Electrician,12,Vijayawada,2.7,Available Morning,4.1,Technician,Technician,0.51,0
+W0933,Driver,17,Visakhapatnam,11.8,Busy,3.0,Carpenter,Carpenter,0.296,0
+W0934,Cleaner,15,Vijayawada,1.5,Available Evening,4.6,Domestic Helper,Domestic Helper,0.53,0
+W0935,Caregiver,14,Vijayawada,6.0,Available,2.9,Domestic Helper,Domestic Helper,0.46,0
+W0936,Caregiver,20,Tirupati,16.8,Available Evening,3.5,Electrician,Electrician,0.386,0
+W0937,Painter,3,Secunderabad,19.2,Available Morning,5.0,Plumber,Plumber,0.326,0
+W0938,Technician,18,Tirupati,12.3,Available Morning,4.7,Gardener,Gardener,0.446,0
+W0939,Electrician,16,Warangal,18.5,Available,4.6,Gardener,Gardener,0.394,0
+W0940,Technician,4,Hyderabad,8.3,Busy,3.4,Plumber,Plumber,0.272,0
+W0941,Cleaner,13,Vijayawada,16.1,Available Evening,2.6,Gardener,Gardener,0.373,0
+W0942,Domestic Helper,16,Warangal,5.2,Busy,4.4,Electrician,Electrician,0.376,0
+W0943,Domestic Helper,10,Guntur,20.8,Available Evening,3.2,Gardener,Gardener,0.348,0
+W0944,Electrician,18,Vijayawada,9.1,Busy,2.5,Domestic Helper,Domestic Helper,0.307,0
+W0945,Gardener,13,Warangal,8.8,Busy,2.8,Caregiver,Caregiver,0.316,0
+W0946,Domestic Helper,6,Secunderabad,20.0,Available,3.5,Painter,Painter,0.32,0
+W0947,Electrician,0,Warangal,12.2,Available Evening,4.2,Carpenter,Carpenter,0.336,0
+W0948,Caregiver,16,Vijayawada,19.2,Available Evening,2.9,Technician,Technician,0.354,0
+W0949,Plumber,7,Vijayawada,3.7,Busy,4.2,Electrician,Electrician,0.354,0
+W0950,Carpenter,4,Secunderabad,24.5,Available Morning,4.2,Painter,Painter,0.278,0
+W0951,Electrician,15,Hyderabad,19.1,Available,3.0,Plumber,Plumber,0.357,0
+W0952,Domestic Helper,1,Vijayawada,12.0,Available Evening,2.6,Technician,Technician,0.316,0
+W0953,Plumber,3,Hanamkonda,23.0,Busy,4.0,Electrician,Electrician,0.156,0
+W0954,Carpenter,0,Guntur,2.7,Available Evening,4.9,Gardener,Gardener,0.426,0
+W0955,Gardener,16,Secunderabad,19.6,Busy,3.8,Carpenter,Carpenter,0.249,0
+W0956,Electrician,0,Warangal,13.5,Busy,4.9,Technician,Technician,0.22,0
+W0957,Domestic Helper,3,Warangal,23.1,Available Morning,3.4,Plumber,Plumber,0.263,0
+W0958,Caregiver,5,Hanamkonda,21.0,Available Morning,3.6,Electrician,Electrician,0.304,0
+W0959,Driver,10,Tirupati,3.5,Available,3.8,Electrician,Electrician,0.498,0
+W0960,Gardener,17,Secunderabad,18.2,Available,3.3,Cleaner,Cleaner,0.37,0
+W0961,Driver,14,Tirupati,15.2,Available Evening,4.2,Cleaner,Cleaner,0.412,0
+W0962,Painter,13,Secunderabad,7.6,Available Morning,3.0,Domestic Helper,Domestic Helper,0.449,0
+W0963,Caregiver,5,Visakhapatnam,0.8,Available Morning,4.2,Gardener,Gardener,0.478,0
+W0964,Caregiver,2,Secunderabad,3.4,Available Morning,3.5,Domestic Helper,Domestic Helper,0.413,0
+W0965,Carpenter,11,Visakhapatnam,24.4,Available Evening,3.0,Electrician,Electrician,0.315,0
+W0966,Electrician,13,Vijayawada,18.3,Available Evening,4.4,Painter,Painter,0.392,0
+W0967,Driver,15,Vijayawada,16.8,Available Morning,5.0,Gardener,Gardener,0.416,0
+W0968,Carpenter,3,Warangal,3.5,Available Morning,3.7,Caregiver,Caregiver,0.426,0
+W0969,Plumber,1,Warangal,20.8,Available Morning,4.2,Electrician,Electrician,0.278,0
+W0970,Driver,10,Tirupati,4.2,Available,4.4,Technician,Technician,0.504,0
+W0971,Caregiver,9,Guntur,16.7,Available Morning,3.8,Painter,Painter,0.382,0
+W0972,Domestic Helper,0,Secunderabad,23.8,Available,5.0,Domestic Helper,Domestic Helper,0.71,1
+W0973,Driver,10,Hyderabad,21.4,Available Morning,3.6,Caregiver,Caregiver,0.351,0
+W0974,Carpenter,9,Warangal,22.2,Busy,3.7,Domestic Helper,Domestic Helper,0.216,0
+W0975,Cleaner,15,Tirupati,19.2,Available Morning,4.2,Driver,Driver,0.38,0
+W0976,Caregiver,5,Visakhapatnam,12.9,Available Morning,3.2,Domestic Helper,Domestic Helper,0.361,0
+W0977,Technician,9,Warangal,8.4,Available,4.0,Gardener,Gardener,0.453,0
+W0978,Gardener,18,Visakhapatnam,1.2,Available Evening,3.5,Gardener,Gardener,0.96,1
+W0979,Gardener,13,Vijayawada,9.1,Busy,3.1,Gardener,Gardener,0.769,1
+W0980,Technician,2,Hyderabad,21.8,Available,3.3,Electrician,Electrician,0.262,0
+W0981,Domestic Helper,1,Visakhapatnam,11.8,Available Morning,3.9,Gardener,Gardener,0.344,0
+W0982,Cleaner,15,Visakhapatnam,14.9,Available Evening,3.4,Plumber,Plumber,0.399,0
+W0983,Gardener,3,Hanamkonda,20.3,Available,4.2,Technician,Technician,0.302,0
+W0984,Gardener,16,Vijayawada,20.4,Available Evening,2.9,Caregiver,Caregiver,0.345,0
+W0985,Gardener,6,Hanamkonda,12.7,Available,4.6,Driver,Driver,0.4,0
+W0986,Cleaner,1,Secunderabad,7.8,Available Morning,4.5,Cleaner,Cleaner,0.838,1
+W0987,Technician,18,Tirupati,8.8,Available,3.9,Electrician,Electrician,0.458,0
+W0988,Driver,11,Vijayawada,20.0,Available Evening,3.8,Painter,Painter,0.366,0
+W0989,Driver,10,Tirupati,5.4,Available Morning,3.1,Domestic Helper,Domestic Helper,0.469,0
+W0990,Domestic Helper,0,Hanamkonda,15.9,Busy,3.9,Carpenter,Carpenter,0.181,0
+W0991,Caregiver,20,Hyderabad,13.6,Available Morning,4.8,Cleaner,Cleaner,0.437,0
+W0992,Domestic Helper,11,Vijayawada,11.8,Busy,2.9,Painter,Painter,0.294,0
+W0993,Driver,10,Visakhapatnam,21.6,Available,4.1,Driver,Driver,0.809,1
+W0994,Cleaner,20,Secunderabad,4.4,Busy,3.5,Cleaner,Cleaner,0.815,1
+W0995,Carpenter,0,Visakhapatnam,6.5,Available Evening,3.7,Painter,Painter,0.372,0
+W0996,Driver,6,Vijayawada,4.4,Busy,2.6,Plumber,Plumber,0.307,0
+W0997,Domestic Helper,20,Hyderabad,21.4,Available Morning,4.5,Carpenter,Carpenter,0.369,0
+W0998,Electrician,19,Visakhapatnam,7.8,Available,4.8,Gardener,Gardener,0.484,0
+W0999,Gardener,12,Secunderabad,23.6,Busy,3.1,Electrician,Electrician,0.203,0
+W1000,Domestic Helper,16,Secunderabad,6.7,Available,3.1,Technician,Technician,0.458,0
