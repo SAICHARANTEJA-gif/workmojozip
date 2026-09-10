@@ -1,5 +1,36 @@
 import { User, Job, Application, NotificationItem, PaymentRecord } from '../types';
 
+export const GUEST_USER: User = {
+  id: 'guest',
+  name: '',
+  phone: '',
+  profilePhoto: '',
+  gender: 'Male',
+  role: 'worker',
+  alternateRoles: ['worker', 'customer'],
+  kycStatus: 'pending',
+  kycVerified: false,
+  rating: 5.0,
+  completedJobs: 0,
+  jobsPosted: 0,
+  skills: [],
+  experience: 'New Member',
+  availability: 'Available',
+  preferredCategories: [],
+  preferredDistance: 10,
+  preferredWage: 500,
+  preferredWorkingTimes: ['Morning', 'Afternoon'],
+  languages: ['English'],
+  reliabilityScore: 100,
+  cancellationCount: 0,
+  savedJobIds: [],
+  paymentPreference: 'ONLINE',
+  preferredPaymentMethod: 'ONLINE',
+  bio: '',
+  locationArea: '',
+  createdAt: new Date().toISOString(),
+};
+
 export const INITIAL_CURRENT_USER: User = {
   id: 'worker-me',
   name: 'Arun Kumar',

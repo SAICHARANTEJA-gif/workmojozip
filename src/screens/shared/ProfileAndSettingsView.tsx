@@ -35,6 +35,7 @@ export const ProfileAndSettingsView: React.FC = () => {
     activeRole,
     toggleRole,
     deleteAccount,
+    logout,
     changePhoneNumber,
     updateUserProfile,
     language,
@@ -764,10 +765,8 @@ export const ProfileAndSettingsView: React.FC = () => {
 
           {/* Log Out */}
           <button
-            onClick={() => {
-              setOnboardingStep('login');
-            }}
-            className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#111827]"
+            onClick={logout}
+            className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#111827] cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] text-[#64748B] flex items-center justify-center shrink-0 shadow-xs">

@@ -23,6 +23,7 @@ import {
   PaymentStatus,
 } from '../types';
 import {
+  GUEST_USER,
   INITIAL_CURRENT_USER,
   SEED_WORKERS,
   SEED_CUSTOMERS,
@@ -50,6 +51,7 @@ interface AppContextType {
   updateUserProfile: (data: Partial<User>) => void;
   changePhoneNumber: (newPhone: string) => void;
   deleteAccount: () => void;
+  logout: () => void;
   completeAuthFlow: (userData?: Partial<User>) => void;
 
   // Language
@@ -162,20 +164,60 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY_PREFIX = 'workmojo_v1_';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Purge any legacy dummy sessions with worker-me or hardcoded demo phone
+  try {
+    const oldUser = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
+    if (oldUser) {
+      const parsed = JSON.parse(oldUser);
+      if (parsed.id === 'worker-me' || parsed.phone === '+91 98765 43210' || !parsed.phone) {
+        localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth');
+        localStorage.removeItem(STORAGE_KEY_PREFIX + 'onboardingStep');
+        localStorage.removeItem(STORAGE_KEY_PREFIX + 'user');
+      }
+    }
+  } catch (_) {}
+
   // --- Persistent State Initialization ---
   const [user, setUser] = useState<User>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
-    return saved ? JSON.parse(saved) : INITIAL_CURRENT_USER;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.phone && parsed.phone !== '+91 98765 43210' && parsed.id !== 'worker-me') {
+          return parsed;
+        }
+      } catch (_) {}
+    }
+    return GUEST_USER;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth');
-    return saved ? JSON.parse(saved) : false; // Real login-first: false on initial launch
+    const savedUser = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
+    if (saved && savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u && u.phone && u.phone !== '+91 98765 43210' && u.id !== 'worker-me' && u.kycVerified && JSON.parse(saved) === true) {
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false; // Real login-first: false on initial launch
   });
 
   const [onboardingStep, setOnboardingStep] = useState<AppContextType['onboardingStep']>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'onboardingStep');
-    return saved ? (saved as any) : 'login'; // Real login-first: start at login
+    const savedAuth = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth');
+    const savedUser = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
+    if (saved && savedAuth && savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u && u.phone && u.phone !== '+91 98765 43210' && u.id !== 'worker-me' && u.kycVerified && JSON.parse(savedAuth) === true) {
+          return saved as any;
+        }
+      } catch (_) {}
+    }
+    return 'login'; // Real login-first: always open the login page of the user first!
   });
 
   const [loginPhone, setLoginPhone] = useState<string>('');
@@ -1406,7 +1448,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Delete Account
   const deleteAccount = () => {
     localStorage.clear();
-    setUser(INITIAL_CURRENT_USER);
+    setUser(GUEST_USER);
+    setIsAuthenticated(false);
+    setOnboardingStep('login');
+    setActiveScreen('login');
+  };
+
+  // Log Out
+  const logout = () => {
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'onboardingStep');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'user');
+    setUser(GUEST_USER);
     setIsAuthenticated(false);
     setOnboardingStep('login');
     setActiveScreen('login');
@@ -1519,6 +1572,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateUserProfile,
         changePhoneNumber,
         deleteAccount,
+        logout,
         completeAuthFlow,
 
         language,
