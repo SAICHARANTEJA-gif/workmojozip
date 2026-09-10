@@ -234,20 +234,27 @@ export const WorkerFiltersSheet: React.FC<FilterSheetProps> = ({
               <span>High Customer Rating (4.5+ ★)</span>
             </label>
 
-            <label className="flex items-center gap-2 text-xs font-semibold text-[#111827] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.skillMatchOnly}
-                onChange={e =>
-                  setFilters(prev => ({ ...prev, skillMatchOnly: e.target.checked }))
-                }
-                className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
-              />
-              <span className="flex items-center gap-1">
-                <Sparkles size={12} className="text-[#2563EB]" />
-                <span>Only Jobs Matching My Registered Skills</span>
-              </span>
-            </label>
+            <div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-[#111827] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.skillMatchOnly}
+                  onChange={e =>
+                    setFilters(prev => ({ ...prev, skillMatchOnly: e.target.checked }))
+                  }
+                  className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
+                />
+                <span className="flex items-center gap-1">
+                  <Sparkles size={12} className="text-[#2563EB]" />
+                  <span>Only Jobs Matching My Registered Skills</span>
+                </span>
+              </label>
+              {filters.skillMatchOnly && (!user.skills || user.skills.length === 0) && (
+                <p className="text-[10px] text-amber-600 pl-6 mt-0.5 font-medium">
+                  Notice: Your profile currently has 0 registered skills.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

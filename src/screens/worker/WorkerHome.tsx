@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../store/AppContext';
 import { JobCard } from '../../components/common/JobCard';
 import { WorkCategory, Job } from '../../types';
@@ -20,6 +20,8 @@ import {
   Star,
   CheckCircle2,
   Calendar,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 
 interface WorkerHomeProps {
@@ -43,7 +45,12 @@ export const WorkerHome: React.FC<WorkerHomeProps> = ({
     savedJobIds,
     language,
     t,
+    refreshJobs,
   } = useApp();
+
+  useEffect(() => {
+    refreshJobs();
+  }, [refreshJobs]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isListening, setIsListening] = useState(false);

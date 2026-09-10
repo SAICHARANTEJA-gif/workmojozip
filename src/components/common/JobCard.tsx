@@ -50,9 +50,22 @@ export const JobCard: React.FC<JobCardProps> = ({
             <span>{getCategoryLabel(job.category, language)}</span>
           </span>
           {activeRole === 'worker' && (
-            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 border bg-[#FFFBEB] text-[#92400E] border-[#FDE68A] shadow-2xs">
-              <Sparkles size={11} className="text-[#F5A900]" />
-              <span>{matchResult.score}% {t.matchScore}</span>
+            <span
+              className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 border shadow-2xs ${
+                matchResult.isMatch
+                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]'
+                  : 'bg-[#FFFBEB] text-[#92400E] border-[#FDE68A]'
+              }`}
+              title={
+                matchResult.isMatch
+                  ? `Random Forest ML Verified: ${matchResult.score}% Compatibility (${matchResult.reasons[0] || 'Ensemble matched'})`
+                  : `Compatibility Score: ${matchResult.score}% (${matchResult.reasons[0] || 'General Gig'})`
+              }
+            >
+              <Sparkles size={11} className={matchResult.isMatch ? 'text-[#2563EB]' : 'text-[#F5A900]'} />
+              <span>
+                {matchResult.score}% {matchResult.isMatch ? 'AI Match' : t.matchScore}
+              </span>
             </span>
           )}
           {job.recurring && job.recurring !== 'none' && (

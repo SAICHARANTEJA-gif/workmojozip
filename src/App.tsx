@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { filterEligibleJobs } from './services/jobMatchingPipeline';
 import { useApp } from './store/AppContext';
 import { AuthFlow } from './screens/auth/AuthFlow';
 import { Header } from './components/common/Header';
@@ -48,7 +49,12 @@ export const App: React.FC = () => {
     pendingRatingJob,
     setPendingRatingJob,
     theme,
+    filters,
   } = useApp();
+
+  const eligibleJobsCount = useMemo(() => {
+    return filterEligibleJobs(jobs, filters, user).length;
+  }, [jobs, filters, user]);
 
   // Modals & Navigation states
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -215,7 +221,7 @@ export const App: React.FC = () => {
         <WorkerFiltersSheet
           isOpen={isFilterOpen}
           onClose={() => setIsFilterOpen(false)}
-          totalFilteredCount={jobs.length}
+          totalFilteredCount={eligibleJobsCount}
         />
 
         {/* 3. Worker Preferences Modal */}

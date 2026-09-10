@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "test": "npx tsx tests/jobMatchingPipeline.test.mjs",
+    "test:pipeline": "npx tsx tests/jobMatchingPipeline.test.mjs",
     "server:install": "cd server && npm install",
     "server:build": "cd server && npm install && npm run build",
     "server:start": "node server/dist/index.js",

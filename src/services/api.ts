@@ -1,8 +1,11 @@
 // API Client bridging Frontend to Backend
 const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
-  }
+  try {
+    const metaEnv = (import.meta as any)?.env;
+    if (metaEnv?.VITE_API_URL) {
+      return metaEnv.VITE_API_URL.replace(/\/+$/, '');
+    }
+  } catch (_) {}
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     // Local development connects to port 5000
@@ -16,9 +19,12 @@ const getApiBaseUrl = () => {
 };
 
 const getHealthUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') + '/api/health';
-  }
+  try {
+    const metaEnv = (import.meta as any)?.env;
+    if (metaEnv?.VITE_API_URL) {
+      return metaEnv.VITE_API_URL.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') + '/api/health';
+    }
+  } catch (_) {}
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) {

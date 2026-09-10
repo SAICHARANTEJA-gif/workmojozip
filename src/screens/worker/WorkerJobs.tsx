@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../store/AppContext';
 import { Job, WorkCategory } from '../../types';
 import { JobCard } from '../../components/common/JobCard';
 import { InteractiveWorkMap } from '../../components/map/InteractiveWorkMap';
-import { calculateMatchScore } from '../../services/matchingService';
 import { speechService } from '../../services/speechService';
 import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
+import { runJobMatchingPipeline } from '../../services/jobMatchingPipeline';
 import {
   Search,
   Mic,
@@ -16,6 +16,10 @@ import {
   Sparkles,
   ArrowUpDown,
   X,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface WorkerJobsProps {
@@ -27,98 +31,34 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
   onSelectJob,
   onOpenFilters,
 }) => {
-  const { jobs, user, filters, setFilters, language, theme, t } = useApp();
+  const { jobs, user, filters, setFilters, resetFilters, language, t, refreshJobs, isSyncingJobs } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [isListening, setIsListening] = useState(false);
 
-  // Dynamic Filtering
-  const filteredJobs = useMemo(() => {
-    return jobs.filter(job => {
-      // 1. Search Query
-      if (filters.searchQuery.trim()) {
-        const q = filters.searchQuery.toLowerCase();
-        const matchTitle = job.title.toLowerCase().includes(q);
-        const matchCat = job.category.toLowerCase().includes(q);
-        const matchDesc = job.description.toLowerCase().includes(q);
-        const matchArea = job.approximateArea.toLowerCase().includes(q);
-        if (!matchTitle && !matchCat && !matchDesc && !matchArea) return false;
-      }
+  // Sync latest jobs from server/Supabase whenever WorkerJobs screen is opened
+  useEffect(() => {
+    refreshJobs();
+  }, [refreshJobs]);
 
-      // 2. Categories
-      if (
-        filters.selectedCategories.length > 0 &&
-        !filters.selectedCategories.includes(job.category)
-      ) {
-        return false;
-      }
+  // 4-Stage Pipeline Execution (Hard Filters -> Eligible Jobs -> AI Compatibility -> Final Ranking)
+  // Strict Guarantee: The Random Forest model is evaluated via inference only and NEVER retrained on filter changes.
+  const pipelineResult = useMemo(() => {
+    return runJobMatchingPipeline(jobs, filters, user);
+  }, [jobs, filters, user]);
 
-      // 3. Max Distance
-      if (job.approximateDistanceKm > filters.maxDistance) {
-        return false;
-      }
+  const { counts, activeFilterTags, rankedJobs } = pipelineResult;
+  const sortedJobs = useMemo(() => rankedJobs.map(r => r.job), [rankedJobs]);
 
-      // 4. Min Wage
-      if (job.wage < filters.minWage) {
-        return false;
-      }
-
-      // 5. Urgency
-      if (filters.urgency !== 'All' && job.urgency !== filters.urgency) {
-        return false;
-      }
-
-      // 6. Customer Trust: KYC
-      if (filters.kycOnly && !job.customerKyc) {
-        return false;
-      }
-
-      // 7. Customer Rating
-      if (filters.minRating > 0 && job.customerRating < filters.minRating) {
-        return false;
-      }
-
-      // 8. Skill Match
-      if (filters.skillMatchOnly) {
-        const hasSkill = user.skills.some(
-          s => s.toLowerCase() === job.category.toLowerCase()
-        );
-        if (!hasSkill) return false;
-      }
-
-      return true;
-    });
-  }, [jobs, filters, user.skills]);
-
-  // Sorting with uniqueness guarantee
-  const sortedJobs = useMemo(() => {
-    const seenIds = new Set<string>();
-    const uniqueList: Job[] = [];
-    for (const job of filteredJobs) {
-      if (!seenIds.has(job.id)) {
-        seenIds.add(job.id);
-        uniqueList.push(job);
-      }
-    }
-
-    const list = [...uniqueList];
-    switch (filters.sortBy) {
-      case 'Nearest':
-        return list.sort((a, b) => a.approximateDistanceKm - b.approximateDistanceKm);
-      case 'Highest Wage':
-        return list.sort((a, b) => b.wage - a.wage);
-      case 'Earliest Start':
-        return list.sort((a, b) => a.startTime.localeCompare(b.startTime));
-      case 'Latest Posted':
-        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      case 'Best Match':
-      default:
-        return list.sort((a, b) => {
-          const scoreA = calculateMatchScore(user, a).score;
-          const scoreB = calculateMatchScore(user, b).score;
-          return scoreB - scoreA;
-        });
-    }
-  }, [filteredJobs, filters.sortBy, user]);
+  const hasActiveFilters =
+    filters.selectedCategories.length > 0 ||
+    filters.minWage > 0 ||
+    filters.maxDistance < 15 ||
+    filters.timeSlot !== 'All' ||
+    filters.urgency !== 'All' ||
+    filters.kycOnly ||
+    filters.minRating > 0 ||
+    filters.skillMatchOnly ||
+    Boolean(filters.searchQuery.trim());
 
   const handleVoiceSearch = () => {
     if (isListening) {
@@ -148,7 +88,7 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
   };
 
   return (
-    <div className="pb-24 max-w-lg mx-auto px-4 pt-3 space-y-4 text-[#111827]">
+    <div className="pb-24 max-w-lg mx-auto px-4 pt-3 space-y-3.5 text-[#111827]">
       {/* Search Bar & View Toggle */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center rounded-2xl border border-[#E2E8F0] bg-white p-1.5 shadow-xs transition-all focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#2563EB]/15">
@@ -166,6 +106,7 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
             <button
               onClick={() => setFilters(prev => ({ ...prev, searchQuery: '' }))}
               className="p-1 text-[#64748B] hover:text-[#111827]"
+              title="Clear search"
             >
               <X size={16} />
             </button>
@@ -209,6 +150,54 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
             <MapIcon size={18} />
           </button>
         </div>
+
+        {/* Sync / Refresh Jobs Button */}
+        <button
+          onClick={() => refreshJobs()}
+          disabled={isSyncingJobs}
+          className={`p-2.5 rounded-2xl border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#2563EB] hover:border-[#2563EB] shadow-xs transition-all flex items-center justify-center shrink-0 ${
+            isSyncingJobs ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+          }`}
+          title={isSyncingJobs ? 'Syncing latest jobs...' : 'Refresh jobs from server'}
+        >
+          <RefreshCw size={18} className={isSyncingJobs ? 'animate-spin text-[#2563EB]' : ''} />
+        </button>
+      </div>
+
+      {/* Mandatory Pipeline Architecture Banner */}
+      <div className="rounded-2xl p-3 bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-100 shadow-2xs space-y-2">
+        <div className="flex items-start gap-2 text-xs">
+          <Sparkles size={15} className="text-[#2563EB] shrink-0 mt-0.5" />
+          <p className="font-semibold text-slate-800 leading-snug">
+            Filters narrow the eligible jobs. AI matching ranks suitable options among the eligible results.
+          </p>
+        </div>
+
+        {/* Dynamic Multi-Stage Progression Indicator */}
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 flex-wrap pt-0.5">
+          <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 shadow-2xs">
+            All: <strong className="text-slate-900">{counts.totalJobs}</strong>
+          </span>
+          <span className="text-slate-400">→</span>
+          <span
+            className={`px-2 py-0.5 rounded-md border shadow-2xs transition-colors ${
+              counts.eligibleJobs < counts.totalJobs
+                ? 'bg-blue-100/90 text-blue-900 border-blue-300 font-bold'
+                : 'bg-white border-slate-200 text-slate-700'
+            }`}
+            title="Jobs surviving the 8 hard eligibility constraints"
+          >
+            Eligible: <strong className="text-blue-950">{counts.eligibleJobs}</strong>
+          </span>
+          <span className="text-slate-400">→</span>
+          <span
+            className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shadow-2xs font-bold flex items-center gap-1"
+            title="Surviving eligible jobs ranked by Random Forest AI compatibility score"
+          >
+            <Sparkles size={10} className="text-amber-600" />
+            <span>AI Ranked: {counts.rankedJobs}</span>
+          </span>
+        </div>
       </div>
 
       {/* Sorting & Filter Trigger Bar */}
@@ -216,16 +205,18 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <button
             onClick={onOpenFilters}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold shadow-xs transition-colors shrink-0 border border-[#E2E8F0] bg-white hover:border-[#2563EB] text-[#111827]"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold shadow-xs transition-colors shrink-0 border ${
+              hasActiveFilters
+                ? 'border-[#2563EB] bg-[#EFF6FF] text-[#2563EB]'
+                : 'border-[#E2E8F0] bg-white hover:border-[#2563EB] text-[#111827]'
+            }`}
           >
-            <Sliders size={13} className="text-[#2563EB]" />
+            <Sliders size={13} className={hasActiveFilters ? 'text-[#2563EB]' : 'text-[#64748B]'} />
             <span>{t.filterTitle}</span>
-            {(filters.selectedCategories.length > 0 ||
-              filters.minWage > 0 ||
-              filters.maxDistance < 15 ||
-              filters.kycOnly ||
-              filters.urgency !== 'All') && (
-              <span className="w-2 h-2 rounded-full bg-[#2563EB]"></span>
+            {hasActiveFilters && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-[#2563EB] text-white">
+                {activeFilterTags.length}
+              </span>
             )}
           </button>
 
@@ -237,7 +228,7 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
               onChange={e => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
               className="bg-transparent border-none outline-none font-bold cursor-pointer text-xs text-[#111827] [&>option]:bg-white [&>option]:text-[#111827]"
             >
-              <option value="Best Match">Sort: Best Match</option>
+              <option value="Best Match">Sort: Best Match (AI)</option>
               <option value="Nearest">Sort: Nearest</option>
               <option value="Highest Wage">Sort: Highest Wage</option>
               <option value="Earliest Start">Sort: Earliest Start</option>
@@ -247,13 +238,13 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
         </div>
 
         <span className="font-bold text-[11px] shrink-0 text-[#64748B]">
-          {sortedJobs.length} {t.navJobs}
+          {sortedJobs.length} {sortedJobs.length === 1 ? 'Job' : t.navJobs}
         </span>
       </div>
 
-      {/* Active Filter Chips */}
-      {filters.selectedCategories.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+      {/* Active Filter Chips with Quick Dismiss */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {filters.selectedCategories.map(cat => (
             <span
               key={cat}
@@ -263,12 +254,114 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
               <span>{getCategoryLabel(cat, language)}</span>
               <button
                 onClick={() => removeCategoryChip(cat)}
-                className="hover:text-rose-600 ml-0.5"
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title={`Remove ${cat}`}
               >
                 <X size={12} />
               </button>
             </span>
           ))}
+
+          {filters.maxDistance < 15 && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+              <span>≤ {filters.maxDistance} km</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, maxDistance: 15 }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Reset distance limit"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {filters.minWage > 0 && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+              <span>≥ ₹{filters.minWage}</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, minWage: 0 }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Reset wage filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {filters.timeSlot !== 'All' && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+              <span>Time: {filters.timeSlot}</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, timeSlot: 'All' }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Reset time slot"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {filters.urgency !== 'All' && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+              <span>Urgency: {filters.urgency}</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, urgency: 'All' }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Reset urgency"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {filters.kycOnly && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+              <span>KYC Customers</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, kycOnly: false }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Remove KYC requirement"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {filters.minRating > 0 && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]">
+              <span>{filters.minRating}+ ★ Rating</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, minRating: 0 }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Remove rating requirement"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {filters.skillMatchOnly && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border bg-[#FFFBEB] text-[#92400E] border-[#FDE68A]">
+              <Sparkles size={11} className="text-[#F5A900]" />
+              <span>My Skills Only</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, skillMatchOnly: false }))}
+                className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                title="Disable skill filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          <button
+            onClick={resetFilters}
+            className="text-[11px] font-bold text-[#64748B] hover:text-[#111827] flex items-center gap-1 px-2 py-0.5 rounded-lg hover:bg-slate-100 transition-colors ml-auto cursor-pointer"
+            title="Clear all active filters"
+          >
+            <RotateCcw size={11} />
+            <span>{t.clearFilters}</span>
+          </button>
         </div>
       )}
 
@@ -286,33 +379,57 @@ export const WorkerJobs: React.FC<WorkerJobsProps> = ({
       ) : (
         <div className="space-y-3">
           {sortedJobs.length === 0 ? (
-            <div className="rounded-3xl p-8 text-center border border-[#E2E8F0] bg-white shadow-xs space-y-3">
+            <div className="rounded-3xl p-8 text-center border border-[#E2E8F0] bg-white shadow-xs space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB]">
                 <Search size={24} />
               </div>
-              <h3 className="font-extrabold text-base text-[#111827]">
-                No jobs match your filters
-              </h3>
-              <p className="text-xs max-w-xs mx-auto text-[#64748B]">
-                Try expanding your distance radius, adjusting minimum wage, or clearing category filters.
-              </p>
-              <button
-                onClick={() => {
-                  setFilters(prev => ({
-                    ...prev,
-                    selectedCategories: [],
-                    minWage: 0,
-                    maxDistance: 15,
-                    searchQuery: '',
-                    kycOnly: false,
-                    skillMatchOnly: false,
-                    urgency: 'All',
-                  }));
-                }}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-xs"
-              >
-                {t.clearFilters}
-              </button>
+              <div>
+                <h3 className="font-extrabold text-base text-[#111827]">
+                  No jobs match your hard filters
+                </h3>
+                <p className="text-xs max-w-xs mx-auto text-[#64748B] mt-1 leading-relaxed">
+                  Filters narrow the eligible jobs before AI matching ranks them. Current constraints eliminated all {counts.totalJobs} available listings.
+                </p>
+              </div>
+
+              {/* Active filters breakdown in empty state */}
+              {activeFilterTags.length > 0 && (
+                <div className="p-3 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] text-left max-w-sm mx-auto space-y-1.5">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Active Restrictive Filters ({activeFilterTags.length}):
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {activeFilterTags.map(tag => (
+                      <span
+                        key={tag}
+                        className="text-[11px] font-semibold px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded-md shadow-2xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Special tip if skillMatchOnly is active but user has 0 skills */}
+              {filters.skillMatchOnly && (!user.skills || user.skills.length === 0) && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs max-w-sm mx-auto text-left">
+                  <AlertCircle size={15} className="text-amber-600 shrink-0" />
+                  <span>
+                    Your profile has 0 registered trade skills. Update your skills in your profile or disable "My Skills Only" to view all gigs.
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <button
+                  onClick={resetFilters}
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-extrabold px-5 py-2.5 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw size={13} />
+                  <span>{t.clearFilters}</span>
+                </button>
+              </div>
             </div>
           ) : (
             sortedJobs.map(job => (

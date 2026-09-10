@@ -6,7 +6,7 @@ import { api } from './api';
  */
 export function normalizeTradeSkill(trade: string): string {
   const t = (trade || '').toLowerCase().trim();
-  if (t.includes('plumb') || t.includes('ప్లంబ') || t.includes('प्लंबर') || t.includes('பிளம்ப')) return 'Plumber';
+  if (t.includes('plumb') || t.includes('ప్లంబ') || t.includes('प्लंबर') || t.includes('பிளம்ப') || t.includes('tap') || t.includes('pipe') || t.includes('drain')) return 'Plumber';
   if (t.includes('electr') || t.includes('ఎలక్ట్రీ') || t.includes('इलेक्ट्री') || t.includes('மின்சார')) return 'Electrician';
   if (t.includes('carpent') || t.includes('వడ్రంగి') || t.includes('बढ़ई') || t.includes('தச்சர்')) return 'Carpenter';
   if (t.includes('paint') || t.includes('పెయింట') || t.includes('पेंटर') || t.includes('வண்ண')) return 'Painter';

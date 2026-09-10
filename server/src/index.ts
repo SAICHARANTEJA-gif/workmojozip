@@ -705,44 +705,51 @@ app.get('/api/v1/jobs', async (req: Request, res: Response) => {
     // If Supabase is connected, query jobs and merge seamlessly
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase.from('jobs').select('*');
-        if (!error && data && data.length > 0) {
+        const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error('[Supabase] Error reading jobs table:', error.message);
+        } else if (data && data.length > 0) {
           const sbJobs = data.map((row: any) => ({
-            id: row.id,
-            customerId: row.employer_id,
-            customerName: 'Verified Employer',
+            id: String(row.id),
+            customerId: String(row.employer_id || 'cust-kumar'),
+            customerName: row.customer_name || 'Verified Employer',
+            customerPhoto: row.customer_photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80',
+            customerRating: Number(row.customer_rating) || 4.8,
+            customerKyc: row.customer_kyc !== undefined ? Boolean(row.customer_kyc) : true,
+            businessName: row.business_name || `${row.title} Services`,
             title: row.title,
             category: row.category,
             description: row.description || '',
-            wage: Number(row.wage),
-            startTime: row.start_time,
+            wage: Number(row.wage) || 500,
+            startTime: row.start_time || '09:00 AM',
             endTime: row.end_time || '05:00 PM',
             duration: row.duration || '8 hours',
             urgency: row.urgency || 'Today',
-            approximateArea: row.approximate_area,
+            approximateArea: row.approximate_area || '',
             approximateDistanceKm: Number(row.approximate_distance_km) || 2.5,
             exactLocation: {
-              approximateArea: row.approximate_area,
+              approximateArea: row.approximate_area || '',
               exactAddress: row.exact_address || '',
               landmark: row.landmark || '',
               lat: Number(row.exact_lat) || 12.934,
               lng: Number(row.exact_lng) || 77.625,
             },
-            workersRequired: row.workers_required || 1,
-            workersConfirmed: row.workers_confirmed || 0,
+            workersRequired: Number(row.workers_required) || 1,
+            workersConfirmed: Number(row.workers_confirmed) || 0,
             selectionMode: row.selection_mode || 'manual',
             status: row.status || 'Posted',
-            applicants: [],
-            confirmedWorkerIds: [],
-            waitingList: [],
+            applicants: Array.isArray(row.applicants) ? row.applicants : [],
+            confirmedWorkerIds: Array.isArray(row.confirmed_worker_ids) ? row.confirmed_worker_ids : [],
+            waitingList: Array.isArray(row.waiting_list) ? row.waiting_list : [],
             recurring: row.recurring || 'none',
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
+            createdAt: row.created_at || new Date().toISOString(),
+            updatedAt: row.updated_at || new Date().toISOString(),
           }));
+          // Supabase jobs take precedence for persistent truth
           combinedJobs = [...sbJobs, ...combinedJobs];
         }
-      } catch (sbErr) {
-        console.warn('[Supabase] Warning reading jobs:', sbErr);
+      } catch (sbErr: any) {
+        console.warn('[Supabase] Warning reading jobs:', sbErr.message);
       }
     }
 
@@ -770,7 +777,7 @@ app.get('/api/v1/jobs', async (req: Request, res: Response) => {
 
 app.post('/api/v1/jobs', async (req: Request, res: Response) => {
   const jobPayload = req.body;
-  const jobId = jobPayload.id || `job-${Date.now()}`;
+  const jobId = String(jobPayload.id || `job-${Date.now()}`);
 
   // IDEMPOTENCY CHECK: Check if an identical job already exists to prevent duplicate creation
   const existingJob = db.jobs.find(
@@ -783,15 +790,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
         (j.customerId === jobPayload.customerId || j.employerId === jobPayload.customerId))
   );
 
-  if (existingJob) {
-    return res.status(200).json({
-      success: true,
-      job: existingJob,
-      message: 'Job already exists, returning existing record.',
-    });
-  }
-
-  const newJob = {
+  const targetJob = existingJob || {
     id: jobId,
     ...jobPayload,
     workersConfirmed: jobPayload.workersConfirmed || 0,
@@ -803,40 +802,81 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
     updatedAt: jobPayload.updatedAt || new Date().toISOString(),
   };
 
-  db.jobs.unshift(newJob);
+  if (!existingJob) {
+    db.jobs.unshift(targetJob);
+  }
 
   // If Supabase is configured, attempt to persist to Supabase
+  let supabasePersisted = false;
+  let supabaseError: string | null = null;
   if (isSupabaseConfigured()) {
     try {
-      await supabase.from('jobs').upsert({
-        id: newJob.id,
-        employer_id: newJob.customerId || newJob.employerId || '00000000-0000-0000-0000-000000000000',
-        title: newJob.title,
-        description: newJob.description || '',
-        category: newJob.category,
-        wage: newJob.wage,
-        start_time: newJob.startTime,
-        duration: newJob.duration || '8 hours',
-        urgency: newJob.urgency || 'Today',
-        workers_required: newJob.workersRequired || 1,
-        workers_confirmed: newJob.workersConfirmed || 0,
-        approximate_area: newJob.approximateArea || '',
-        approximate_distance_km: newJob.approximateDistanceKm || 2.5,
-        exact_address: newJob.exactLocation?.exactAddress || newJob.exactAddress || newJob.approximateArea || '',
-        landmark: newJob.exactLocation?.landmark || newJob.landmark || '',
-        exact_lat: newJob.exactLocation?.lat || 12.934,
-        exact_lng: newJob.exactLocation?.lng || 77.625,
-        status: newJob.status || 'Open',
-        recurring: newJob.recurring || 'none',
-      });
-    } catch (sbErr) {
-      console.warn('[Supabase] Warning persisting job:', sbErr);
+      const sbPayload: any = {
+        id: targetJob.id,
+        employer_id: String(targetJob.customerId || targetJob.employerId || 'cust-kumar'),
+        title: targetJob.title,
+        description: targetJob.description || '',
+        category: targetJob.category,
+        wage: Number(targetJob.wage) || 500,
+        start_time: targetJob.startTime || '09:00 AM',
+        duration: targetJob.duration || '8 hours',
+        urgency: targetJob.urgency || 'Today',
+        workers_required: Number(targetJob.workersRequired) || 1,
+        workers_confirmed: Number(targetJob.workersConfirmed) || 0,
+        approximate_area: targetJob.approximateArea || 'Bangalore',
+        approximate_distance_km: Number(targetJob.approximateDistanceKm) || 2.5,
+        exact_address: targetJob.exactLocation?.exactAddress || targetJob.exactAddress || targetJob.approximateArea || 'Bangalore Central',
+        landmark: targetJob.exactLocation?.landmark || targetJob.landmark || '',
+        exact_lat: Number(targetJob.exactLocation?.lat) || 12.934,
+        exact_lng: Number(targetJob.exactLocation?.lng) || 77.625,
+        status: targetJob.status || 'Open',
+        recurring: targetJob.recurring || 'none',
+      };
+
+      if (targetJob.customerName) sbPayload.customer_name = targetJob.customerName;
+      if (targetJob.customerPhoto) sbPayload.customer_photo = targetJob.customerPhoto;
+      if (targetJob.customerRating !== undefined) sbPayload.customer_rating = Number(targetJob.customerRating);
+      if (targetJob.customerKyc !== undefined) sbPayload.customer_kyc = Boolean(targetJob.customerKyc);
+      if (targetJob.businessName) sbPayload.business_name = targetJob.businessName;
+      if (targetJob.selectionMode) sbPayload.selection_mode = targetJob.selectionMode;
+
+      const { error } = await supabase.from('jobs').upsert(sbPayload);
+      if (error) {
+        supabaseError = `${error.code}: ${error.message}`;
+        console.error('[Supabase] Job upsert error:', error.message, error.details || error.hint);
+        // If unknown column error (e.g. metadata columns before migration 20260911), retry with base columns
+        if (error.code === '42703' || error.code === 'PGRST204' || String(error.message).includes('Could not find')) {
+          delete sbPayload.customer_name;
+          delete sbPayload.customer_photo;
+          delete sbPayload.customer_rating;
+          delete sbPayload.customer_kyc;
+          delete sbPayload.business_name;
+          delete sbPayload.selection_mode;
+          const retry = await supabase.from('jobs').upsert(sbPayload);
+          if (!retry.error) {
+            supabasePersisted = true;
+            supabaseError = null;
+            console.log('[Supabase] Job persisted with core columns:', targetJob.id);
+          } else {
+            supabaseError = `${retry.error.code}: ${retry.error.message}`;
+          }
+        }
+      } else {
+        supabasePersisted = true;
+        console.log('[Supabase] Job successfully persisted:', targetJob.id);
+      }
+    } catch (sbErr: any) {
+      supabaseError = sbErr.message;
+      console.error('[Supabase] Exception persisting job:', sbErr.message);
     }
   }
 
-  res.status(201).json({
+  res.status(existingJob ? 200 : 201).json({
     success: true,
-    job: newJob,
+    job: targetJob,
+    persistedToSupabase: supabasePersisted,
+    ...(supabaseError ? { supabaseNotice: supabaseError } : {}),
+    ...(existingJob ? { message: 'Job already exists in memory, refreshed and synced.' } : {}),
   });
 });
 

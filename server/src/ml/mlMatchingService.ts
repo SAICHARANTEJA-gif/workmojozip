@@ -1,4 +1,4 @@
-﻿import fs from 'fs';
+import fs from 'fs';
 import path from 'path';
 
 export interface TreeNode {
@@ -105,7 +105,7 @@ function loadModel(): ModelPayload {
  */
 export function normalizeTradeSkill(trade: string): string {
   const t = (trade || '').toLowerCase().trim();
-  if (t.includes('plumb') || t.includes('ప్లంబ') || t.includes('प्लंबर')) return 'Plumber';
+  if (t.includes('plumb') || t.includes('ప్లంబ') || t.includes('प्लंबर') || t.includes('tap') || t.includes('pipe') || t.includes('drain')) return 'Plumber';
   if (t.includes('electr') || t.includes('ఎలక్ట్రీ') || t.includes('इलेक्ट्री')) return 'Electrician';
   if (t.includes('carpent') || t.includes('వడ్రంగి') || t.includes('बढ़ई')) return 'Carpenter';
   if (t.includes('paint') || t.includes('పెయింట') || t.includes('पेंटर')) return 'Painter';

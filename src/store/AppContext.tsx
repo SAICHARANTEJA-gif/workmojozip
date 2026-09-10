@@ -67,11 +67,13 @@ interface AppContextType {
   toggleSaveJob: (jobId: string) => void;
   applyToJob: (jobId: string) => { success: boolean; isWaitingList: boolean; position?: number };
   cancelConfirmedJob: (jobId: string) => void;
-  createJob: (jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>) => Job;
+  createJob: (jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>) => Promise<Job>;
+  refreshJobs: () => Promise<Job[] | null>;
+  isSyncingJobs: boolean;
   confirmWorkerForJob: (jobId: string, workerId: string) => void;
   autoSelectWorkersForJob: (jobId: string) => void;
   simulateCompleteJob: (jobId: string) => void;
-  rehireWorker: (workerId: string, category: WorkCategory) => void;
+  rehireWorker: (workerId: string, category: WorkCategory) => Promise<void>;
   cancelJob: (jobId: string, reason?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
 
   // Applications
@@ -411,6 +413,80 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'payments', JSON.stringify(payments));
   }, [payments]);
+
+  // --- Cross-Device Job Synchronization (Supabase PostgreSQL + Render Backend) ---
+  const [isSyncingJobs, setIsSyncingJobs] = useState<boolean>(false);
+
+  const refreshJobsFromServer = useCallback(async (): Promise<Job[] | null> => {
+    setIsSyncingJobs(true);
+    try {
+      const res = await api.getJobs();
+      if (res && res.success && Array.isArray(res.jobs)) {
+        setJobs(prevJobs => {
+          const map = new Map<string, Job>();
+          const seenSignatures = new Set<string>();
+
+          // Remote jobs (from Supabase PostgreSQL & Render backend) have priority for cross-device consistency
+          for (const sj of res.jobs) {
+            const sig = `${sj.title.trim().toLowerCase()}_${sj.category}_${sj.wage}_${sj.startTime}_${sj.approximateArea}`;
+            if (!map.has(sj.id) && !seenSignatures.has(sig)) {
+              map.set(sj.id, sj);
+              seenSignatures.add(sig);
+            }
+          }
+
+          // Merge locally pending jobs that may not have completed syncing
+          for (const pj of prevJobs) {
+            const sig = `${pj.title.trim().toLowerCase()}_${pj.category}_${pj.wage}_${pj.startTime}_${pj.approximateArea}`;
+            if (!map.has(pj.id) && !seenSignatures.has(sig)) {
+              map.set(pj.id, pj);
+              seenSignatures.add(sig);
+            }
+          }
+
+          return Array.from(map.values());
+        });
+        return res.jobs;
+      }
+    } catch (err) {
+      console.warn('[AppContext] Failed to fetch remote jobs from backend:', err);
+    } finally {
+      setIsSyncingJobs(false);
+    }
+    return null;
+  }, []);
+
+  // Initial fetch on mount + reactive window focus & visibility sync
+  useEffect(() => {
+    refreshJobsFromServer();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshJobsFromServer();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshJobsFromServer();
+    };
+
+    // Background sync every 25 seconds when browser tab is active
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshJobsFromServer();
+      }
+    }, 25000);
+
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshJobsFromServer]);
+
 
   const setLanguage = (lang: SupportedLanguage) => {
     setLanguageState(lang);
@@ -767,8 +843,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  // Create New Job
-  const createJob = (jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>): Job => {
+  // Create New Job (Optimistic local save + async POST to backend / Supabase)
+  const createJob = async (
+    jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>
+  ): Promise<Job> => {
     // Check if an identical job already exists to prevent duplicate submissions
     const existing = jobs.find(
       j =>
@@ -824,9 +902,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     // Sync newly created job to backend API (and Supabase if configured)
-    api.postJob(newJob).catch(err => {
+    try {
+      const res = await api.postJob(newJob);
+      if (res && res.success && res.job) {
+        setJobs(prev => prev.map(j => (j.id === newJob.id ? { ...j, ...res.job } : j)));
+        return { ...newJob, ...res.job };
+      }
+    } catch (err) {
       console.warn('[JobSync] Warning syncing job to backend:', err);
-    });
+    }
 
     return newJob;
   };
@@ -867,11 +951,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Rehire Worker
-  const rehireWorker = (workerId: string, category: WorkCategory) => {
+  const rehireWorker = async (workerId: string, category: WorkCategory) => {
     const workerObj = allWorkers.find(w => w.id === workerId);
     if (!workerObj) return;
 
-    const quickJob = createJob({
+    const quickJob = await createJob({
       customerId: user.id,
       customerName: user.name,
       customerPhoto: user.profilePhoto,
@@ -1592,6 +1676,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         simulateCompleteJob,
         rehireWorker,
         cancelJob,
+        refreshJobs: refreshJobsFromServer,
+        isSyncingJobs,
 
         applications,
 
