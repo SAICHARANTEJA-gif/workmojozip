@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { isSupabaseConfigured, supabase } from './db/supabaseClient';
+import { isSupabaseConfigured, isServiceRoleActive, supabase } from './db/supabaseClient';
 import { processAiChat } from './aiService';
 import { predictWorkerJobMatch, rankWorkersForJob, getMLDiagnostics } from './ml/mlMatchingService';
 
@@ -1655,7 +1655,8 @@ app.get(['/api/v1/ai/chat', '/api/v1/mojo/chat', '/api/ai/chat', '/ai/chat'], (r
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`[WORK MOJO] API Backend running on http://localhost:${PORT}`);
-    console.log(`[WORK MOJO] Supabase/PostgreSQL schema ready. Dual store active.`);
+    const authType = isServiceRoleActive() ? 'SERVICE_ROLE (privileged server writes active)' : 'ANON (standard key)';
+    console.log(`[WORK MOJO] Supabase status: ${isSupabaseConfigured() ? 'Connected via ' + authType : 'Disabled (in-memory mode)'}`);
   });
 }
 

@@ -19,7 +19,15 @@ export const isSupabaseConfigured = (): boolean => {
   );
 };
 
+export const isServiceRoleActive = (): boolean => {
+  return (
+    !!process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY !== 'demo-anon-key'
+  );
+};
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
 });
+
 
