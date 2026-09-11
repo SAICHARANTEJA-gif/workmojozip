@@ -3,6 +3,7 @@ import { useApp } from '../../store/AppContext';
 import { MojoMascotIcon } from '../../components/mojo/MojoMascotIcon';
 import { Gender, SupportedLanguage, UserRole } from '../../types';
 import { api } from '../../services/api';
+import { LanguageSelector } from '../../components/common/LanguageSelector';
 import {
   Phone,
   ShieldCheck,
@@ -59,12 +60,6 @@ export const AuthFlow: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [useWebcam, setUseWebcam] = useState(false);
 
-  const languages: Array<{ code: SupportedLanguage; label: string }> = [
-    { code: 'en', label: 'English' },
-    { code: 'te', label: 'తెలుగు' },
-    { code: 'hi', label: 'हिन्दी' },
-    { code: 'ta', label: 'தமிழ்' },
-  ];
 
   // Auto transition Splash screen after 2 seconds
   useEffect(() => {
@@ -203,26 +198,8 @@ export const AuthFlow: React.FC = () => {
 
   // Common Language Selector Header on Auth Screens
   const renderLanguageHeader = () => (
-    <div className="flex items-center justify-between w-full pb-3 mb-2 border-b border-[#F1F5F9]">
-      <div className="flex items-center gap-1.5 text-xs font-bold text-[#2563EB]">
-        <Globe size={14} />
-        <span>Select Language:</span>
-      </div>
-      <div className="flex items-center gap-1">
-        {languages.map(l => (
-          <button
-            key={l.code}
-            onClick={() => setLanguage(l.code)}
-            className={`text-[11px] font-bold px-2 py-1 rounded-lg transition-all ${
-              language === l.code
-                ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] shadow-xs'
-                : 'bg-[#F1F5F9] text-[#64748B] hover:text-[#111827]'
-            }`}
-          >
-            {l.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex items-center justify-end w-full pb-2 mb-2 border-b border-[#F1F5F9]">
+      <LanguageSelector variant="auth" iconSize={17} />
     </div>
   );
 

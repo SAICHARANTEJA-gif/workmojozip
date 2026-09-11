@@ -4,6 +4,7 @@ import { useApp } from '../../store/AppContext';
 import { speechService } from '../../services/speechService';
 import { SupportedLanguage } from '../../types';
 import { getLanguageConfig } from '../../config/languageConfig';
+import { LanguageSelector } from '../common/LanguageSelector';
 import {
   X,
   Send,
@@ -68,6 +69,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [voiceAvailable, setVoiceAvailable] = useState<boolean>(true);
   const [voiceName, setVoiceName] = useState<string | undefined>(undefined);
+  const [isLangSelectorOpen, setIsLangSelectorOpen] = useState<boolean>(false);
   const [conversationState, setConversationState] = useState<{
     lastIntent?: string;
     jobDraft?: {
@@ -453,8 +455,19 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
         let actionText: string | undefined = res.action?.label;
         let onAction: (() => void) | undefined;
 
-        if (res.action?.type === 'CHANGE_LANGUAGE' && res.action?.language) {
-          setLanguage(res.action.language);
+        if (res.action?.type === 'CHANGE_LANGUAGE') {
+          if (res.action?.language) {
+            setLanguage(res.action.language);
+          }
+          actionText = actionText || (
+            language === 'te' ? 'భాషను మార్చండి' :
+            language === 'hi' ? 'भाषा बदलें' :
+            language === 'ta' ? 'மொழியை மாற்றுங்கள்' :
+            'Change Language'
+          );
+          onAction = () => {
+            setIsLangSelectorOpen(true);
+          };
         }
 
         if (res.action?.type === 'OPEN_POST_JOB' || res.action?.type === 'UPDATE_JOB_DRAFT') {
@@ -663,12 +676,6 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
 
   const suggestions = getContextSuggestions();
 
-  const languagesList: Array<{ code: SupportedLanguage; label: string; native: string }> = [
-    { code: 'en', label: 'EN', native: 'English' },
-    { code: 'te', label: 'తెలుగు', native: 'తెలుగు' },
-    { code: 'hi', label: 'हिन्दी', native: 'हिन्दी' },
-    { code: 'ta', label: 'தமிழ்', native: 'தமிழ்' },
-  ];
 
   return (
     <>
@@ -743,6 +750,14 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                     </button>
                   )}
 
+                  {/* Language Selector */}
+                  <LanguageSelector
+                    variant="mojo"
+                    iconSize={16}
+                    isOpen={isLangSelectorOpen}
+                    onOpenChange={setIsLangSelectorOpen}
+                  />
+
                   {/* Sound Toggle */}
                   <button
                     onClick={() => {
@@ -780,29 +795,6 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                   >
                     <X size={19} />
                   </button>
-                </div>
-              </div>
-
-              {/* In-Chat Quick Language Switcher Pills */}
-              <div className="flex items-center justify-between bg-black/15 p-1 rounded-xl">
-                <div className="flex items-center gap-1 text-[10px] font-bold text-blue-100 px-1">
-                  <Globe size={11} />
-                  <span>Language:</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {languagesList.map(lang => (
-                    <button
-                      key={lang.code}
-                      onClick={() => setLanguage(lang.code)}
-                      className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all ${
-                        language === lang.code
-                          ? 'bg-white text-[#2563EB] shadow-xs scale-105'
-                          : 'text-white/90 hover:bg-white/10 font-bold'
-                      }`}
-                    >
-                      {lang.native}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>

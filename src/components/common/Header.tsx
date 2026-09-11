@@ -10,7 +10,7 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { SupportedLanguage } from '../../types';
+import { LanguageSelector } from './LanguageSelector';
 
 export const Header: React.FC = () => {
   const {
@@ -20,8 +20,6 @@ export const Header: React.FC = () => {
     setUserAvailability,
     notifications,
     setActiveScreen,
-    language,
-    setLanguage,
     t,
     theme,
     toggleTheme,
@@ -29,12 +27,6 @@ export const Header: React.FC = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const languages: Array<{ code: SupportedLanguage; label: string }> = [
-    { code: 'en', label: 'EN' },
-    { code: 'te', label: 'తెలుగు' },
-    { code: 'hi', label: 'हिन्दी' },
-    { code: 'ta', label: 'தமிழ்' },
-  ];
 
   const getAvailabilityLabel = (st: 'Available' | 'Busy' | 'Away') => {
     if (st === 'Available') return t.available.split(' ')[0] || 'Available';
@@ -68,22 +60,8 @@ export const Header: React.FC = () => {
 
         {/* Right Action Tools: Language, Role Switcher, Notifications */}
         <div className="flex items-center gap-1.5">
-          {/* Language Selector Dropdown */}
-          <div className="flex items-center bg-[#EFF6FF] rounded-xl p-0.5 border border-[#DBEAFE]">
-            {languages.map(lang => (
-              <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                  language === lang.code
-                    ? 'bg-[#2563EB] text-white font-black shadow-2xs'
-                    : 'text-[#64748B] hover:text-[#111827]'
-                }`}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
+          {/* Language Selector */}
+          <LanguageSelector variant="header" iconSize={17} />
 
           {/* DUAL ROLE SWITCHER - Yellow WorkMojo Highlight CTA Button */}
           <button
