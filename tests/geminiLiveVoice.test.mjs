@@ -371,9 +371,174 @@ async function runTests() {
     assert(draftMsg?.jobDraft?.workersRequired === 15, 'Dynamically synchronized draft state to backend');
 
     // -------------------------------------------------------------------------
-    // Test 10: Clean Session Termination
+    // Test 10: 12-Turn Continuous Dialog Acceptance Test (Requirement 20)
     // -------------------------------------------------------------------------
-    console.log('\n--- Test 10: Clean Session Termination ---');
+    console.log('\n--- Test 10: 12-Turn Continuous Dialog Acceptance Test ---');
+
+    // Re-initialize fresh session over the SAME open WebSocket
+    ws.send(
+      JSON.stringify({
+        type: 'init',
+        language: 'en',
+        role: 'customer',
+        conversationState: { jobDraft: {} },
+      })
+    );
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const acceptanceTurns = [
+      {
+        turn: 1,
+        input: 'I need 5 electricians tomorrow in Madhapur',
+        expectedIntent: 'WORKER_COUNT',
+        validate: (action) =>
+          action.entities?.workersRequired === 5 &&
+          action.action?.jobDraft?.category === 'Electrical Work' &&
+          action.action?.jobDraft?.location?.toLowerCase().includes('madhapur'),
+        desc: 'Turn 1: Sets workers=5, Electrical Work, Madhapur, Tomorrow',
+      },
+      {
+        turn: 2,
+        input: 'Actually change that to eight',
+        expectedIntent: 'WORKER_COUNT',
+        validate: (action) =>
+          action.entities?.workersRequired === 8 &&
+          action.action?.jobDraft?.category === 'Electrical Work' &&
+          action.action?.jobDraft?.location?.toLowerCase().includes('madhapur'),
+        desc: 'Turn 2: "Actually change that to eight" updates workersRequired to 8 and preserves Electrical Work + Madhapur',
+      },
+      {
+        turn: 3,
+        input: 'Set the wage to 900 rupees',
+        expectedIntent: 'JOB_WAGE',
+        validate: (action) =>
+          action.entities?.wage === 900 &&
+          action.action?.jobDraft?.workersRequired === 8,
+        desc: 'Turn 3: Updates wage to 900 and preserves workersRequired=8',
+      },
+      {
+        turn: 4,
+        input: 'Shift time 9 AM to 6 PM',
+        expectedIntent: 'JOB_START_TIME',
+        validate: (action) =>
+          action.action?.jobDraft?.startTime?.includes('9') &&
+          action.action?.jobDraft?.endTime?.includes('6'),
+        desc: 'Turn 4: Working hours 9 AM to 6 PM',
+      },
+      {
+        turn: 5,
+        input: 'Change location to Jubilee Hills',
+        expectedIntent: 'JOB_LOCATION',
+        validate: (action) =>
+          action.action?.jobDraft?.location?.toLowerCase().includes('jubilee'),
+        desc: 'Turn 5: Updates location to Jubilee Hills',
+      },
+      {
+        turn: 6,
+        input: 'What is the worker count now?',
+        expectedIntent: 'WORKER_COUNT',
+        validate: (action) =>
+          action.entities?.isQuery === true &&
+          action.action?.jobDraft?.workersRequired === 8,
+        desc: 'Turn 6: Answers worker count query (=8)',
+      },
+      {
+        turn: 7,
+        input: 'Where is the location?',
+        expectedIntent: 'JOB_LOCATION',
+        validate: (action) =>
+          action.entities?.isQuery === true &&
+          action.action?.jobDraft?.location?.toLowerCase().includes('jubilee'),
+        desc: 'Turn 7: Answers location query (=Jubilee Hills)',
+      },
+      {
+        turn: 8,
+        input: 'Switch to Telugu',
+        expectedIntent: 'LANGUAGE_CHANGE',
+        validate: (action) => action.entities?.targetLanguage === 'te',
+        desc: 'Turn 8: Switches language to Telugu',
+      },
+      {
+        turn: 9,
+        input: 'నాకు 3 ప్లంబర్లు కావాలి',
+        expectedIntent: 'WORKER_COUNT',
+        validate: (action) =>
+          action.entities?.workersRequired === 3 &&
+          action.action?.jobDraft?.category === 'Plumbing',
+        desc: 'Turn 9: Telugu request for 3 plumbers',
+      },
+      {
+        turn: 10,
+        input: 'ఎంతమంది వర్కర్లు?',
+        expectedIntent: 'WORKER_COUNT',
+        validate: (action) =>
+          action.entities?.isQuery === true &&
+          action.action?.jobDraft?.workersRequired === 3,
+        desc: 'Turn 10: Telugu worker count query (=3)',
+      },
+      {
+        turn: 11,
+        input: 'Cancel job',
+        expectedIntent: 'JOB_CANCELLATION',
+        validate: (action) =>
+          action.conversationState?.pendingConfirmation === 'CANCEL_JOB',
+        desc: 'Turn 11: Cancel job prompts for confirmation (pendingConfirmation set)',
+      },
+      {
+        turn: 12,
+        input: 'Yes confirm',
+        expectedIntent: 'JOB_CANCELLATION',
+        validate: (action) =>
+          action.entities?.confirmationStatus === 'confirmed' &&
+          !action.conversationState?.pendingConfirmation &&
+          Object.keys(action.action?.jobDraft || {}).length === 0,
+        desc: 'Turn 12: Confirmation resets job draft and clears pending state',
+      },
+    ];
+
+    for (const t of acceptanceTurns) {
+      receivedMessages.length = 0;
+      ws.send(JSON.stringify({ type: 'text', text: t.input }));
+
+      let actionPayload = null;
+      const turnStart = Date.now();
+      while (Date.now() - turnStart < 2500) {
+        actionPayload = receivedMessages.find(m => m.type === 'intent_action');
+        if (actionPayload) break;
+        await new Promise(resolve => setTimeout(resolve, 80));
+      }
+
+      assert(actionPayload !== null, `${t.desc} - received intent_action`);
+      assert(actionPayload.intent === t.expectedIntent, `${t.desc} - intent matches ${t.expectedIntent} (got ${actionPayload?.intent})`);
+      assert(t.validate(actionPayload), `${t.desc} - validated successfully`);
+      assert(ws.readyState === WebSocket.OPEN, `Session remains continuously OPEN after Acceptance Turn ${t.turn}`);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 11: 50-Turn Longevity & Stress Test (Continuous Hands-Free Session)
+    // -------------------------------------------------------------------------
+    console.log('\n--- Test 11: 50-Turn Longevity & Stress Test ---');
+
+    for (let i = 1; i <= 50; i++) {
+      receivedMessages.length = 0;
+      ws.send(JSON.stringify({ type: 'text', text: `I need ${i} helpers` }));
+
+      let actionPayload = null;
+      const tStart = Date.now();
+      while (Date.now() - tStart < 2000) {
+        actionPayload = receivedMessages.find(m => m.type === 'intent_action');
+        if (actionPayload) break;
+        await new Promise(resolve => setTimeout(resolve, 40));
+      }
+
+      assert(actionPayload !== null && actionPayload.entities?.workersRequired === i, `Turn ${i}/50: processed without disconnect`);
+      assert(ws.readyState === WebSocket.OPEN, `Turn ${i}/50: socket is healthy & open`);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 12: Clean Session Termination
+    // -------------------------------------------------------------------------
+    console.log('\n--- Test 12: Clean Session Termination ---');
 
     ws.send(JSON.stringify({ type: 'close' }));
     ws.close(1000, 'Normal closure');

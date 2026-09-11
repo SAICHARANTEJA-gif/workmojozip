@@ -8,6 +8,7 @@ export interface GeminiLiveConfig {
   systemPrompt?: string;
   language?: 'en' | 'te' | 'hi' | 'ta';
   role?: 'customer' | 'worker';
+  conversationState?: any;
 }
 
 export class GeminiLiveService extends EventEmitter {
@@ -96,17 +97,32 @@ export class GeminiLiveService extends EventEmitter {
         ? 'Preferred language: Tamil (தமிழ்). Speak naturally in Tamil.'
         : 'Preferred language: Indian English. Speak naturally in English.';
 
+    let draftContext = '';
+    const draft = this.config.conversationState?.jobDraft;
+    if (draft && Object.keys(draft).length > 0) {
+      draftContext = `\nCURRENT ACTIVE JOB DRAFT STATE:\n` +
+        `- Category / Trade: ${draft.category || 'Not specified yet'}\n` +
+        `- Workers Required: ${draft.workersRequired || 'Not specified yet'}\n` +
+        `- Location: ${draft.location || 'Not specified yet'}\n` +
+        `- Wage: ${draft.wage ? `₹${draft.wage}/day` : 'Not specified yet'}\n` +
+        `- Date: ${draft.date || 'Today'}\n` +
+        `- Working Hours: ${draft.startTime || '9:00 AM'} to ${draft.endTime || '6:00 PM'}\n` +
+        `Preserve these details unless the user explicitly updates them.\n`;
+    }
+
     const basePrompt = `You are Mojo, the official real-time voice assistant for WorkMojo — India's zero-commission, fair-wage hyper-local blue-collar work platform.
 Role of user: ${this.config.role === 'customer' ? 'Customer/Employer looking to post jobs or select workers' : 'Worker looking for nearby jobs, wage info, or attendance'}.
 ${languageContext}
-
+${draftContext}
 CRITICAL RULES FOR VOICE:
 1. Always respond in the exact language spoken by the user (English, Telugu, Hindi, or Tamil).
 2. Keep responses brief, conversational, and direct (1 to 2 sentences maximum).
 3. Do not recite markdown syntax, asterisks, bullet points, emojis, or code blocks.
 4. If the user wants to post a job or hire workers, actively collect: trade/category, number of workers, date/time, wage, and location.
 5. Worker count is flexible and can be any positive integer (e.g. 1, 5, 8, 12, 20).
-6. Be warm, professional, respectful, and ready to assist.`;
+6. If the user asks about the current job draft (e.g. "What is the worker count?", "Where is the location?"), accurately answer using the active draft details.
+7. If the user asks to cancel the job, ask for confirmation first before proceeding.
+8. Be warm, professional, respectful, and ready to assist.`;
 
     const systemPrompt = this.config.systemPrompt ? `${basePrompt}\n${this.config.systemPrompt}` : basePrompt;
 

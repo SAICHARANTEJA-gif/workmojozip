@@ -10,6 +10,8 @@ export class AudioPlayback {
   private isPlaying: boolean = false;
   private endTimeout: ReturnType<typeof setTimeout> | null = null;
   private onPlaybackStateChange?: (isPlaying: boolean) => void;
+  private analyserNode: AnalyserNode | null = null;
+  private frequencyDataArray: Uint8Array | null = null;
 
   constructor(onPlaybackStateChange?: (isPlaying: boolean) => void) {
     this.onPlaybackStateChange = onPlaybackStateChange;
@@ -20,6 +22,12 @@ export class AudioPlayback {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       this.audioContext = new AudioContextClass({ sampleRate: 24000 });
       this.nextPlayTime = 0;
+
+      // Initialize AnalyserNode for audio output visualization
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 64;
+      this.frequencyDataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+      this.analyserNode.connect(this.audioContext.destination);
     }
     if (this.audioContext.state === 'suspended') {
       this.audioContext.resume().catch(() => {});
@@ -52,7 +60,11 @@ export class AudioPlayback {
 
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(ctx.destination);
+      if (this.analyserNode) {
+        source.connect(this.analyserNode);
+      } else {
+        source.connect(ctx.destination);
+      }
 
       // Schedule seamless gapless playback
       const currentTime = ctx.currentTime;
@@ -134,6 +146,12 @@ export class AudioPlayback {
 
   public stop(): void {
     this.flush();
+    if (this.analyserNode) {
+      try {
+        this.analyserNode.disconnect();
+      } catch {}
+      this.analyserNode = null;
+    }
     if (this.audioContext && this.audioContext.state !== 'closed') {
       try {
         this.audioContext.close();
@@ -144,6 +162,17 @@ export class AudioPlayback {
 
   public get playing(): boolean {
     return this.isPlaying;
+  }
+
+  /**
+   * Returns instantaneous frequency data (0-255 per bin) for audio playback visualizer
+   */
+  public getFrequencyData(): Uint8Array {
+    if (this.analyserNode && this.frequencyDataArray && this.isPlaying) {
+      this.analyserNode.getByteFrequencyData(this.frequencyDataArray as any);
+      return this.frequencyDataArray;
+    }
+    return new Uint8Array(0);
   }
 }
 

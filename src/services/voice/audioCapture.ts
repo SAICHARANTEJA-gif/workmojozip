@@ -8,6 +8,9 @@ export class AudioCapture {
   private mediaStream: MediaStream | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private processorNode: ScriptProcessorNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
+  private gainNode: GainNode | null = null;
+  private frequencyDataArray: Uint8Array | null = null;
   private isCapturing: boolean = false;
   private currentRms: number = 0;
 
@@ -49,6 +52,12 @@ export class AudioCapture {
       this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.processorNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
 
+      // Connect source to AnalyserNode for live visualizer frequency data
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 64;
+      this.frequencyDataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+      this.sourceNode.connect(this.analyserNode);
+
       this.processorNode.onaudioprocess = e => {
         if (!this.isCapturing) return;
 
@@ -77,7 +86,13 @@ export class AudioCapture {
       };
 
       this.sourceNode.connect(this.processorNode);
-      this.processorNode.connect(this.audioContext.destination);
+
+      // Route through GainNode with gain = 0 to prevent mic echo through speakers
+      // while keeping Web Audio onaudioprocess clock running
+      this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = 0;
+      this.processorNode.connect(this.gainNode);
+      this.gainNode.connect(this.audioContext.destination);
 
       this.isCapturing = true;
     } catch (err: any) {
@@ -151,6 +166,20 @@ export class AudioCapture {
       this.processorNode = null;
     }
 
+    if (this.gainNode) {
+      try {
+        this.gainNode.disconnect();
+      } catch {}
+      this.gainNode = null;
+    }
+
+    if (this.analyserNode) {
+      try {
+        this.analyserNode.disconnect();
+      } catch {}
+      this.analyserNode = null;
+    }
+
     if (this.sourceNode) {
       try {
         this.sourceNode.disconnect();
@@ -183,5 +212,16 @@ export class AudioCapture {
 
   public get rms(): number {
     return this.currentRms;
+  }
+
+  /**
+   * Returns instantaneous frequency data (0-255 per bin) for audio visualizer
+   */
+  public getFrequencyData(): Uint8Array {
+    if (this.analyserNode && this.frequencyDataArray && this.isCapturing) {
+      this.analyserNode.getByteFrequencyData(this.frequencyDataArray as any);
+      return this.frequencyDataArray;
+    }
+    return new Uint8Array(0);
   }
 }

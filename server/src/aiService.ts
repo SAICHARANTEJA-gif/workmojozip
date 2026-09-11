@@ -44,6 +44,7 @@ export interface ConversationState {
   lastIntent?: MojoIntent;
   jobDraft?: JobDraft;
   activeJobId?: string;
+  pendingConfirmation?: 'CANCEL_JOB' | string;
   conversationHistory?: Array<{
     role: 'user' | 'assistant';
     content: string;
@@ -62,6 +63,8 @@ export interface ExtractedEntities {
   title?: string;
   description?: string;
   targetLanguage?: 'en' | 'te' | 'hi' | 'ta';
+  isQuery?: boolean;
+  confirmationStatus?: 'confirmed' | 'declined';
 }
 
 export interface AiChatAction {
@@ -184,8 +187,8 @@ export function extractCategory(text: string): { category: string; labelEn: stri
 export function extractWorkerCount(text: string): number | null {
   const clean = text.toLowerCase().trim();
 
-  // Pattern 1: Incremental "Change it to 8", "make it 5", "change count to 10", "update to 12"
-  const changeRegex = /(?:change(?:\s+it|\s+count)?\s+to|make\s+it|update\s+to|set(?:\s+it)?\s+to)\s*(\d+|[a-z\u0C00-\u0C7F\u0900-\u097F\u0B80-\u0BFF]+)/i;
+  // Pattern 1: Incremental "Actually change that to eight", "Change it to 8", "make it 5", "change count to 10", "update to 12"
+  const changeRegex = /(?:change(?:\s+(?:it|that|the\s+count|count))?\s+to|make\s+(?:it|that)|update\s+(?:it|that)?\s*to|set(?:\s+(?:it|that))?\s+to)\s*(\d+|[a-z\u0C00-\u0C7F\u0900-\u097F\u0B80-\u0BFF]+)/i;
   const changeMatch = clean.match(changeRegex);
   if (changeMatch && changeMatch[1]) {
     const rawVal = changeMatch[1].trim();
@@ -209,7 +212,8 @@ export function extractWorkerCount(text: string): number | null {
       const fullMatchIdx = clean.indexOf(matchStr);
       const surrounding = clean.substring(Math.max(0, fullMatchIdx - 8), Math.min(clean.length, fullMatchIdx + matchStr.length + 12));
       const isCurrencyContext = /₹|\brs\.?\b|\brupees?\b|\bper\s*day\b|\bవేతనం\b|\bజీతం\b|\bमजदूरी\b|\bवेतन\b|\bஊதியம்\b/i.test(surrounding);
-      if (!isCurrencyContext) {
+      const isTimeContext = /\b(?:am|pm|a\.m\.|p\.m\.|o'?clock|hours?|hrs?|shift|timing|starts?|ends?|గంటలు|గంటల|బజే|घंटे|மணி)\b/i.test(surrounding);
+      if (!isCurrencyContext && !isTimeContext) {
         return parsed;
       }
     }
@@ -233,10 +237,10 @@ export function extractWorkerCount(text: string): number | null {
   return null;
 }
 
-// Extract wage if mentioned (e.g. "₹800", "800 rupees", "wage 900", "pay 1000")
+// Extract wage if mentioned (e.g. "₹800", "800 rupees", "wage 900", "pay 1000", "set the wage to 900")
 export function extractWage(text: string): number | null {
   const clean = text.toLowerCase();
-  const wageRegex = /(?:wage|pay|salary|rate|జీతం|వేతనం|वेतन|मजदूरी|ஊதியம்|₹|rs\.?)\s*[:=]?\s*(\d{3,5})/i;
+  const wageRegex = /(?:wage|pay|salary|rate|జీతం|వేతనం|वेतन|मजदूरी|ஊதியம்|₹|rs\.?)\s*(?:is|to|:|=)?\s*(\d{3,5})/i;
   const m = clean.match(wageRegex);
   if (m && m[1]) {
     const val = parseInt(m[1], 10);
@@ -287,6 +291,14 @@ export function classifyIntentAndExtractEntities(
   }
 
   // Time extraction
+  const rangeMatch = q.match(/(?:shift(?:\s+time)?|timing|hours|from)?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))\s*(?:to|-)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+  if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+    entities.startTime = rangeMatch[1].trim();
+    draft.startTime = entities.startTime;
+    entities.endTime = rangeMatch[2].trim();
+    draft.endTime = entities.endTime;
+  }
+
   const startTimeMatch = q.match(/(?:start(?:ing)?\s*(?:time|at)?|reporting\s*time|ఉదయం|सुबह)\s*[:=]?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
   if (startTimeMatch && startTimeMatch[1]) {
     entities.startTime = startTimeMatch[1].trim();
@@ -299,12 +311,22 @@ export function classifyIntentAndExtractEntities(
   }
 
   // Location extraction
-  const locMatch = q.match(/\b(?:location|address|work\s*site|లొకేషన్|చిరునామా|स्थान|पता)\b\s*(?:is|:)?\s*([a-zA-Z0-9\s,]{3,30})/i);
+  const locMatch = q.match(/\b(?:location|address|work\s*site|లొకేషన్|చిరునామా|స్థలం|स्थान|पता)\b\s*(?:is|to|:)?\s*([a-zA-Z0-9\s,]{3,30})/i);
   if (locMatch && locMatch[1] && !locMatch[1].includes('worker') && !locMatch[1].includes('job') && !locMatch[1].includes('plumbing') && !locMatch[1].includes('category')) {
     const candidateLoc = locMatch[1].trim();
     if (candidateLoc.length >= 3) {
       entities.location = candidateLoc;
       draft.location = candidateLoc;
+    }
+  } else {
+    const inLocMatch = q.match(/\b(?:in|at)\s+([A-Za-z0-9\s]{3,25})$/i) || q.match(/\b(?:in|at)\s+([A-Za-z0-9]{3,20})\b/i);
+    if (inLocMatch && inLocMatch[1]) {
+      const candidate = inLocMatch[1].trim();
+      const lowerCand = candidate.toLowerCase();
+      if (!['tomorrow', 'today', 'morning', 'evening', 'night', 'hours', 'hour', 'telugu', 'hindi', 'tamil', 'english', 'workers', 'helpers'].includes(lowerCand)) {
+        entities.location = candidate;
+        draft.location = candidate;
+      }
     }
   }
 
@@ -321,9 +343,53 @@ export function classifyIntentAndExtractEntities(
   // Intent Classification (Order of Priority Matters)
   // -------------------------------------------------------------------------
 
+  // 0. Pending Confirmation Handling for Destructive Actions
+  if (currentState?.pendingConfirmation === 'CANCEL_JOB') {
+    const isYes = /^(?:yes|yep|yeah|sure|confirm|proceed|ok|okay|హా|అవును|సరే|हाँ|ஆம்|சரி)\b/i.test(q) ||
+                  q.includes('confirm') || q.includes('అవును') || q.includes('హా') || q.includes('yes');
+    const isNo = /^(?:no|nope|cancel|don'?t|stop|keep(?:\s+it)?|వద్దు|లేదు|నహి|नहीं|இல்லை)\b/i.test(q) ||
+                 q.includes("don't") || q.includes('వద్దు') || q.includes('లేదు') || q.includes('keep');
+
+    if (isYes) {
+      delete currentState.pendingConfirmation;
+      const resetDraft: JobDraft = {};
+      return {
+        intent: 'JOB_CANCELLATION',
+        entities: { confirmationStatus: 'confirmed' },
+        updatedDraft: resetDraft,
+      };
+    } else if (isNo) {
+      delete currentState.pendingConfirmation;
+      return {
+        intent: 'JOB_CANCELLATION',
+        entities: { confirmationStatus: 'declined' },
+        updatedDraft: draft,
+      };
+    }
+  }
+
+  // 0.1 Draft Queries (inquiring about worker count, location, wage, details)
+  const isWorkerCountQuery = /(?:what(?:'s|\s+is)?\s+(?:the\s+)?worker\s+count|how\s+many\s+workers|worker\s+count\s+now|ఎంతమంది\s+వర్కర్లు|వర్కర్ల\s+సంఖ్య\s+ఎంత|कितने\s+मजदूर)/i.test(q);
+  if (isWorkerCountQuery) {
+    entities.isQuery = true;
+    return { intent: 'WORKER_COUNT', entities, updatedDraft: draft };
+  }
+
+  const isLocationQuery = /(?:where\s+is\s+(?:the\s+)?(?:location|site|work\s*site|address)|what(?:'s|\s+is)?\s+(?:the\s+)?(?:location|address)|లొకేషన్\s+ఎక్కడ|స్థలం\s+ఎక్కడ|पता\s+कहाँ)/i.test(q);
+  if (isLocationQuery) {
+    entities.isQuery = true;
+    return { intent: 'JOB_LOCATION', entities, updatedDraft: draft };
+  }
+
+  const isWageQuery = /(?:what(?:'s|\s+is)?\s+(?:the\s+)?wage|how\s+much\s+(?:is\s+the\s+)?(?:wage|pay)|వేతనం\s+ఎంత|జీతం\s+ఎంత|मजदूरी\s+कितनी)/i.test(q);
+  if (isWageQuery) {
+    entities.isQuery = true;
+    return { intent: 'JOB_WAGE', entities, updatedDraft: draft };
+  }
+
   // 1. Language Change
   if (
-    q.includes('change language') || q.includes('switch language') || q.includes('speak in') ||
+    q.includes('change language') || q.includes('switch language') || q.includes('switch to') || q.includes('speak in') ||
     q.includes('talk in') || q.includes('తెలుగులో మాట్లాడు') || q.includes('భాష మార్చు') ||
     q.includes('हिंदी में') || q.includes('भाषा बदलो') || q.includes('தமிழில் பேசுங்கள்') || q.includes('மொழி')
   ) {
@@ -336,18 +402,21 @@ export function classifyIntentAndExtractEntities(
     return { intent: 'LANGUAGE_CHANGE', entities, updatedDraft: draft };
   }
 
-  // 2. Incremental / Direct Worker Count (e.g. "Change it to 8", "5 workers", "three electricians", "need 10 helpers")
+  // 2. Incremental / Direct Worker Count (e.g. "Actually change that to eight", "Change it to 8", "5 workers", "three electricians", "need 10 helpers")
   const isExplicitChangeCount =
-    q.match(/^(?:change(?:\s+it)?\s+to|make\s+it|update\s+to|set(?:\s+it)?\s+to)\s*(\d+|[a-z\u0C00-\u0C7F\u0900-\u097F\u0B80-\u0BFF]+)/i) !== null ||
+    /(?:change(?:\s+(?:it|that|the\s+count|count))?\s+to|make\s+(?:it|that)|update\s+(?:it|that)?\s*to|set(?:\s+(?:it|that))?\s+to)\s*(\d+|[a-z\u0C00-\u0C7F\u0900-\u097F\u0B80-\u0BFF]+)/i.test(q) ||
     q.includes('మార్చండి') || q.includes('कर दो') || q.includes('மாற்றுங்கள்');
 
   const isCountPhrase =
     workerCount !== null &&
     (
       isExplicitChangeCount ||
-      q.includes('worker') || q.includes('helper') || q.includes('మంది') || q.includes('మజదూర్') ||
-      q.includes('मजदूर') || q.includes('कामगार') || q.includes('தொழிலாளர்கள்') || q.includes('ஆட்கள்') ||
-      q.split(/\s+/).length <= 4 // Short message like "5 workers", "three electricians", "8"
+      q.includes('worker') || q.includes('helper') || q.includes('electrician') || q.includes('plumber') ||
+      q.includes('painter') || q.includes('carpenter') || q.includes('mason') || q.includes('labour') ||
+      q.includes('labor') || q.includes('ప్లంబ') || q.includes('ఎలక్ట్రీషియన్') || q.includes('మంది') ||
+      q.includes('మజదూర్') || q.includes('మనుషులు') || q.includes('मजदूर') || q.includes('कामगार') ||
+      q.includes('कारीगर') || q.includes('தொழிலாளர்கள்') || q.includes('ஆட்கள்') ||
+      (q.split(/\s+/).length <= 4 && !q.includes('wage') && !q.includes('salary') && !q.includes('rupee'))
     );
 
   if (isExplicitChangeCount || isCountPhrase) {
@@ -417,6 +486,9 @@ export function classifyIntentAndExtractEntities(
     q.includes('how to cancel') || q.includes('cancel my job') || q.includes('రద్దు') ||
     q.includes('रद्द') || q.includes('ரத்து')
   ) {
+    if (currentState) {
+      currentState.pendingConfirmation = 'CANCEL_JOB';
+    }
     return { intent: 'JOB_CANCELLATION', entities, updatedDraft: draft };
   }
 
@@ -466,7 +538,7 @@ export function classifyIntentAndExtractEntities(
     return { intent: 'JOB_DESCRIPTION', entities, updatedDraft: draft };
   }
 
-  if (q.includes('location is') || q.includes('location:') || q.includes('work site') || q.includes('address is') || q.includes('site is') || q.includes('లొకేషన్') || q.includes('చిరునామా') || q.includes('कार्यस्थल')) {
+  if (q.includes('location is') || q.includes('location:') || q.includes('location to') || q.includes('change location') || q.includes('work site') || q.includes('address is') || q.includes('site is') || q.includes('లొకేషన్') || q.includes('చిరునామా') || q.includes('कार्यस्थल')) {
     return { intent: 'JOB_LOCATION', entities, updatedDraft: draft };
   }
 
@@ -474,7 +546,7 @@ export function classifyIntentAndExtractEntities(
     return { intent: 'JOB_DATE', entities, updatedDraft: draft };
   }
 
-  if (q.includes('start time') || q.includes('starts at') || q.includes('reporting time') || q.includes('ప్రారంభ సమయం') || q.includes('शुरू होने का समय')) {
+  if (q.includes('start time') || q.includes('starts at') || q.includes('reporting time') || q.includes('shift time') || q.includes('ప్రారంభ సమయం') || q.includes('शुरू होने का समय')) {
     return { intent: 'JOB_START_TIME', entities, updatedDraft: draft };
   }
 
@@ -555,6 +627,51 @@ export function generateIntentResponse(
   switch (intent) {
     case 'WORKER_COUNT': {
       const isUpdated = draft.category || draft.title;
+      if (entities.isQuery) {
+        if (lang === 'te') {
+          return {
+            reply: `ప్రస్తుతం నమోదు చేసిన వర్కర్ల సంఖ్య: ${workersCount} ${categoryName !== 'General Gig' ? `${categoryName} ` : ''}వర్కర్లు.`,
+            action: {
+              type: 'UPDATE_JOB_DRAFT',
+              target: 'post_job',
+              jobDraft: draft,
+              label: `డ్రాఫ్ట్ చూడండి (${workersCount} వర్కర్లు)`,
+            },
+          };
+        }
+        if (lang === 'hi') {
+          return {
+            reply: `वर्तमान में आवश्यक कामगारों की संख्या: ${workersCount} ${categoryName !== 'General Gig' ? `${categoryName} ` : ''}कामगार।`,
+            action: {
+              type: 'UPDATE_JOB_DRAFT',
+              target: 'post_job',
+              jobDraft: draft,
+              label: `ड्राफ्ट देखें (${workersCount} कामगार)`,
+            },
+          };
+        }
+        if (lang === 'ta') {
+          return {
+            reply: `தற்போதைய தொழிலாளர்கள் எண்ணிக்கை: ${workersCount} ${categoryName !== 'General Gig' ? `${categoryName} ` : ''}தொழிலாளர்கள்.`,
+            action: {
+              type: 'UPDATE_JOB_DRAFT',
+              target: 'post_job',
+              jobDraft: draft,
+              label: `வரைவு பார்க்க (${workersCount} தொழிலாளர்கள்)`,
+            },
+          };
+        }
+        return {
+          reply: `Current worker count is ${workersCount} ${categoryName !== 'General Gig' ? `${categoryName} ` : ''}worker${workersCount > 1 ? 's' : ''}.`,
+          action: {
+            type: 'UPDATE_JOB_DRAFT',
+            target: 'post_job',
+            jobDraft: draft,
+            label: `Review Job Draft (${workersCount} Workers)`,
+          },
+        };
+      }
+
       if (lang === 'te') {
         return {
           reply: `ఖచ్చితంగా! మీకు ${workersCount} మంది వర్కర్లు అవసరమని నమోదు చేశాను.${isUpdated ? ` (${categoryName} పని కోసం)` : ''} దయచేసి రోజువారీ వేతనం లేదా పని సమయాన్ని ధృవీకరించండి. లేదా క్రింది బటన్ నొక్కి పోస్టింగ్ పూర్తి చేయండి.`,
@@ -807,31 +924,106 @@ export function generateIntentResponse(
     }
 
     case 'JOB_CANCELLATION': {
+      if (entities.confirmationStatus === 'confirmed') {
+        if (lang === 'te') {
+          return {
+            reply: 'మీ జాబ్ డ్రాఫ్ట్ విజయవంతంగా రద్దు చేయబడింది.',
+            action: { type: 'CANCEL_JOB', jobDraft: {} },
+          };
+        }
+        if (lang === 'hi') {
+          return {
+            reply: 'आपका जॉब ड्राफ्ट सफलतापूर्वक रद्द कर दिया गया है।',
+            action: { type: 'CANCEL_JOB', jobDraft: {} },
+          };
+        }
+        if (lang === 'ta') {
+          return {
+            reply: 'உங்கள் வேலை வரைவு வெற்றிகரமாக ரத்து செய்யப்பட்டது.',
+            action: { type: 'CANCEL_JOB', jobDraft: {} },
+          };
+        }
+        return {
+          reply: 'Your job draft has been cancelled. All draft details have been cleared.',
+          action: { type: 'CANCEL_JOB', jobDraft: {} },
+        };
+      }
+
+      if (entities.confirmationStatus === 'declined') {
+        if (lang === 'te') {
+          return {
+            reply: 'సరే, మీ జాబ్ డ్రాఫ్ట్ భద్రంగా ఉంచబడింది.',
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft },
+          };
+        }
+        if (lang === 'hi') {
+          return {
+            reply: 'ठीक है, आपका जॉब ड्राफ्ट सुरक्षित रखा गया है।',
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft },
+          };
+        }
+        if (lang === 'ta') {
+          return {
+            reply: 'சரி, உங்கள் வேலை வரைவு அப்படியே வைக்கப்பட்டுள்ளது.',
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft },
+          };
+        }
+        return {
+          reply: 'Understood. Your job draft has been kept intact.',
+          action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft },
+        };
+      }
+
       if (lang === 'te') {
         return {
-          reply: 'పనిని రద్దు చేయవలసి వస్తే: మీ జాబ్ పోస్టింగ్ స్క్రీన్‌లో "రద్దు చేయి" బటన్ ఉంటుంది. రద్దు చేస్తే కన్ఫర్మ్ అయిన వర్కర్లకు మరియు దరఖాస్తుదారులకు వెంటనే నోటిఫికేషన్ వెళ్తుంది.',
-          action: { type: 'CANCEL_JOB', target: 'applicants', label: 'జాబ్ రద్దు ప్రక్రియ' },
+          reply: 'మీరు నిజంగా ఈ జాబ్ డ్రాఫ్ట్‌ను రద్దు చేయాలనుకుంటున్నారా? అవును లేదా వద్దు అని చెప్పండి.',
+          action: { type: 'CANCEL_JOB', target: 'applicants', label: 'జాబ్ రద్దు నిర్ధారించండి' },
         };
       }
       if (lang === 'hi') {
         return {
-          reply: 'काम रद्द करने के लिए: अपनी जॉब स्क्रीन पर "काम रद्द करें" (Cancel Job) विकल्प चुनें। इससे सभी कन्फर्म और प्रतीक्षारत कामगारों को तुरंत सूचना मिल जाएगी।',
+          reply: 'क्या आप वाकई इस जॉब ड्राफ्ट को रद्द करना चाहते हैं? पुष्टि के लिए हाँ या रद्द के लिए नहीं कहें।',
           action: { type: 'CANCEL_JOB', target: 'applicants', label: 'काम रद्द करें' },
         };
       }
       if (lang === 'ta') {
         return {
-          reply: 'வேலையை ரத்து செய்ய: உங்கள் வேலை பக்கத்தில் உள்ள "ரத்து செய்" (Cancel Job) பொத்தானைப் பயன்படுத்தவும்.',
+          reply: 'இந்த வேலை வரைவை நிச்சயமாக ரத்து செய்ய விரும்புகிறீர்களா? ஆம் அல்லது இல்லை என்று சொல்லுங்கள்.',
           action: { type: 'CANCEL_JOB', target: 'applicants', label: 'வேலை ரத்து' },
         };
       }
       return {
-        reply: "To cancel an active job, navigate to the job's applicants view and tap 'Cancel Job'. Confirmed workers and applicants will be notified immediately, freeing all reserved slots.",
-        action: { type: 'CANCEL_JOB', target: 'applicants', label: 'Cancel Job Options' },
+        reply: 'Are you sure you want to cancel the job draft? Say yes to confirm or no to keep it.',
+        action: { type: 'CANCEL_JOB', target: 'applicants', label: 'Confirm Cancellation' },
       };
     }
 
     case 'JOB_WAGE': {
+      if (entities.isQuery) {
+        if (lang === 'te') {
+          return {
+            reply: `ప్రస్తుత రోజువారీ వేతనం ₹${wageAmt}.`,
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'వేతనం వివరాలు' },
+          };
+        }
+        if (lang === 'hi') {
+          return {
+            reply: `वर्तमान दैनिक मजदूरी ₹${wageAmt} है।`,
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'वेतन विवरण' },
+          };
+        }
+        if (lang === 'ta') {
+          return {
+            reply: `தற்போதைய தினசரி ஊதியம் ₹${wageAmt}.`,
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'ஊதியம் விவரங்கள்' },
+          };
+        }
+        return {
+          reply: `The current wage is set to ₹${wageAmt} per day.`,
+          action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'Review Wage' },
+        };
+      }
+
       if (lang === 'te') {
         return {
           reply: `రోజువారీ వేతనం ₹${wageAmt}గా గుర్తించబడింది. వర్క్ మోజోలో సగటు రోజువారీ వేతనాలు నైపుణ్యాన్ని బట్టి ₹700 నుండి ₹1200+ వరకు ఉంటాయి. వర్కర్లు పూర్తి వేతనాన్ని పొందుతారు.`,
@@ -886,6 +1078,30 @@ export function generateIntentResponse(
 
     case 'JOB_LOCATION': {
       const loc = draft.location || 'Your site area';
+      if (entities.isQuery) {
+        if (lang === 'te') {
+          return {
+            reply: `పని లొకేషన్: "${loc}".`,
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'లొకేషన్ వివరాలు' },
+          };
+        }
+        if (lang === 'hi') {
+          return {
+            reply: `कार्यस्थल की लोकेशन: "${loc}"।`,
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'लोकेशन विवरण' },
+          };
+        }
+        if (lang === 'ta') {
+          return {
+            reply: `பணி இடம்: "${loc}".`,
+            action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'இடம் விவரங்கள்' },
+          };
+        }
+        return {
+          reply: `The job location is set to "${loc}".`,
+          action: { type: 'UPDATE_JOB_DRAFT', jobDraft: draft, label: 'Review Location' },
+        };
+      }
       if (lang === 'te') {
         return {
           reply: `పని ప్రదేశం: "${loc}". భద్రత కొరకు వర్కర్ కన్ఫర్మ్ అయ్యేంత వరకు ఖచ్చితమైన వీధి చిరునామా గోప్యంగా ఉంచబడుతుంది.`,

@@ -14,8 +14,10 @@ export type VoiceState =
   | 'LISTENING'
   | 'USER_SPEAKING'
   | 'THINKING'
-  | 'SPEAKING'
+  | 'MOJO_SPEAKING'
+  | 'SPEAKING' // Backward-compatible alias
   | 'INTERRUPTED'
+  | 'RECONNECTING'
   | 'ERROR';
 
 export interface VoiceEventCallbacks {
@@ -41,26 +43,27 @@ export class GeminiLiveClient {
   private role: 'customer' | 'worker' = 'customer';
   private conversationState: any = {};
   private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 2;
+  private maxReconnectAttempts: number = 3;
+  private isExplicitDisconnect: boolean = false;
 
   // VAD & Turn Detection Parameters
   private lastSpeechTime: number = 0;
   private consecutiveBargeInFrames: number = 0;
-  private readonly SPEECH_RMS_THRESHOLD = 0.018;
-  private readonly BARGE_IN_RMS_THRESHOLD = 0.055;
-  private readonly TRAILING_SILENCE_MS = 1300;
+  private readonly SPEECH_RMS_THRESHOLD = 0.015;
+  private readonly BARGE_IN_RMS_THRESHOLD = 0.04;
+  private readonly TRAILING_SILENCE_MS = 1200;
 
   constructor(callbacks: VoiceEventCallbacks = {}) {
     this.callbacks = callbacks;
     this.capture = new AudioCapture();
     this.playback = new AudioPlayback(isPlaying => {
       if (isPlaying) {
-        if (this.state !== 'SPEAKING') {
-          this.setState('SPEAKING');
+        if (this.state !== 'MOJO_SPEAKING') {
+          this.setState('MOJO_SPEAKING');
         }
       } else {
         // Mojo finished speaking: deterministically transition back to continuous LISTENING!
-        if (this.state === 'SPEAKING' || this.state === 'THINKING') {
+        if (this.state === 'MOJO_SPEAKING' || (this.state as string) === 'SPEAKING' || this.state === 'THINKING') {
           this.setState('LISTENING');
         }
       }
@@ -103,14 +106,17 @@ export class GeminiLiveClient {
     role: 'customer' | 'worker' = 'customer',
     conversationState: any = {}
   ): Promise<void> {
-    if (this.state !== 'IDLE' && this.state !== 'ERROR') {
+    if (this.state !== 'IDLE' && this.state !== 'ERROR' && this.state !== 'RECONNECTING') {
       return;
     }
 
+    this.isExplicitDisconnect = false;
     this.language = language;
     this.role = role;
     this.conversationState = conversationState;
-    this.setState('CONNECTING');
+    if (this.state !== 'RECONNECTING') {
+      this.setState('CONNECTING');
+    }
 
     try {
       // 1. Initialize microphone capture first
@@ -129,7 +135,7 @@ export class GeminiLiveClient {
       this.ws = new WebSocket(wsUrl);
 
       const connectTimeout = setTimeout(() => {
-        if (this.state === 'CONNECTING') {
+        if (this.state === 'CONNECTING' || this.state === 'RECONNECTING') {
           console.warn('[MOJO VOICE] Connection timed out waiting for backend session_ready');
           this.handleError('Voice connection timed out. Please check your network or try again.');
         }
@@ -168,11 +174,31 @@ export class GeminiLiveClient {
       this.ws.onclose = () => {
         clearTimeout(connectTimeout);
         console.log('[MOJO VOICE] Voice WebSocket closed');
-        if (this.state !== 'IDLE' && this.state !== 'ERROR') {
+        if (this.isExplicitDisconnect) {
           this.setState('IDLE');
+          this.capture.stop();
+          this.playback.stop();
+          return;
         }
-        this.capture.stop();
-        this.playback.stop();
+
+        if (this.reconnectAttempts < this.maxReconnectAttempts && this.state !== 'ERROR') {
+          this.reconnectAttempts++;
+          console.log(`[MOJO VOICE] Attempting automatic reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+          this.setState('RECONNECTING');
+          setTimeout(() => {
+            if (this.state === 'RECONNECTING') {
+              this.connect(this.language, this.role, this.conversationState).catch(err => {
+                console.warn('[MOJO VOICE] Reconnect failed:', err);
+              });
+            }
+          }, 1500 * this.reconnectAttempts);
+        } else {
+          if (this.state !== 'IDLE' && this.state !== 'ERROR') {
+            this.setState('IDLE');
+          }
+          this.capture.stop();
+          this.playback.stop();
+        }
       };
     } catch (err: any) {
       console.error('[MOJO VOICE] Failed to initialize voice session:', err);
@@ -191,7 +217,7 @@ export class GeminiLiveClient {
     const now = Date.now();
 
     // 1. Acoustic Echo Suppression & Barge-in during Mojo SPEAKING
-    if (this.state === 'SPEAKING') {
+    if (this.state === 'MOJO_SPEAKING' || (this.state as string) === 'SPEAKING') {
       if (rms >= this.BARGE_IN_RMS_THRESHOLD) {
         this.consecutiveBargeInFrames++;
         if (this.consecutiveBargeInFrames >= 2) {
@@ -206,7 +232,6 @@ export class GeminiLiveClient {
         }
       } else {
         this.consecutiveBargeInFrames = 0;
-        // Suppress audio chunk to prevent Gemini Live from hearing its own echo
       }
       return;
     }
@@ -263,8 +288,8 @@ export class GeminiLiveClient {
         }
         if (msg.pcm24k) {
           this.playback.queuePcm24k(msg.pcm24k);
-          if (this.state !== 'SPEAKING') {
-            this.setState('SPEAKING');
+          if (this.state !== 'MOJO_SPEAKING') {
+            this.setState('MOJO_SPEAKING');
           }
         }
         break;
@@ -395,6 +420,7 @@ export class GeminiLiveClient {
    * Explicitly closes voice session (only on user click, modal close, or fatal error)
    */
   public disconnect(): void {
+    this.isExplicitDisconnect = true;
     this.capture.stop();
     this.playback.stop();
 
@@ -411,6 +437,19 @@ export class GeminiLiveClient {
     }
 
     this.setState('IDLE');
+  }
+
+  /**
+   * Provides real-time frequency data for UI animated equalizer/waveform
+   */
+  public getFrequencyData(): Uint8Array {
+    if (this.state === 'MOJO_SPEAKING' || (this.state as string) === 'SPEAKING') {
+      return this.playback.getFrequencyData();
+    }
+    if (this.state === 'USER_SPEAKING' || this.state === 'LISTENING') {
+      return this.capture.getFrequencyData();
+    }
+    return new Uint8Array(0);
   }
 }
 

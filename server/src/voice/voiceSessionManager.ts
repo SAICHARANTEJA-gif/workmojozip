@@ -109,6 +109,7 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
               voiceName: liveVoice,
               language: session.language,
               role: session.role,
+              conversationState: session.conversationState,
             });
 
             session.geminiService = gemini;
@@ -159,7 +160,7 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
 
               const textToClassify = userSpeech || modelSpeech;
               if (textToClassify) {
-                routeSpeechToIntent(session, textToClassify, ws);
+                routeSpeechToIntent(session, textToClassify, ws, true);
               }
 
               sendToClient(ws, {
@@ -311,7 +312,12 @@ function sendToClient(ws: WebSocket, payload: Record<string, any>) {
   }
 }
 
-function routeSpeechToIntent(session: ClientSession, fullSpeech: string, ws: WebSocket) {
+function routeSpeechToIntent(
+  session: ClientSession,
+  fullSpeech: string,
+  ws: WebSocket,
+  isVoiceTurn: boolean = false
+) {
   if (!fullSpeech || !fullSpeech.trim()) return;
 
   const classification = classifyIntentAndExtractEntities(
@@ -341,9 +347,13 @@ function routeSpeechToIntent(session: ClientSession, fullSpeech: string, ws: Web
     conversationState: session.conversationState,
   });
 
-  sendToClient(ws, {
-    type: 'transcript',
-    sender: 'mojo',
-    text: domainResult.reply,
-  });
+  // During a real Gemini Live voice turn, Gemini already speaks native audio and emits
+  // real-time transcripts. Do NOT broadcast a duplicate synthetic transcript.
+  if (!isVoiceTurn) {
+    sendToClient(ws, {
+      type: 'transcript',
+      sender: 'mojo',
+      text: domainResult.reply,
+    });
+  }
 }
