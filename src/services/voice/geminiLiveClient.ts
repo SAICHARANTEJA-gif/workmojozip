@@ -106,7 +106,15 @@ export class GeminiLiveClient {
 
       // 2. Open WebSocket connection to WorkMojo backend
       const wsUrl = this.getWebSocketUrl();
+      console.log('[MOJO VOICE] Connecting to WebSocket URL:', wsUrl);
       this.ws = new WebSocket(wsUrl);
+
+      const connectTimeout = setTimeout(() => {
+        if (this.state === 'CONNECTING') {
+          console.warn('[MOJO VOICE] Connection timed out waiting for backend session_ready');
+          this.handleError('Voice connection timed out. Please check your network or try again.');
+        }
+      }, 10000);
 
       this.ws.onopen = () => {
         console.log('[MOJO VOICE] Connected to backend voice WebSocket');
@@ -123,6 +131,9 @@ export class GeminiLiveClient {
       this.ws.onmessage = event => {
         try {
           const msg = JSON.parse(event.data);
+          if (msg.type === 'session_ready') {
+            clearTimeout(connectTimeout);
+          }
           this.handleServerMessage(msg);
         } catch (err) {
           console.warn('[MOJO VOICE] Error parsing server message:', err);
@@ -130,11 +141,13 @@ export class GeminiLiveClient {
       };
 
       this.ws.onerror = () => {
+        clearTimeout(connectTimeout);
         console.warn('[MOJO VOICE] WebSocket connection error');
         this.handleError('Voice connection error. You can continue using text chat.');
       };
 
       this.ws.onclose = () => {
+        clearTimeout(connectTimeout);
         console.log('[MOJO VOICE] Voice WebSocket closed');
         if (this.state !== 'IDLE' && this.state !== 'ERROR') {
           this.setState('IDLE');
@@ -256,8 +269,10 @@ export class GeminiLiveClient {
 
     if (this.ws) {
       try {
-        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        if (this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(JSON.stringify({ type: 'close' }));
+        }
+        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
           this.ws.close(1000, 'Client disconnect');
         }
       } catch {}
