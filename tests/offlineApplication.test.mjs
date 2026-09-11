@@ -5,6 +5,7 @@ async function runTests() {
   console.log('=== WORKMOJO RESILIENT APPLY NOW & OFFLINE FALLBACK TEST SUITE ===\n');
 
   process.env.PORT = '5057';
+  process.env.SUPABASE_URL = '';
   const { app } = await import('../server/dist/index.js');
   await new Promise(resolve => setTimeout(resolve, 800));
 

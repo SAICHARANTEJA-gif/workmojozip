@@ -1200,7 +1200,7 @@ async function callGemini(
   const systemPrompt = buildGeminiSystemPrompt(req, intent, entities, draft);
 
   const modelsToTry = Array.from(
-    new Set([userModel, 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'].filter(Boolean) as string[])
+    new Set([userModel, 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter(Boolean) as string[])
   );
 
   for (const model of modelsToTry) {

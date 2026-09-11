@@ -29,7 +29,10 @@ export class GeminiLiveService extends EventEmitter {
           throw new Error('GEMINI_API_KEY is missing or empty.');
         }
 
-        const model = this.config.model || 'models/gemini-2.0-flash-exp';
+        const model =
+          process.env.GEMINI_LIVE_MODEL ||
+          this.config.model ||
+          'models/gemini-2.5-flash-native-audio-latest';
         const host = 'generativelanguage.googleapis.com';
         const url = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 

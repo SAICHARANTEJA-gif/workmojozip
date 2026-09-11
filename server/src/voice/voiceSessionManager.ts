@@ -98,7 +98,7 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
               session.geminiService = null;
             }
 
-            const liveModel = process.env.GEMINI_LIVE_MODEL || 'models/gemini-2.0-flash-exp';
+            const liveModel = process.env.GEMINI_LIVE_MODEL || 'models/gemini-2.5-flash-native-audio-latest';
             const liveVoice = process.env.GEMINI_LIVE_VOICE || 'Aoede';
 
             const gemini = new GeminiLiveService({
