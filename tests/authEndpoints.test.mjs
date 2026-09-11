@@ -107,8 +107,9 @@ async function runAuthApiTests() {
   assert.strictEqual(resReplay.status, 401);
   console.log('✅ PASS: Replay attempt with already-verified OTP rejected with HTTP 401');
 
-  // 6. Provider Unconfigured Error
+  // 6. Provider Unconfigured Error (when DEMO_OTP_BYPASS=false)
   console.log('\n--- 6. Provider Unconfigured Error Handling ---');
+  process.env.DEMO_OTP_BYPASS = 'false';
   setMockSmsSenderForTesting(null);
   delete process.env.TWILIO_ACCOUNT_SID;
   delete process.env.FAST2SMS_API_KEY;
@@ -123,7 +124,76 @@ async function runAuthApiTests() {
   const dataUnconfigured = await resUnconfigured.json();
   assert.strictEqual(dataUnconfigured.success, false);
   assert(dataUnconfigured.error.includes('temporarily unavailable'));
-  console.log('✅ PASS: Unconfigured SMS provider cleanly returns HTTP 503 with user-safe message');
+  console.log('✅ PASS: Unconfigured SMS provider cleanly returns HTTP 503 when DEMO_OTP_BYPASS=false');
+
+  // 7. Temporary Demo Mode (DEMO_OTP_BYPASS=true)
+  console.log('\n--- 7. Temporary Demo Mode (DEMO_OTP_BYPASS=true) ---');
+  process.env.DEMO_OTP_BYPASS = 'true';
+  clearOtpStoreForTesting();
+
+  // Send OTP in demo mode (succeeds even without provider)
+  const resDemoSend = await fetch(`${BASE_URL}/auth/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone: '9876500077' }),
+  });
+  assert.strictEqual(resDemoSend.status, 200);
+  const dataDemoSend = await resDemoSend.json();
+  assert.strictEqual(dataDemoSend.success, true);
+  assert.strictEqual(dataDemoSend.demoModeActive, true);
+  assert(dataDemoSend.message.includes('Demo OTP mode active'));
+  console.log('✅ PASS: send-otp succeeds in demo mode without SMS provider, indicating demo mode');
+
+  // Verify with 123456
+  const resDemoVerify1 = await fetch(`${BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      phone: '9876500077',
+      otp: '123456',
+      name: 'Demo Tester 1',
+      role: 'worker',
+    }),
+  });
+  assert.strictEqual(resDemoVerify1.status, 200);
+  const dataDemoVerify1 = await resDemoVerify1.json();
+  assert.strictEqual(dataDemoVerify1.success, true);
+  assert.strictEqual(dataDemoVerify1.demoModeActive, true);
+  assert(dataDemoVerify1.token.startsWith('wm_auth_token_'));
+  assert.strictEqual(dataDemoVerify1.user.name, 'Demo Tester 1');
+  console.log('✅ PASS: verify-otp accepts 123456 and creates session in demo mode');
+
+  // Verify with another arbitrary 6-digit code: 999999
+  const resDemoVerify2 = await fetch(`${BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      phone: '9876500088',
+      otp: '999999',
+      name: 'Demo Tester 2',
+      role: 'customer',
+    }),
+  });
+  assert.strictEqual(resDemoVerify2.status, 200);
+  const dataDemoVerify2 = await resDemoVerify2.json();
+  assert.strictEqual(dataDemoVerify2.success, true);
+  assert.strictEqual(dataDemoVerify2.demoModeActive, true);
+  console.log('✅ PASS: verify-otp accepts 999999 in demo mode');
+
+  // Verify non-6-digit code is still rejected in demo mode
+  const resDemoBadCode = await fetch(`${BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      phone: '9876500088',
+      otp: '12',
+    }),
+  });
+  assert.strictEqual(resDemoBadCode.status, 400);
+  console.log('✅ PASS: verify-otp still strictly validates 6-digit format in demo mode');
+
+  // Cleanly restore DEMO_OTP_BYPASS to false
+  process.env.DEMO_OTP_BYPASS = 'false';
 
   console.log('\n=============================================================');
   console.log('🎉 ALL AUTH HTTP ENDPOINT TESTS PASSED SUCCESSFULLY!');

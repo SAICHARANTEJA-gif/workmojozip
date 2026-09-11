@@ -366,6 +366,7 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: result.message || 'OTP sent successfully',
+    ...(result.demoModeActive ? { demoModeActive: true } : {}),
   });
 });
 
@@ -382,7 +383,7 @@ app.post('/api/v1/auth/verify-otp', async (req: Request, res: Response) => {
 
   const cleanPhone = normalizePhoneNumber(phone);
 
-  // 1. Verify submitted OTP using crypto.timingSafeEqual on salted SHA-256 hash
+  // 1. Verify submitted OTP using crypto.timingSafeEqual on salted SHA-256 hash (or bypass if DEMO_OTP_BYPASS=true)
   const verification = verifyOtp(cleanPhone, String(otp));
   if (!verification.success) {
     return res.status(verification.status).json({
@@ -420,6 +421,7 @@ app.post('/api/v1/auth/verify-otp', async (req: Request, res: Response) => {
     success: true,
     token,
     user,
+    ...(verification.demoModeActive ? { demoModeActive: true, message: 'Authentication successful (Demo OTP Mode)' } : {}),
   });
 });
 

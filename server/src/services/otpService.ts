@@ -75,6 +75,14 @@ export const getActiveSmsProvider = (): SmsProvider => {
   return 'none';
 };
 
+/**
+ * Checks whether the DEMO_OTP_BYPASS mode is explicitly activated via environment variable.
+ * Must be strictly 'true' (string); default is false.
+ */
+export const isDemoOtpBypassEnabled = (): boolean => {
+  return process.env.DEMO_OTP_BYPASS === 'true';
+};
+
 // Optional mock sender hook for automated unit testing (never used in production)
 type SmsSenderFn = (phone: string, otp: string) => Promise<{ success: boolean; error?: string }>;
 let mockSmsSender: SmsSenderFn | null = null;
@@ -180,7 +188,7 @@ async function sendViaFast2SMS(phone: string, otp: string): Promise<{ success: b
  */
 export const requestOtp = async (
   rawPhone: string
-): Promise<{ success: boolean; status: number; message?: string; error?: string; retryAfterSeconds?: number }> => {
+): Promise<{ success: boolean; status: number; message?: string; error?: string; retryAfterSeconds?: number; demoModeActive?: boolean }> => {
   const phone = normalizePhoneNumber(rawPhone);
   if (!phone) {
     return {
@@ -190,6 +198,7 @@ export const requestOtp = async (
     };
   }
 
+  const isDemoBypass = isDemoOtpBypassEnabled();
   const now = Date.now();
 
   // Rate Limiting Checks
@@ -222,7 +231,7 @@ export const requestOtp = async (
 
   // Check active SMS provider
   const provider = getActiveSmsProvider();
-  if (provider === 'none' && !mockSmsSender) {
+  if (provider === 'none' && !mockSmsSender && !isDemoBypass) {
     return {
       success: false,
       status: 503,
@@ -235,24 +244,26 @@ export const requestOtp = async (
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = hashOtp(otp, salt);
 
-  // Dispatch SMS
-  let sendResult: { success: boolean; error?: string };
-  if (mockSmsSender) {
-    sendResult = await mockSmsSender(phone, otp);
-  } else if (provider === 'twilio') {
-    sendResult = await sendViaTwilio(phone, otp);
-  } else if (provider === 'fast2sms') {
-    sendResult = await sendViaFast2SMS(phone, otp);
-  } else {
-    sendResult = { success: false, error: 'No SMS provider configured.' };
-  }
+  // Dispatch SMS (if provider is configured or mock sender hook is present)
+  if (mockSmsSender || provider !== 'none') {
+    let sendResult: { success: boolean; error?: string };
+    if (mockSmsSender) {
+      sendResult = await mockSmsSender(phone, otp);
+    } else if (provider === 'twilio') {
+      sendResult = await sendViaTwilio(phone, otp);
+    } else if (provider === 'fast2sms') {
+      sendResult = await sendViaFast2SMS(phone, otp);
+    } else {
+      sendResult = { success: false, error: 'No SMS provider configured.' };
+    }
 
-  if (!sendResult.success) {
-    return {
-      success: false,
-      status: 503,
-      error: sendResult.error || 'Failed to dispatch SMS verification code.',
-    };
+    if (!sendResult.success && !isDemoBypass) {
+      return {
+        success: false,
+        status: 503,
+        error: sendResult.error || 'Failed to dispatch SMS verification code.',
+      };
+    }
   }
 
   // Record rate limit request
@@ -275,7 +286,10 @@ export const requestOtp = async (
   return {
     success: true,
     status: 200,
-    message: `Verification code sent to ${phone}`,
+    message: isDemoBypass
+      ? 'Demo OTP mode active: enter any 6-digit code to continue.'
+      : `Verification code sent to ${phone}`,
+    demoModeActive: isDemoBypass ? true : undefined,
   };
 };
 
@@ -288,7 +302,7 @@ export const requestOtp = async (
 export const verifyOtp = (
   rawPhone: string,
   enteredOtp: string
-): { success: boolean; status: number; error?: string } => {
+): { success: boolean; status: number; error?: string; demoModeActive?: boolean } => {
   const phone = normalizePhoneNumber(rawPhone);
   if (!phone) {
     return {
@@ -307,7 +321,18 @@ export const verifyOtp = (
     };
   }
 
+  // When DEMO_OTP_BYPASS=true: accept ANY valid 6-digit OTP
+  if (isDemoOtpBypassEnabled()) {
+    otpStore.delete(phone);
+    return {
+      success: true,
+      status: 200,
+      demoModeActive: true,
+    };
+  }
+
   const record = otpStore.get(phone);
+
   if (!record) {
     return {
       success: false,
@@ -374,3 +399,4 @@ export const verifyOtp = (
     status: 200,
   };
 };
+

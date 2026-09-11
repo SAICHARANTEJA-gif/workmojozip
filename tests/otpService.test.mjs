@@ -233,6 +233,39 @@ async function runOtpTests() {
     }
   });
 
+  console.log('\n--- 9. Temporary Demo OTP Bypass Mode ---');
+  test('Accepts any valid 6-digit OTP when DEMO_OTP_BYPASS=true', () => {
+    process.env.DEMO_OTP_BYPASS = 'true';
+    clearOtpStoreForTesting();
+
+    const sampleCodes = ['123456', '111111', '000000', '654321', '987654'];
+    for (const code of sampleCodes) {
+      const res = verifyOtp('+919876543210', code);
+      assert.strictEqual(res.success, true);
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.demoModeActive, true);
+    }
+
+    // Phone validation is still enforced
+    const badPhoneRes = verifyOtp('123', '123456');
+    assert.strictEqual(badPhoneRes.success, false);
+    assert.strictEqual(badPhoneRes.status, 400);
+
+    // 6-digit code format is still enforced
+    const badOtpRes = verifyOtp('+919876543210', '123');
+    assert.strictEqual(badOtpRes.success, false);
+    assert.strictEqual(badOtpRes.status, 400);
+  });
+
+  test('Strictly rejects arbitrary OTPs when DEMO_OTP_BYPASS=false', () => {
+    process.env.DEMO_OTP_BYPASS = 'false';
+    clearOtpStoreForTesting();
+
+    const res = verifyOtp('+919876543210', '123456');
+    assert.strictEqual(res.success, false);
+    assert.strictEqual(res.status, 401);
+  });
+
   console.log('\n=============================================================');
   console.log(`🎉 ALL ${passed}/${total} OTP SERVICE TESTS PASSED SUCCESSFULLY!`);
   console.log('=============================================================');
