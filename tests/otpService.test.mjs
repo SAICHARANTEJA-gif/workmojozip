@@ -96,7 +96,8 @@ async function runOtpTests() {
   });
 
   console.log('\n--- 3. Unconfigured Provider Protection ---');
-  await asyncTest('Returns 503 error when no SMS provider is configured', async () => {
+  await asyncTest('Returns 503 error when no SMS provider is configured and bypass is false', async () => {
+    process.env.DEMO_OTP_BYPASS = 'false';
     clearOtpStoreForTesting();
     setMockSmsSenderForTesting(null);
     delete process.env.TWILIO_ACCOUNT_SID;
@@ -108,7 +109,21 @@ async function runOtpTests() {
     assert(res.error.includes('temporarily unavailable'));
   });
 
+  await asyncTest('Returns demo mode success when no SMS provider is configured and DEMO_OTP_BYPASS is default/true', async () => {
+    delete process.env.DEMO_OTP_BYPASS;
+    clearOtpStoreForTesting();
+    setMockSmsSenderForTesting(null);
+    delete process.env.TWILIO_ACCOUNT_SID;
+    delete process.env.FAST2SMS_API_KEY;
+
+    const res = await requestOtp('+919876543210');
+    assert.strictEqual(res.success, true);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.demoModeActive, true);
+  });
+
   console.log('\n--- 4. OTP Request & Mock SMS Delivery ---');
+  process.env.DEMO_OTP_BYPASS = 'false';
   let lastDispatchedOtp = null;
   let lastDispatchedPhone = null;
 

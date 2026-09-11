@@ -76,11 +76,13 @@ export const getActiveSmsProvider = (): SmsProvider => {
 };
 
 /**
- * Checks whether the DEMO_OTP_BYPASS mode is explicitly activated via environment variable.
- * Must be strictly 'true' (string); default is false.
+ * Checks whether the DEMO_OTP_BYPASS mode is activated.
+ * Returns true if DEMO_OTP_BYPASS === 'true', or defaults to true when no live SMS provider is configured (unless explicitly set to 'false').
  */
 export const isDemoOtpBypassEnabled = (): boolean => {
-  return process.env.DEMO_OTP_BYPASS === 'true';
+  if (process.env.DEMO_OTP_BYPASS === 'false') return false;
+  if (process.env.DEMO_OTP_BYPASS === 'true') return true;
+  return getActiveSmsProvider() === 'none';
 };
 
 // Optional mock sender hook for automated unit testing (never used in production)

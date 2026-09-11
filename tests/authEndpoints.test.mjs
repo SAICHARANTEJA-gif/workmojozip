@@ -6,8 +6,9 @@ const BASE_URL = 'http://localhost:5056/api/v1';
 async function runAuthApiTests() {
   console.log('=== WORKMOJO AUTH HTTP ENDPOINTS TEST SUITE ===\n');
 
-  // Set test port before importing server
+  // Set test port and initialize live test mode
   process.env.PORT = '5056';
+  process.env.DEMO_OTP_BYPASS = 'false';
 
   const {
     setMockSmsSenderForTesting,
