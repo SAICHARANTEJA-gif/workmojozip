@@ -23,14 +23,29 @@ import {
 import { WORK_CATEGORIES, getCategoryInfo, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import confetti from 'canvas-confetti';
 
+export interface PostJobInitialDraft {
+  category?: WorkCategory;
+  title?: string;
+  description?: string;
+  wage?: number;
+  workersRequired?: number;
+  startTime?: string;
+  endTime?: string;
+  approximateArea?: string;
+  exactAddress?: string;
+  selectionMode?: SelectionMode;
+}
+
 interface PostJobWizardProps {
   onClose: () => void;
   onJobCreated: (job: Job) => void;
+  initialDraft?: PostJobInitialDraft | null;
 }
 
 export const PostJobWizard: React.FC<PostJobWizardProps> = ({
   onClose,
   onJobCreated,
+  initialDraft,
 }) => {
   const { user, createJob, language, t } = useApp();
 
@@ -38,22 +53,36 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
   const totalSteps = 8;
 
   // Form State
-  const [category, setCategory] = useState<WorkCategory>('Loading/Unloading');
-  const [title, setTitle] = useState('Warehouse Loading & Sorting Helper');
-  const [description, setDescription] = useState('Need energetic helpers for unloading cartons, sorting dry food boxes, and arranging storeroom racks.');
+  const [category, setCategory] = useState<WorkCategory>(
+    (initialDraft?.category as WorkCategory) || 'Loading/Unloading'
+  );
+  const [title, setTitle] = useState(
+    initialDraft?.title || 'Warehouse Loading & Sorting Helper'
+  );
+  const [description, setDescription] = useState(
+    initialDraft?.description || 'Need energetic helpers for unloading cartons, sorting dry food boxes, and arranging storeroom racks.'
+  );
   const [isListening, setIsListening] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>(
     'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
   );
-  const [wage, setWage] = useState<number>(800);
-  const [startTime, setStartTime] = useState<string>('09:00 AM');
-  const [endTime, setEndTime] = useState<string>('06:00 PM');
+  const [wage, setWage] = useState<number>(initialDraft?.wage || 800);
+  const [startTime, setStartTime] = useState<string>(initialDraft?.startTime || '09:00 AM');
+  const [endTime, setEndTime] = useState<string>(initialDraft?.endTime || '06:00 PM');
   const [duration, setDuration] = useState<string>('9 hours');
-  const [approximateArea, setApproximateArea] = useState<string>('Koramangala 4th Block (approx 2.1 km)');
-  const [exactAddress, setExactAddress] = useState<string>('Shop #18, 80ft Main Road, Koramangala 4th Block');
+  const [approximateArea, setApproximateArea] = useState<string>(
+    initialDraft?.approximateArea || 'Koramangala 4th Block (approx 2.1 km)'
+  );
+  const [exactAddress, setExactAddress] = useState<string>(
+    initialDraft?.exactAddress || 'Shop #18, 80ft Main Road, Koramangala 4th Block'
+  );
   const [landmark, setLandmark] = useState<string>('Opposite Sony World Signal');
-  const [workersNeeded, setWorkersNeeded] = useState<number>(3);
-  const [selectionMode, setSelectionMode] = useState<SelectionMode>('manual');
+  const [workersNeeded, setWorkersNeeded] = useState<number>(
+    initialDraft?.workersRequired && initialDraft.workersRequired >= 1 ? initialDraft.workersRequired : 3
+  );
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>(
+    initialDraft?.selectionMode || 'manual'
+  );
   const [recurring, setRecurring] = useState<'none' | 'daily' | 'weekly'>('none');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isPostedSuccess, setIsPostedSuccess] = useState<boolean>(false);
@@ -641,24 +670,77 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
                 </p>
               </div>
 
-              <div className="grid grid-cols-5 gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
+              {/* Direct Numeric Input & Stepper */}
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-3xl space-y-3">
+                <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider text-center">
+                  Number of Workers Required
+                </label>
+                <div className="flex items-center justify-center gap-4">
                   <button
-                    key={n}
-                    onClick={() => setWorkersNeeded(n)}
-                    className={`py-3 rounded-2xl text-base font-black transition-all ${
-                      workersNeeded === n
-                        ? 'bg-[#2563EB] text-white shadow-xs scale-105'
-                        : 'bg-[#F1F5F9] text-[#111827] hover:bg-[#E2E8F0]'
-                    }`}
+                    type="button"
+                    onClick={() => setWorkersNeeded(prev => Math.max(1, prev - 1))}
+                    disabled={workersNeeded <= 1}
+                    className="w-12 h-12 rounded-2xl bg-white border border-[#E2E8F0] hover:bg-[#F1F5F9] disabled:opacity-40 disabled:cursor-not-allowed font-black text-2xl text-[#111827] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer"
                   >
-                    {n}
+                    –
                   </button>
-                ))}
+
+                  <div className="flex flex-col items-center">
+                    <input
+                      type="number"
+                      min="1"
+                      max="999"
+                      value={workersNeeded}
+                      onChange={e => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val) && val >= 1) {
+                          setWorkersNeeded(val);
+                        } else if (e.target.value === '') {
+                          setWorkersNeeded(1);
+                        }
+                      }}
+                      className="w-24 text-center font-black text-3xl text-[#2563EB] bg-white border-2 border-[#2563EB] rounded-2xl py-2 shadow-xs outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+                    />
+                    <span className="text-[11px] font-bold text-[#64748B] mt-1">
+                      {workersNeeded === 1 ? 'Worker' : 'Workers'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setWorkersNeeded(prev => prev + 1)}
+                    className="w-12 h-12 rounded-2xl bg-white border border-[#E2E8F0] hover:bg-[#F1F5F9] font-black text-2xl text-[#111827] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
-              <div className="p-3 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] text-xs text-[#64748B]">
-                Total estimated wage outlay: <strong className="text-[#2563EB] font-extrabold">₹{workersNeeded * wage}</strong> ({workersNeeded} workers × ₹{wage})
+              {/* Quick Select Pills */}
+              <div>
+                <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                  Quick Select
+                </label>
+                <div className="grid grid-cols-6 gap-2">
+                  {[1, 2, 3, 5, 10, 20].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setWorkersNeeded(n)}
+                      className={`py-2.5 rounded-xl text-sm font-black transition-all cursor-pointer ${
+                        workersNeeded === n
+                          ? 'bg-[#2563EB] text-white shadow-xs scale-105'
+                          : 'bg-[#F1F5F9] text-[#111827] hover:bg-[#E2E8F0]'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-[#EFF6FF] rounded-2xl border border-[#DBEAFE] text-xs text-[#1E40AF]">
+                Total estimated wage outlay: <strong className="text-[#2563EB] font-black text-sm">₹{workersNeeded * wage}</strong> ({workersNeeded} {workersNeeded === 1 ? 'worker' : 'workers'} × ₹{wage})
               </div>
             </div>
           )}

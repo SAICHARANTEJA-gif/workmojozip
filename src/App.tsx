@@ -66,6 +66,7 @@ export const App: React.FC = () => {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
+  const [postJobInitialDraft, setPostJobInitialDraft] = useState<any>(null);
   const [isSOSOpen, setIsSOSOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
@@ -202,7 +203,14 @@ export const App: React.FC = () => {
         </main>
 
         {/* Floating Mojo AI Assistant (Not a bottom nav tab!) */}
-        <FloatingMojoAssistant onOpenDirectoryWithCategory={handleOpenDirectoryWithCategory} />
+        <FloatingMojoAssistant
+          onOpenDirectoryWithCategory={handleOpenDirectoryWithCategory}
+          onOpenPostJob={draft => {
+            setPostJobInitialDraft(draft || null);
+            setIsPostJobOpen(true);
+          }}
+          onOpenApplicants={handleOpenApplicants}
+        />
 
         {/* Bottom Navigation */}
         <BottomNav />
@@ -239,9 +247,14 @@ export const App: React.FC = () => {
         {/* 5. Post Job Wizard (Customer) */}
         {isPostJobOpen && (
           <PostJobWizard
-            onClose={() => setIsPostJobOpen(false)}
+            initialDraft={postJobInitialDraft}
+            onClose={() => {
+              setIsPostJobOpen(false);
+              setPostJobInitialDraft(null);
+            }}
             onJobCreated={newJob => {
               setIsPostJobOpen(false);
+              setPostJobInitialDraft(null);
               setSelectedJob(newJob);
             }}
           />

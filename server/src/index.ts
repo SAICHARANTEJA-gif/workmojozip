@@ -2037,7 +2037,7 @@ app.get('/api/v1/admin/overview', (req: Request, res: Response) => {
 // ============================================================================
 app.post(['/api/v1/ai/chat', '/api/v1/mojo/chat', '/api/ai/chat', '/ai/chat'], async (req: Request, res: Response) => {
   try {
-    const { message, language, role, context } = req.body || {};
+    const { message, language, role, context, conversationState } = req.body || {};
     if (!message || typeof message !== 'string' || !message.trim()) {
       res.status(400).json({
         success: false,
@@ -2047,10 +2047,12 @@ app.post(['/api/v1/ai/chat', '/api/v1/mojo/chat', '/api/ai/chat', '/ai/chat'], a
       });
       return;
     }
+    const state = conversationState || context?.conversationState;
     const result = await processAiChat({
       message: message.trim(),
       language: language || 'en',
       role: role || 'worker',
+      conversationState: state,
       context,
     });
     res.json(result);

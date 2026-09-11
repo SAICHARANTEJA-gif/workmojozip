@@ -458,15 +458,20 @@ export const api = {
     message: string,
     language: string = 'en',
     role: string = 'worker',
-    context?: any
+    context?: any,
+    conversationState?: any
   ) => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const payload: any = { message, language, role, context };
+      if (conversationState) {
+        payload.conversationState = conversationState;
+      }
       const res = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, language, role, context }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);

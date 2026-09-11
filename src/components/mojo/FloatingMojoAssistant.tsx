@@ -36,10 +36,14 @@ interface ChatMessage {
 
 export interface FloatingMojoAssistantProps {
   onOpenDirectoryWithCategory?: (category: string) => void;
+  onOpenPostJob?: (draft?: any) => void;
+  onOpenApplicants?: (jobOrJobId?: string) => void;
 }
 
 export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
   onOpenDirectoryWithCategory,
+  onOpenPostJob,
+  onOpenApplicants,
 }) => {
   const {
     activeRole,
@@ -64,6 +68,23 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [voiceAvailable, setVoiceAvailable] = useState<boolean>(true);
   const [voiceName, setVoiceName] = useState<string | undefined>(undefined);
+  const [conversationState, setConversationState] = useState<{
+    lastIntent?: string;
+    jobDraft?: {
+      title?: string;
+      category?: string;
+      description?: string;
+      workersRequired?: number;
+      wage?: number;
+      startTime?: string;
+      endTime?: string;
+      location?: string;
+      date?: string;
+    };
+    activeJobId?: string;
+  }>({
+    jobDraft: {},
+  });
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const cfg = getLanguageConfig(language);
@@ -380,6 +401,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
   };
 
   const handleClearChat = () => {
+    setConversationState({ jobDraft: {} });
     const cfg = getLanguageConfig(language);
     const greeting = activeRole === 'worker' ? cfg.greeting.worker : cfg.greeting.customer;
     setMessages([
@@ -410,18 +432,79 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
     setIsTyping(true);
 
     try {
-      const res = await api.chatWithMojo(text, language, activeRole, {
-        activeScreen,
-        skills: user.skills,
-      });
+      const res = await api.chatWithMojo(
+        text,
+        language,
+        activeRole,
+        {
+          activeScreen,
+          skills: user.skills,
+        },
+        conversationState
+      );
 
       setIsTyping(false);
 
       if (res && res.success && res.reply) {
+        if (res.conversationState) {
+          setConversationState(res.conversationState);
+        }
+
         let actionText: string | undefined = res.action?.label;
         let onAction: (() => void) | undefined;
 
-        if (res.action?.type === 'view_workers') {
+        if (res.action?.type === 'CHANGE_LANGUAGE' && res.action?.language) {
+          setLanguage(res.action.language);
+        }
+
+        if (res.action?.type === 'OPEN_POST_JOB' || res.action?.type === 'UPDATE_JOB_DRAFT') {
+          const draftToUse = res.action?.jobDraft || conversationState.jobDraft;
+          actionText = actionText || (res.action?.type === 'OPEN_POST_JOB' ? 'Post Job Now' : 'Continue Job Post');
+          onAction = () => {
+            if (onOpenPostJob) {
+              onOpenPostJob(draftToUse);
+            } else {
+              setActiveScreen('post_job');
+            }
+            setIsOpen(false);
+          };
+        } else if (res.action?.type === 'OPEN_WORKER_SEARCH') {
+          const cat = res.action.filterCategory || 'All';
+          actionText = actionText || `View ${cat} Workers`;
+          onAction = () => {
+            if (onOpenDirectoryWithCategory) {
+              onOpenDirectoryWithCategory(cat);
+            } else {
+              setActiveScreen('directory');
+            }
+            setIsOpen(false);
+          };
+        } else if (res.action?.type === 'OPEN_APPLICANTS' || res.action?.type === 'CANCEL_JOB') {
+          const targetJobId = res.action?.jobId || jobs[0]?.id;
+          actionText = actionText || (res.action?.type === 'CANCEL_JOB' ? 'Job Options' : 'Review Applicants');
+          onAction = () => {
+            if (onOpenApplicants) {
+              onOpenApplicants(targetJobId);
+            } else {
+              setActiveScreen('applicants');
+            }
+            setIsOpen(false);
+          };
+        } else if (res.action?.type === 'AUTO_SELECT_WORKERS') {
+          const targetJobId = res.action?.jobId || jobs[0]?.id;
+          actionText = actionText || 'Auto-Select Best Workers';
+          onAction = () => {
+            if (targetJobId) {
+              autoSelectWorkersForJob(targetJobId);
+            }
+            if (onOpenApplicants) {
+              onOpenApplicants(targetJobId);
+            } else {
+              setActiveScreen('applicants');
+            }
+            setIsOpen(false);
+          };
+        } else if (res.action?.type === 'view_workers') {
           const cat = (res.action as any).category || res.action.filterCategory || 'All';
           actionText = actionText || 'View Skilled Workers';
           onAction = () => {
