@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../store/AppContext';
 import { Job } from '../../types';
-import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
+import { getCategoryInfo, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   PlusCircle,
@@ -157,8 +157,14 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <img
-                    src={job.image}
+                    src={job.image || getCategoryInfo(job.category)?.defaultImage}
                     alt={job.title}
+                    onError={(e) => {
+                      const fallback = getCategoryInfo(job.category)?.defaultImage;
+                      if (fallback && e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                     className="w-14 h-14 rounded-2xl object-cover border border-[#E2E8F0] shrink-0"
                   />
                   <div>

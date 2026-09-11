@@ -33,7 +33,12 @@ import {
 } from '../data/seedData';
 import { calculateMatchScore } from '../services/matchingService';
 import { translations, Translations } from '../data/translations';
-import { api } from '../services/api';
+import {
+  api,
+  pendingApplicationsStorage,
+  PendingApplication,
+  ApplicationState,
+} from '../services/api';
 
 interface AppContextType {
   // Auth & User
@@ -65,7 +70,9 @@ interface AppContextType {
   allCustomers: User[];
   savedJobIds: string[];
   toggleSaveJob: (jobId: string) => void;
-  applyToJob: (jobId: string) => Promise<{ success: boolean; isWaitingList: boolean; position?: number; error?: string }>;
+  applyToJob: (
+    jobId: string
+  ) => Promise<{ success: boolean; isWaitingList: boolean; position?: number; status?: ApplicationState; error?: string; message?: string }>;
   cancelConfirmedJob: (jobId: string) => void;
   createJob: (jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>) => Promise<Job>;
   refreshJobs: () => Promise<Job[] | null>;
@@ -79,6 +86,10 @@ interface AppContextType {
 
   // Applications
   applications: Application[];
+  pendingApplications: PendingApplication[];
+  syncPendingApplications: () => Promise<{ syncedCount: number; failedCount: number }>;
+  getApplicationState: (jobId: string, workerId?: string) => ApplicationState;
+  isApplicationPending: (jobId: string, workerId?: string) => boolean;
 
   // Navigation & Active View
   activeScreen: string;
@@ -280,6 +291,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
   });
 
+  const addNotification = useCallback((notif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
+    const newNotif: NotificationItem = {
+      ...notif,
+      id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  }, []);
+
   const [ratings, setRatings] = useState<RatingRecord[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'ratings');
     return saved ? JSON.parse(saved) : [];
@@ -337,6 +358,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const [activeReceipt, setActiveReceipt] = useState<DigitalReceiptData | null>(null);
+
+  // Resilient Offline Pending Applications State
+  const [pendingApplications, setPendingApplications] = useState<PendingApplication[]>(() => {
+    return pendingApplicationsStorage.getPending();
+  });
 
   const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'theme');
@@ -469,36 +495,123 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return null;
   }, []);
 
-  // Initial fetch on mount + reactive window focus & visibility sync
+  // Resilient Offline Applications Synchronization
+  const syncPendingApplications = useCallback(async () => {
+    try {
+      const pending = pendingApplicationsStorage.getPending();
+      if (pending.length === 0) return { syncedCount: 0, failedCount: 0 };
+
+      const syncResult = await api.syncPendingApplications((syncedItem, apiRes) => {
+        setJobs(prevJobs =>
+          prevJobs.map(job => {
+            if (job.id === syncedItem.jobId) {
+              const isWaiting = apiRes.status === 'waiting_list';
+              if (isWaiting) {
+                const nextWaiting = job.waitingList.includes(syncedItem.workerId)
+                  ? job.waitingList
+                  : [...job.waitingList, syncedItem.workerId];
+                return { ...job, waitingList: nextWaiting, updatedAt: new Date().toISOString() };
+              } else {
+                const nextApps = job.applicants.includes(syncedItem.workerId)
+                  ? job.applicants
+                  : [...job.applicants, syncedItem.workerId];
+                return { ...job, applicants: nextApps, updatedAt: new Date().toISOString() };
+              }
+            }
+            return job;
+          })
+        );
+
+        addNotification({
+          recipientId: syncedItem.workerId,
+          title: 'Application Synced ✓',
+          message: 'Your saved application has been synced and received by the employer.',
+          type: 'application_received',
+          targetJobId: syncedItem.jobId,
+          actionScreen: 'job_details',
+        });
+      });
+
+      setPendingApplications(pendingApplicationsStorage.getPending());
+      if (syncResult.syncedCount > 0) {
+        refreshJobsFromServer();
+      }
+      return { syncedCount: syncResult.syncedCount, failedCount: syncResult.failedCount };
+    } catch (err) {
+      console.warn('[OfflineSync] Failed syncing pending applications:', err);
+      return { syncedCount: 0, failedCount: 0 };
+    }
+  }, [addNotification, refreshJobsFromServer]);
+
+  const isApplicationPending = useCallback(
+    (jobId: string, workerId?: string) => {
+      const wId = workerId || user.id;
+      return pendingApplications.some(p => p.jobId === jobId && p.workerId === wId);
+    },
+    [pendingApplications, user.id]
+  );
+
+  const getApplicationState = useCallback(
+    (jobId: string, workerId?: string): ApplicationState => {
+      const wId = workerId || user.id;
+      const targetJob = jobs.find(j => j.id === jobId);
+      if (
+        targetJob?.applicants.includes(wId) ||
+        targetJob?.confirmedWorkerIds.includes(wId) ||
+        targetJob?.waitingList.includes(wId)
+      ) {
+        return 'APPLIED';
+      }
+      if (pendingApplications.some(p => p.jobId === jobId && p.workerId === wId)) {
+        return 'SYNC_PENDING';
+      }
+      return 'NOT_APPLIED';
+    },
+    [jobs, pendingApplications, user.id]
+  );
+
+  // Initial fetch on mount + reactive window focus & visibility sync + auto-sync pending applications
   useEffect(() => {
     refreshJobsFromServer();
+    syncPendingApplications();
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         refreshJobsFromServer();
+        syncPendingApplications();
       }
     };
 
     const handleFocus = () => {
       refreshJobsFromServer();
+      syncPendingApplications();
+    };
+
+    const handleOnline = () => {
+      console.log('[WorkMojo] Network online detected — syncing pending applications...');
+      refreshJobsFromServer();
+      syncPendingApplications();
     };
 
     // Background sync every 25 seconds when browser tab is active
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible') {
         refreshJobsFromServer();
+        syncPendingApplications();
       }
     }, 25000);
 
     window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       clearInterval(intervalId);
       window.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
     };
-  }, [refreshJobsFromServer]);
+  }, [refreshJobsFromServer, syncPendingApplications]);
 
 
   const setLanguage = (lang: SupportedLanguage) => {
@@ -587,21 +700,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateUserProfile = (data: Partial<User>) => {
-    setUser(prev => ({ ...prev, ...data }));
+    setUser(prev => {
+      const updated = { ...prev, ...data };
+      api.updateUserProfile({
+        userId: updated.id,
+        phone: updated.phone,
+        profilePhoto: updated.profilePhoto,
+        name: updated.name,
+        gender: updated.gender,
+        role: updated.role,
+      }).catch(err => console.warn('[ProfileSync] Warning syncing profile to server:', err));
+      return updated;
+    });
     setAllWorkers(prev =>
       prev.map(w => (w.id === user.id ? { ...w, ...data } : w))
     );
   };
-
-  const addNotification = useCallback((notif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
-    const newNotif: NotificationItem = {
-      ...notif,
-      id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-  }, []);
 
   const markNotificationAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
@@ -621,13 +735,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  // Apply to Job with Server/Supabase Persistence
+  // Apply to Job with Resilient Offline-First Fallback and Backend Sync
   const applyToJob = async (
     jobId: string
-  ): Promise<{ success: boolean; isWaitingList: boolean; position?: number; error?: string }> => {
+  ): Promise<{
+    success: boolean;
+    isWaitingList: boolean;
+    position?: number;
+    status: ApplicationState;
+    error?: string;
+    message?: string;
+  }> => {
     const currentJob = jobs.find(j => j.id === jobId);
     if (!currentJob) {
-      return { success: false, isWaitingList: false, error: 'Job not found.' };
+      return { success: false, isWaitingList: false, status: 'NOT_APPLIED', error: 'Job not found.' };
     }
 
     if (currentJob.status === 'Cancelled' || currentJob.status === 'CANCELLED') {
@@ -638,12 +759,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         type: 'alert_triggered',
         targetJobId: jobId,
       });
-      return { success: false, isWaitingList: false, error: 'This job has been cancelled by the employer.' };
+      return {
+        success: false,
+        isWaitingList: false,
+        status: 'NOT_APPLIED',
+        error: 'This job has been cancelled by the employer.',
+      };
+    }
+
+    // 1. Duplicate Application Protection
+    const alreadyApplied =
+      currentJob.applicants.includes(user.id) ||
+      currentJob.confirmedWorkerIds.includes(user.id) ||
+      currentJob.waitingList.includes(user.id);
+    const alreadyPending = pendingApplicationsStorage.isPending(jobId, user.id);
+
+    if (alreadyApplied || alreadyPending) {
+      return {
+        success: false,
+        isWaitingList: false,
+        status: alreadyApplied ? 'APPLIED' : 'SYNC_PENDING',
+        error: 'You have already applied to this job.',
+        message: 'You have already applied to this job.',
+      };
     }
 
     const match = calculateMatchScore(user, currentJob);
 
-    // 1. Dispatch application payload to Express backend for Supabase persistence
     const appPayload = {
       workerId: user.id,
       workerName: user.name || 'Verified Worker',
@@ -655,86 +797,123 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       matchScore: match.score,
     };
 
-    const res = await api.applyForJob(jobId, appPayload);
-
-    // If server/database write failed, do NOT mark worker as applied!
-    if (!res || !res.success) {
-      const errMsg = res?.error || 'Failed to submit application. Please check your connection and try again.';
-      addNotification({
-        recipientId: user.id,
-        title: 'Application Failed',
-        message: errMsg,
-        type: 'alert_triggered',
-        targetJobId: jobId,
-      });
-      return { success: false, isWaitingList: false, error: errMsg };
+    // 2. Try the backend application API first
+    let res: any = null;
+    try {
+      res = await api.applyForJob(jobId, appPayload);
+    } catch (netErr: any) {
+      res = { success: false, error: netErr.message || 'Network error' };
     }
 
-    const isWaiting = res.status === 'waiting_list';
-    const position = res.position;
+    // 3. If backend + Supabase succeeds:
+    if (res && res.success) {
+      pendingApplicationsStorage.removePending(jobId, user.id);
+      setPendingApplications(pendingApplicationsStorage.getPending());
 
-    // 2. Only after verified backend persistence, commit the applied status locally
-    setJobs(prevJobs => {
-      return prevJobs.map(job => {
-        if (job.id !== jobId) return job;
+      const isWaiting = res.status === 'waiting_list';
+      const position = res.position;
 
-        if (isWaiting) {
-          const nextWaitingList = job.waitingList.includes(user.id)
-            ? job.waitingList
-            : [...job.waitingList, user.id];
-          const pos = position || (nextWaitingList.indexOf(user.id) + 1);
+      setJobs(prevJobs => {
+        return prevJobs.map(job => {
+          if (job.id !== jobId) return job;
 
+          if (isWaiting) {
+            const nextWaitingList = job.waitingList.includes(user.id)
+              ? job.waitingList
+              : [...job.waitingList, user.id];
+            const pos = position || (nextWaitingList.indexOf(user.id) + 1);
+
+            addNotification({
+              recipientId: user.id,
+              title: `Waiting List (#${pos})`,
+              message: `You are #${pos} on the waiting list for ${job.title}. If a confirmed worker cancels, you'll be automatically promoted!`,
+              type: 'alert_triggered',
+              targetJobId: job.id,
+              actionScreen: 'job_details',
+            });
+
+            return {
+              ...job,
+              waitingList: nextWaitingList,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+
+          // Standard application
+          const nextApplicants = job.applicants.includes(user.id)
+            ? job.applicants
+            : [...job.applicants, user.id];
+
+          // Notify customer
+          addNotification({
+            recipientId: job.customerId,
+            title: 'New Applicant Received!',
+            message: `${user.name} (${user.rating}★, ${user.reliabilityScore}% Reliability) applied for "${job.title}".`,
+            type: 'application_received',
+            targetJobId: job.id,
+            actionScreen: 'applicants',
+          });
+
+          // Notify worker
           addNotification({
             recipientId: user.id,
-            title: `Waiting List (#${pos})`,
-            message: `You are #${pos} on the waiting list for ${job.title}. If a confirmed worker cancels, you'll be automatically promoted!`,
-            type: 'alert_triggered',
+            title: 'Application Submitted',
+            message: 'Application submitted successfully! ✓',
+            type: 'application_received',
             targetJobId: job.id,
             actionScreen: 'job_details',
           });
 
           return {
             ...job,
-            waitingList: nextWaitingList,
+            applicants: nextApplicants,
+            status: 'Applied' as JobStatus,
             updatedAt: new Date().toISOString(),
           };
-        }
-
-        // Standard application
-        const nextApplicants = job.applicants.includes(user.id)
-          ? job.applicants
-          : [...job.applicants, user.id];
-
-        // Notify customer
-        addNotification({
-          recipientId: job.customerId,
-          title: 'New Applicant Received!',
-          message: `${user.name} (${user.rating}★, ${user.reliabilityScore}% Reliability) applied for "${job.title}".`,
-          type: 'application_received',
-          targetJobId: job.id,
-          actionScreen: 'applicants',
         });
-
-        // Notify worker
-        addNotification({
-          recipientId: user.id,
-          title: 'Application Submitted',
-          message: `Your application for "${job.title}" was submitted. Waiting for customer confirmation.`,
-          type: 'application_received',
-          targetJobId: job.id,
-          actionScreen: 'job_details',
-        });
-
-        return {
-          ...job,
-          applicants: nextApplicants,
-          status: 'Applied' as JobStatus,
-          updatedAt: new Date().toISOString(),
-        };
       });
+
+      return {
+        success: true,
+        isWaitingList: isWaiting,
+        position,
+        status: 'APPLIED',
+        message: 'Application submitted successfully! ✓',
+      };
+    }
+
+    // 4. Backend failure, timeout, 5xx, or temporary database failure:
+    // DO NOT show PostgreSQL/Supabase/RLS/foreign-key errors to the worker!
+    console.warn('[OfflineFallback] Backend/DB application write failed. Reason suppressed from worker:', res?.error);
+
+    const pendingItem: PendingApplication = {
+      applicationId: `pending-${jobId}-${user.id}-${Date.now()}`,
+      jobId,
+      workerId: user.id,
+      createdAt: new Date().toISOString(),
+      status: 'SYNC_PENDING',
+      payload: appPayload,
+    };
+
+    pendingApplicationsStorage.savePending(pendingItem);
+    setPendingApplications(pendingApplicationsStorage.getPending());
+
+    // Immediately show worker friendly offline notification
+    addNotification({
+      recipientId: user.id,
+      title: 'Application Saved',
+      message: "Application saved. We'll sync it when you're back online. ✓",
+      type: 'application_received',
+      targetJobId: jobId,
+      actionScreen: 'job_details',
     });
 
-    return { success: true, isWaitingList: isWaiting, position };
+    return {
+      success: true,
+      isWaitingList: false,
+      status: 'SYNC_PENDING',
+      message: "Application saved. We'll sync it when you're back online. ✓",
+    };
   };
 
   // Fetch Remote Applications for a selected Job
@@ -1019,9 +1198,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (res && res.success && res.job) {
         setJobs(prev => prev.map(j => (j.id === newJob.id ? { ...j, ...res.job } : j)));
         return { ...newJob, ...res.job };
+      } else if (res && !res.success) {
+        console.error('[JobSync] Server rejected job creation:', res.error);
+        setJobs(prev => prev.filter(j => j.id !== newJob.id));
+        throw new Error(res.error || 'Failed to persist job to database.');
       }
-    } catch (err) {
-      console.warn('[JobSync] Warning syncing job to backend:', err);
+    } catch (err: any) {
+      console.warn('[JobSync] Error syncing job to backend:', err.message);
+      setJobs(prev => prev.filter(j => j.id !== newJob.id));
+      throw err;
     }
 
     return newJob;
@@ -1793,6 +1978,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isSyncingJobs,
 
         applications,
+        pendingApplications,
+        syncPendingApplications,
+        getApplicationState,
+        isApplicationPending,
 
         activeScreen,
         setActiveScreen,

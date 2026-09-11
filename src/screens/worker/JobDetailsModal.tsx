@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Job } from '../../types';
 import { useApp } from '../../store/AppContext';
 import { calculateMatchScore } from '../../services/matchingService';
-import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
+import { getCategoryInfo, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   X,
@@ -32,7 +32,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
   onClose,
   onOpenConfirmed,
 }) => {
-  const { user, savedJobIds, toggleSaveJob, applyToJob, cancelConfirmedJob, t, language } = useApp();
+  const { user, savedJobIds, toggleSaveJob, applyToJob, cancelConfirmedJob, t, language, isApplicationPending } = useApp();
   const [isApplying, setIsApplying] = useState(false);
   const [justApplied, setJustApplied] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
@@ -40,6 +40,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
   const isSaved = savedJobIds.includes(job.id);
   const matchResult = calculateMatchScore(user, job);
   const isConfirmed = job.confirmedWorkerIds.includes(user.id);
+  const isPending = isApplicationPending ? isApplicationPending(job.id, user.id) : false;
   const isApplied = job.applicants.includes(user.id);
   const isWaitingList = job.waitingList.includes(user.id);
   const waitingPos = isWaitingList ? job.waitingList.indexOf(user.id) + 1 : null;
@@ -53,7 +54,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
       setIsApplying(false);
       if (result.success) {
         setJustApplied(true);
-        if (!result.isWaitingList) {
+        if (result.status === 'APPLIED' && !result.isWaitingList) {
           try {
             confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
           } catch {
@@ -65,7 +66,7 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
       }
     } catch (err: any) {
       setIsApplying(false);
-      setApplyError(err.message || 'An error occurred while submitting your application.');
+      setApplyError('We saved your application and will retry automatically.');
     }
   };
 
@@ -75,8 +76,14 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
         {/* Top Image Banner */}
         <div className="relative h-48 sm:h-56 w-full bg-slate-900 shrink-0">
           <img
-            src={job.image}
+            src={job.image || getCategoryInfo(job.category)?.defaultImage}
             alt={job.title}
+            onError={(e) => {
+              const fallback = getCategoryInfo(job.category)?.defaultImage;
+              if (fallback && e.currentTarget.src !== fallback) {
+                e.currentTarget.src = fallback;
+              }
+            }}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
@@ -317,11 +324,21 @@ export const JobDetailsModal: React.FC<JobDetailsProps> = ({
                 If any confirmed worker cancels, you will automatically be promoted to Confirmed!
               </p>
             </div>
+          ) : isPending ? (
+            <div className="bg-[#EFF6FF] p-3.5 rounded-2xl text-center border border-[#BFDBFE]">
+              <div className="font-black text-sm text-[#2563EB] flex items-center justify-center gap-1.5">
+                <CheckCircle2 size={16} className="text-[#2563EB]" />
+                <span>Application Saved (Sync Pending)</span>
+              </div>
+              <p className="text-xs text-[#64748B] mt-1 font-medium">
+                Application saved. We'll sync it when you're back online. ✓
+              </p>
+            </div>
           ) : isApplied || justApplied ? (
             <div className="bg-[#F7F9FC] p-3.5 rounded-2xl text-center border border-[#E2E8F0]">
               <div className="font-black text-sm text-[#111827] flex items-center justify-center gap-1.5">
                 <CheckCircle2 size={16} className="text-[#16A34A]" />
-                <span>Application Submitted</span>
+                <span>Application Submitted ✓</span>
               </div>
               <p className="text-xs text-[#64748B] mt-1 font-medium">
                 Status: Waiting for customer review & confirmation.

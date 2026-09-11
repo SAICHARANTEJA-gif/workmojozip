@@ -37,6 +37,75 @@ const getHealthUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+export type ApplicationState =
+  | 'NOT_APPLIED'
+  | 'SUBMITTING'
+  | 'APPLIED'
+  | 'SYNC_PENDING'
+  | 'FAILED_RETRYABLE';
+
+export interface PendingApplication {
+  applicationId: string;
+  jobId: string;
+  workerId: string;
+  createdAt: string;
+  status: 'SYNC_PENDING';
+  payload?: {
+    workerId: string;
+    workerName?: string;
+    workerPhone?: string;
+    workerPhoto?: string;
+    workerRating?: number;
+    workerReliability?: number;
+    workerSkills?: string[];
+    matchScore?: number;
+  };
+}
+
+export const PENDING_APPS_STORAGE_KEY = 'workmojo_pending_applications';
+
+export const pendingApplicationsStorage = {
+  getPending: (): PendingApplication[] => {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return [];
+      const raw = localStorage.getItem(PENDING_APPS_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  },
+
+  savePending: (app: PendingApplication): void => {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      const current = pendingApplicationsStorage.getPending();
+      const filtered = current.filter(p => !(p.jobId === app.jobId && p.workerId === app.workerId));
+      filtered.push(app);
+      localStorage.setItem(PENDING_APPS_STORAGE_KEY, JSON.stringify(filtered));
+    } catch (err) {
+      console.warn('[OfflineStorage] Error saving pending application:', err);
+    }
+  },
+
+  removePending: (jobId: string, workerId: string): void => {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      const current = pendingApplicationsStorage.getPending();
+      const filtered = current.filter(p => !(p.jobId === jobId && p.workerId === workerId));
+      localStorage.setItem(PENDING_APPS_STORAGE_KEY, JSON.stringify(filtered));
+    } catch (err) {
+      console.warn('[OfflineStorage] Error removing pending application:', err);
+    }
+  },
+
+  isPending: (jobId: string, workerId: string): boolean => {
+    const current = pendingApplicationsStorage.getPending();
+    return current.some(p => p.jobId === jobId && p.workerId === workerId);
+  },
+};
+
 export const api = {
   // Health
   checkHealth: async () => {
@@ -152,12 +221,73 @@ export const api = {
   },
 
   postJob: async (jobData: any) => {
-    const res = await fetch(`${API_BASE_URL}/jobs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(jobData),
-    });
-    return await res.json();
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || `Server responded with HTTP ${res.status}`,
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Network error occurred while creating job.',
+      };
+    }
+  },
+
+  // Media & Profile Persistence
+  uploadImage: async (fileData: string, folder = 'general', contentType = 'image/jpeg', fileName?: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/upload/image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileData, folder, contentType, fileName }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || 'Failed to upload image.',
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Network error uploading image.',
+      };
+    }
+  },
+
+  updateUserProfile: async (userData: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || 'Failed to update profile.',
+        };
+      }
+      return data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Network error updating profile.',
+      };
+    }
   },
 
   applyForJob: async (jobId: string, workerPayload: any) => {
@@ -186,6 +316,42 @@ export const api = {
         error: err.message || 'Network error occurred while applying.',
       };
     }
+  },
+
+  syncPendingApplications: async (
+    onItemSynced?: (item: PendingApplication, res: any) => void
+  ): Promise<{ syncedCount: number; failedCount: number; results: Array<{ jobId: string; workerId: string; success: boolean }> }> => {
+    const list = pendingApplicationsStorage.getPending();
+    if (list.length === 0) {
+      return { syncedCount: 0, failedCount: 0, results: [] };
+    }
+
+    let syncedCount = 0;
+    let failedCount = 0;
+    const results: Array<{ jobId: string; workerId: string; success: boolean }> = [];
+
+    for (const item of list) {
+      try {
+        const payload = item.payload || { workerId: item.workerId };
+        const res = await api.applyForJob(item.jobId, payload);
+        if (res && res.success) {
+          pendingApplicationsStorage.removePending(item.jobId, item.workerId);
+          syncedCount++;
+          results.push({ jobId: item.jobId, workerId: item.workerId, success: true });
+          if (onItemSynced) {
+            onItemSynced(item, res);
+          }
+        } else {
+          failedCount++;
+          results.push({ jobId: item.jobId, workerId: item.workerId, success: false });
+        }
+      } catch (err) {
+        failedCount++;
+        results.push({ jobId: item.jobId, workerId: item.workerId, success: false });
+      }
+    }
+
+    return { syncedCount, failedCount, results };
   },
 
   getJobApplications: async (jobId: string) => {

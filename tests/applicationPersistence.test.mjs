@@ -112,6 +112,7 @@ async function runTests() {
   console.log('\n=============================================================');
   console.log('🎉 ALL APPLICATION PERSISTENCE & APPLICANTS TESTS PASSED!');
   console.log('=============================================================');
+  setTimeout(() => process.exit(0), 100);
 }
 
 runTests().catch(err => {

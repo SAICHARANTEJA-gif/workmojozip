@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../store/AppContext';
 import { WorkCategory, SelectionMode, Job } from '../../types';
 import { speechService } from '../../services/speechService';
+import { api } from '../../services/api';
 import {
   X,
   ChevronLeft,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   ArrowRight,
   ShieldAlert,
+  Loader2,
 } from 'lucide-react';
 import { WORK_CATEGORIES, getCategoryInfo, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import confetti from 'canvas-confetti';
@@ -57,6 +59,56 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
   const [isPostedSuccess, setIsPostedSuccess] = useState<boolean>(false);
   const [createdJobRecord, setCreatedJobRecord] = useState<Job | null>(null);
   const [categorySearchQuery, setCategorySearchQuery] = useState<string>('');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageUploadError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageUploadError('Only JPEG, PNG, or WebP formats are supported.');
+      return;
+    }
+
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setImageUploadError('Image exceeds 5MB limit.');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      if (base64Data) {
+        try {
+          const res = await api.uploadImage(base64Data, 'jobs', file.type);
+          if (res && res.url) {
+            setSelectedImage(res.url);
+          } else {
+            setSelectedImage(base64Data);
+          }
+        } catch {
+          setSelectedImage(base64Data);
+        } finally {
+          setIsUploadingImage(false);
+        }
+      } else {
+        setIsUploadingImage(false);
+      }
+    };
+    reader.onerror = () => {
+      setIsUploadingImage(false);
+      setImageUploadError('Failed to read image file.');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCategorySelect = (catId: WorkCategory) => {
     const info = getCategoryInfo(catId);
@@ -339,36 +391,77 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
                 </p>
               </div>
 
-              <div className="w-full h-44 rounded-2xl overflow-hidden border-2 border-dashed border-[#E2E8F0] relative group">
+              {imageUploadError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold p-2.5 rounded-xl">
+                  {imageUploadError}
+                </div>
+              )}
+
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleImageFileChange}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleImageFileChange}
+              />
+
+              <div className="w-full h-44 rounded-2xl overflow-hidden border-2 border-dashed border-[#E2E8F0] relative group bg-[#F8FAFC]">
                 <img
                   src={selectedImage}
                   alt="Workplace preview"
+                  onError={(e) => {
+                    const fallback = getCategoryInfo(category).defaultImage;
+                    if (fallback && e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-3">
-                  <button
-                    onClick={() =>
-                      setSelectedImage(
-                        'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80'
-                      )
-                    }
-                    className="bg-white text-[#111827] px-3 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5"
-                  >
-                    <Camera size={14} className="text-[#2563EB]" />
-                    <span>Take Photo</span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      setSelectedImage(
-                        'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
-                      )
-                    }
-                    className="bg-white text-[#111827] px-3 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5"
-                  >
-                    <ImageIcon size={14} className="text-[#2563EB]" />
-                    <span>Choose Gallery</span>
-                  </button>
+                  {isUploadingImage ? (
+                    <div className="bg-white text-[#111827] px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-2">
+                      <Loader2 size={16} className="text-[#2563EB] animate-spin" />
+                      <span>Uploading photo...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="bg-white hover:bg-slate-50 text-[#111827] px-3 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
+                      >
+                        <Camera size={14} className="text-[#2563EB]" />
+                        <span>Take Photo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-white hover:bg-slate-50 text-[#111827] px-3 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
+                      >
+                        <ImageIcon size={14} className="text-[#2563EB]" />
+                        <span>Choose Gallery</span>
+                      </button>
+                    </>
+                  )}
                 </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(getCategoryInfo(category).defaultImage)}
+                  className="text-xs text-[#2563EB] hover:underline font-semibold cursor-pointer"
+                >
+                  Use category default image
+                </button>
               </div>
             </div>
           )}

@@ -26,8 +26,10 @@ import {
   Moon,
   Camera,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { UserAvatar } from '../../components/common/UserAvatar';
+import { api } from '../../services/api';
 
 export const ProfileAndSettingsView: React.FC = () => {
   const {
@@ -57,6 +59,7 @@ export const ProfileAndSettingsView: React.FC = () => {
   // Profile photo upload state
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [photoSuccess, setPhotoSuccess] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Change phone state
   const [newPhoneInput, setNewPhoneInput] = useState('');
@@ -84,16 +87,31 @@ export const ProfileAndSettingsView: React.FC = () => {
       return;
     }
 
+    setIsUploadingPhoto(true);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const result = reader.result as string;
       if (result) {
-        updateUserProfile({ profilePhoto: result });
-        setPhotoSuccess('Profile photo updated successfully!');
-        setTimeout(() => setPhotoSuccess(null), 3000);
+        try {
+          const uploadRes = await api.uploadImage(result, 'profiles', file.type);
+          const persistentUrl = uploadRes?.url || result;
+          updateUserProfile({ profilePhoto: persistentUrl });
+          setPhotoSuccess('Profile photo updated successfully!');
+          setTimeout(() => setPhotoSuccess(null), 3000);
+        } catch (uploadErr) {
+          // Resilient fallback: update locally if network fails
+          updateUserProfile({ profilePhoto: result });
+          setPhotoSuccess('Profile photo updated.');
+          setTimeout(() => setPhotoSuccess(null), 3000);
+        } finally {
+          setIsUploadingPhoto(false);
+        }
+      } else {
+        setIsUploadingPhoto(false);
       }
     };
     reader.onerror = () => {
+      setIsUploadingPhoto(false);
       setPhotoError(t.uploadFailed || 'Failed to read photo file.');
     };
     reader.readAsDataURL(file);
@@ -167,10 +185,11 @@ export const ProfileAndSettingsView: React.FC = () => {
               className="absolute -bottom-1 -right-1 p-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-full shadow-md cursor-pointer border-2 border-white transition-transform active:scale-90"
               title={t.uploadProfilePhoto || "Upload Profile Photo"}
             >
-              <Camera size={14} />
+              {isUploadingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
               <input
                 id="profile-photo-upload-input"
                 type="file"
+                disabled={isUploadingPhoto}
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={handlePhotoUpload}

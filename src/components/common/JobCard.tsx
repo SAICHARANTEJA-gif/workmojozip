@@ -2,7 +2,7 @@ import React from 'react';
 import { Job } from '../../types';
 import { useApp } from '../../store/AppContext';
 import { calculateMatchScore } from '../../services/matchingService';
-import { getCategoryLabel, getCategoryEmoji } from '../../config/categories';
+import { getCategoryInfo, getCategoryLabel, getCategoryEmoji } from '../../config/categories';
 import { UserAvatar } from './UserAvatar';
 import {
   Clock,
@@ -29,10 +29,11 @@ export const JobCard: React.FC<JobCardProps> = ({
   onApply,
   compact = false,
 }) => {
-  const { user, savedJobIds, toggleSaveJob, activeRole, t, theme, language } = useApp();
+  const { user, savedJobIds, toggleSaveJob, activeRole, t, theme, language, isApplicationPending } = useApp();
   const isSaved = savedJobIds.includes(job.id);
   const matchResult = calculateMatchScore(user, job);
   const isConfirmed = job.confirmedWorkerIds.includes(user.id);
+  const isPending = isApplicationPending ? isApplicationPending(job.id, user.id) : false;
   const isApplied = job.applicants.includes(user.id);
   const isWaitingList = job.waitingList.includes(user.id);
   const waitingPos = isWaitingList ? job.waitingList.indexOf(user.id) + 1 : null;
@@ -94,8 +95,14 @@ export const JobCard: React.FC<JobCardProps> = ({
       {/* Main Content Layout: Image + Title + Wage */}
       <div className="flex gap-3.5 items-start">
         <img
-          src={job.image}
+          src={job.image || getCategoryInfo(job.category)?.defaultImage}
           alt={job.title}
+          onError={(e) => {
+            const fallback = getCategoryInfo(job.category)?.defaultImage;
+            if (fallback && e.currentTarget.src !== fallback) {
+              e.currentTarget.src = fallback;
+            }
+          }}
           className="w-20 h-20 rounded-2xl object-cover shrink-0 border border-[#E2E8F0] shadow-inner"
         />
 
@@ -191,12 +198,22 @@ export const JobCard: React.FC<JobCardProps> = ({
             >
               <span>#{waitingPos} {t.waitingList.split(' ')[0]}</span>
             </button>
+          ) : isPending ? (
+            <button
+              onClick={() => onViewDetails && onViewDetails(job)}
+              title="Application saved locally. We'll sync it when connection is restored."
+              className="bg-[#EFF6FF] text-[#2563EB] text-xs font-bold px-3 py-2 rounded-xl border border-[#BFDBFE] flex items-center gap-1 shadow-2xs cursor-pointer"
+            >
+              <CheckCircle2 size={13} className="text-[#2563EB]" />
+              <span>Applied ✓ (Sync pending)</span>
+            </button>
           ) : isApplied ? (
             <button
               onClick={() => onViewDetails && onViewDetails(job)}
-              className="bg-[#F1F5F9] text-[#64748B] text-xs font-bold px-3 py-2 rounded-xl border border-[#E2E8F0]"
+              className="bg-[#F1F5F9] text-[#16A34A] text-xs font-bold px-3 py-2 rounded-xl border border-[#E2E8F0] flex items-center gap-1 cursor-pointer"
             >
-              <span>{t.tabApplied}</span>
+              <CheckCircle2 size={13} className="text-[#16A34A]" />
+              <span>Applied ✓</span>
             </button>
           ) : isFull ? (
             <button

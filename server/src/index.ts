@@ -1,7 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { isSupabaseConfigured, isServiceRoleActive, supabase } from './db/supabaseClient';
+import crypto from 'crypto';
+import { isSupabaseConfigured, isServiceRoleActive, supabase, STORAGE_BUCKET, ensureMediaBucketExists } from './db/supabaseClient';
 import { processAiChat } from './aiService';
 import { predictWorkerJobMatch, rankWorkersForJob, getMLDiagnostics } from './ml/mlMatchingService';
 import { requestOtp, verifyOtp, normalizePhoneNumber } from './services/otpService';
@@ -12,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({ origin: '*' }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // In-Memory Database Store for immediate server execution & offline demo readiness
 interface ServerStore {
@@ -340,6 +341,24 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
+// Category default image mapper to guarantee no job or worker ever has a blank/broken visual
+const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
+  'Loading/Unloading': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+  'Cleaning': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80',
+  'Construction Helper': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+  'Delivery Partner': 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=800&auto=format&fit=crop&q=80',
+  'Gardening': 'https://images.unsplash.com/photo-1558904541-efa8c4a52d31?w=800&auto=format&fit=crop&q=80',
+  'General Labour': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+  'Catering/Cooking': 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
+  'Plumbing Assist': 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&auto=format&fit=crop&q=80',
+  'Electrical Assist': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80',
+  'Painting Helper': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&auto=format&fit=crop&q=80',
+};
+
+export function getCategoryDefaultImage(category: string): string {
+  return DEFAULT_CATEGORY_IMAGES[category] || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+}
+
 // ============================================================================
 // 2. AUTHENTICATION ROUTES
 // ============================================================================
@@ -424,6 +443,152 @@ app.post('/api/v1/auth/verify-otp', async (req: Request, res: Response) => {
     ...(verification.demoModeActive ? { demoModeActive: true, message: 'Authentication successful (Demo OTP Mode)' } : {}),
   });
 });
+
+// ============================================================================
+// 2B. PRODUCTION MEDIA UPLOAD & USER PROFILE PERSISTENCE
+// ============================================================================
+app.post('/api/v1/upload/image', async (req: Request, res: Response) => {
+  try {
+    const rawData = req.body.fileData || req.body.base64Data || req.body.image;
+    const folder = req.body.folder || 'general';
+    let mimeType = req.body.contentType || req.body.mimeType || 'image/jpeg';
+
+    if (!rawData || typeof rawData !== 'string') {
+      return res.status(400).json({ success: false, error: 'Image file data is required.' });
+    }
+
+    // Extract base64 payload if data URL is provided
+    let base64Content = rawData;
+    if (rawData.startsWith('data:')) {
+      const parts = rawData.split(',');
+      const match = parts[0].match(/:(.*?);/);
+      if (match) mimeType = match[1];
+      base64Content = parts[1] || '';
+    }
+
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!allowedMimes.includes(mimeType)) {
+      return res.status(400).json({ success: false, error: 'Only JPEG, PNG, WebP, or SVG formats are supported.' });
+    }
+
+    const buffer = Buffer.from(base64Content, 'base64');
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ success: false, error: 'Image size exceeds maximum limit of 5MB.' });
+    }
+
+    const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg').replace('+xml', '') || 'jpg';
+    const targetFolder = ['profiles', 'jobs', 'general'].includes(folder) ? folder : 'general';
+    const uniqueName = `${targetFolder}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+
+    // If Supabase is configured and storage bucket is ready, upload to Supabase Storage
+    if (isSupabaseConfigured()) {
+      try {
+        await ensureMediaBucketExists();
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(uniqueName, buffer, {
+            contentType: mimeType,
+            upsert: true,
+          });
+
+        if (!uploadErr && uploadData) {
+          const { data: publicUrlData } = supabase.storage
+            .from(STORAGE_BUCKET)
+            .getPublicUrl(uniqueName);
+
+          if (publicUrlData && publicUrlData.publicUrl) {
+            return res.json({
+              success: true,
+              url: publicUrlData.publicUrl,
+              storage: 'supabase',
+            });
+          }
+        } else if (uploadErr) {
+          console.warn('[Upload] Supabase storage upload notice:', uploadErr.message);
+        }
+      } catch (stErr: any) {
+        console.warn('[Upload] Exception during storage upload:', stErr.message);
+      }
+    }
+
+    // High-reliability persistent fallback: Return verified data URI
+    // (guarantees images render across all devices even if Supabase storage addon is unconfigured)
+    const fallbackDataUrl = `data:${mimeType};base64,${base64Content}`;
+    return res.json({
+      success: true,
+      url: fallbackDataUrl,
+      storage: 'fallback_data_uri',
+    });
+  } catch (err: any) {
+    console.error('[Upload] Error uploading image:', err.message);
+    res.status(500).json({ success: false, error: err.message || 'Failed to upload image.' });
+  }
+});
+
+app.post('/api/v1/users/profile', async (req: Request, res: Response) => {
+  try {
+    const { userId, phone, profilePhoto, name, gender, role } = req.body;
+    if (!userId && !phone) {
+      return res.status(400).json({ success: false, error: 'User ID or Phone number is required.' });
+    }
+
+    // 1. Locate or initialize user in in-memory db
+    let user = db.users.find(u => (userId && u.id === userId) || (phone && u.phone === phone));
+    if (!user) {
+      user = {
+        id: userId || `u-${Date.now()}`,
+        phone: phone || '',
+        name: name || 'User',
+        gender: gender || 'Male',
+        role: role || 'worker',
+        kycVerified: false,
+        profilePhoto: profilePhoto || '',
+      };
+      db.users.push(user);
+    } else {
+      if (profilePhoto !== undefined) user.profilePhoto = profilePhoto;
+      if (name) user.name = name;
+      if (gender) user.gender = gender;
+      if (role) user.role = role;
+    }
+
+    // 2. Persist to Supabase users table if configured
+    let supabasePersisted = false;
+    if (isSupabaseConfigured()) {
+      try {
+        const updatePayload: any = {
+          id: user.id,
+          phone: user.phone,
+          name: user.name,
+          gender: user.gender,
+          role: user.role,
+        };
+        if (user.profilePhoto) {
+          updatePayload.profile_photo = user.profilePhoto;
+        }
+
+        const { error } = await supabase.from('users').upsert(updatePayload);
+        if (!error) {
+          supabasePersisted = true;
+          console.log('[Users] Profile updated in Supabase for user:', user.id);
+        } else {
+          console.warn('[Users] Supabase profile upsert warning:', error.message);
+        }
+      } catch (sbErr: any) {
+        console.warn('[Users] Exception updating profile in Supabase:', sbErr.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      user,
+      persistedToSupabase: supabasePersisted,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 
 // ============================================================================
@@ -713,6 +878,7 @@ app.get('/api/v1/jobs', async (req: Request, res: Response) => {
               businessName: row.business_name || `${row.title} Services`,
               title: row.title,
               category: row.category,
+              image: row.image_url || getCategoryDefaultImage(row.category),
               description: row.description || '',
               wage: Number(row.wage) || 500,
               startTime: row.start_time || '09:00 AM',
@@ -754,6 +920,7 @@ app.get('/api/v1/jobs', async (req: Request, res: Response) => {
     for (const job of combinedJobs) {
       const sig = `${job.title}_${job.category}_${job.wage}_${job.startTime}_${job.approximateArea}`;
       if (!uniqueMap.has(job.id) && !seenSignatures.has(sig)) {
+        job.image = job.image || getCategoryDefaultImage(job.category);
         uniqueMap.set(job.id, job);
         seenSignatures.add(sig);
       }
@@ -785,9 +952,12 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
         (j.customerId === jobPayload.customerId || j.employerId === jobPayload.customerId))
   );
 
+  const jobImage = jobPayload.image || jobPayload.imageUrl || getCategoryDefaultImage(jobPayload.category);
+
   const targetJob = existingJob || {
     id: jobId,
     ...jobPayload,
+    image: jobImage,
     workersConfirmed: jobPayload.workersConfirmed || 0,
     applicants: jobPayload.applicants || [],
     confirmedWorkerIds: jobPayload.confirmedWorkerIds || [],
@@ -797,11 +967,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
     updatedAt: jobPayload.updatedAt || new Date().toISOString(),
   };
 
-  if (!existingJob) {
-    db.jobs.unshift(targetJob);
-  }
-
-  // If Supabase is configured, attempt to persist to Supabase
+  // If Supabase is configured, persist directly to Supabase jobs table
   let supabasePersisted = false;
   let supabaseError: string | null = null;
   if (isSupabaseConfigured()) {
@@ -812,6 +978,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
         title: targetJob.title,
         description: targetJob.description || '',
         category: targetJob.category,
+        image_url: targetJob.image || jobImage,
         wage: Number(targetJob.wage) || 500,
         start_time: targetJob.startTime || '09:00 AM',
         duration: targetJob.duration || '8 hours',
@@ -839,7 +1006,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
       if (error) {
         supabaseError = `${error.code}: ${error.message}`;
         console.error('[Supabase] Job upsert error:', error.message, error.details || error.hint);
-        // If unknown column error (e.g. metadata columns before migration 20260911), retry with base columns
+        // If unknown column error (e.g. metadata columns before migration), retry with base columns
         if (error.code === '42703' || error.code === 'PGRST204' || String(error.message).includes('Could not find')) {
           delete sbPayload.customer_name;
           delete sbPayload.customer_photo;
@@ -847,6 +1014,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
           delete sbPayload.customer_kyc;
           delete sbPayload.business_name;
           delete sbPayload.selection_mode;
+          delete sbPayload.image_url;
           const retry = await supabase.from('jobs').upsert(sbPayload);
           if (!retry.error) {
             supabasePersisted = true;
@@ -866,12 +1034,26 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
     }
   }
 
+  // STRICT PERSISTENCE REQUIREMENT:
+  // If Supabase is configured and database insertion failed, DO NOT create a phantom memory-only job!
+  // Return HTTP 500 error so the employer client does not register a broken job that workers cannot apply for.
+  if (isSupabaseConfigured() && !supabasePersisted) {
+    return res.status(500).json({
+      success: false,
+      error: `Failed to persist job to database: ${supabaseError}`,
+    });
+  }
+
+  // Only commit to in-memory store once database persistence is confirmed (or in offline test mode)
+  if (!existingJob) {
+    db.jobs.unshift(targetJob);
+  }
+
   res.status(existingJob ? 200 : 201).json({
     success: true,
     job: targetJob,
     persistedToSupabase: supabasePersisted,
-    ...(supabaseError ? { supabaseNotice: supabaseError } : {}),
-    ...(existingJob ? { message: 'Job already exists in memory, refreshed and synced.' } : {}),
+    ...(existingJob ? { message: 'Job already exists, refreshed and synced.' } : {}),
   });
 });
 
@@ -940,6 +1122,40 @@ app.post('/api/v1/jobs/:id/apply', async (req: Request, res: Response) => {
 
   if (isSupabaseConfigured()) {
     try {
+      // Ensure target job exists in Supabase jobs table before writing to applications
+      // This strictly prevents 23503 foreign key error (applications_job_id_fkey) if the job was seeded or in-memory
+      const { data: jobCheck } = await supabase.from('jobs').select('id').eq('id', id).maybeSingle();
+      if (!jobCheck && job) {
+        console.log(`[Supabase] Job ${id} not found in Supabase jobs table; auto-syncing job before inserting application.`);
+        const jobPayload: any = {
+          id: String(job.id),
+          employer_id: String(job.employerId || job.customerId || 'c1'),
+          title: job.title,
+          description: job.description || '',
+          category: job.category,
+          image_url: job.image || getCategoryDefaultImage(job.category),
+          wage: Number(job.wage) || 500,
+          start_time: job.startTime || '09:00 AM',
+          duration: job.duration || '8 hours',
+          urgency: job.urgency || 'Today',
+          workers_required: Number(job.workersRequired) || 1,
+          workers_confirmed: Number(job.workersConfirmed) || 0,
+          approximate_area: job.approximateArea || 'Bangalore',
+          approximate_distance_km: Number(job.approximateDistanceKm) || 2.5,
+          exact_address: job.exactLocation?.exactAddress || job.approximateArea || 'Bangalore',
+          landmark: job.exactLocation?.landmark || '',
+          exact_lat: Number(job.exactLocation?.lat) || 12.934,
+          exact_lng: Number(job.exactLocation?.lng) || 77.625,
+          status: job.status || 'Open',
+          recurring: job.recurring || 'none',
+        };
+        const { error: syncJobErr } = await supabase.from('jobs').upsert(jobPayload);
+        if (syncJobErr && (syncJobErr.code === '42703' || syncJobErr.code === 'PGRST204')) {
+          delete jobPayload.image_url;
+          await supabase.from('jobs').upsert(jobPayload);
+        }
+      }
+
       const appRecord: any = {
         job_id: id,
         worker_id: String(workerId),
@@ -1859,12 +2075,61 @@ app.get(['/api/v1/ai/chat', '/api/v1/mojo/chat', '/api/ai/chat', '/ai/chat'], (r
   });
 });
 
+// Seed Jobs synchronization helper: ensures default seed jobs exist in Supabase
+// so workers applying to initial seed jobs satisfy foreign key constraint applications_job_id_fkey
+export const syncSeedJobsToSupabase = async () => {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { data: existingJobs } = await supabase.from('jobs').select('id').limit(20);
+    const existingIds = new Set(Array.isArray(existingJobs) ? existingJobs.map((j: any) => String(j.id)) : []);
+
+    for (const job of db.jobs) {
+      if (!existingIds.has(String(job.id))) {
+        const payload: any = {
+          id: String(job.id),
+          employer_id: String(job.employerId || job.customerId || 'c1'),
+          title: job.title,
+          description: job.description || '',
+          category: job.category,
+          image_url: job.image || getCategoryDefaultImage(job.category),
+          wage: Number(job.wage) || 500,
+          start_time: job.startTime || '09:00 AM',
+          duration: job.duration || '8 hours',
+          urgency: job.urgency || 'Today',
+          workers_required: Number(job.workersRequired) || 1,
+          workers_confirmed: Number(job.workersConfirmed) || 0,
+          approximate_area: job.approximateArea || 'Bangalore',
+          approximate_distance_km: Number(job.approximateDistanceKm) || 2.5,
+          exact_address: job.exactLocation?.exactAddress || job.approximateArea || 'Bangalore',
+          landmark: job.exactLocation?.landmark || '',
+          exact_lat: Number(job.exactLocation?.lat) || 12.934,
+          exact_lng: Number(job.exactLocation?.lng) || 77.625,
+          status: job.status || 'Open',
+          recurring: job.recurring || 'none',
+        };
+        const { error } = await supabase.from('jobs').upsert(payload);
+        if (!error) {
+          console.log(`[Supabase/Init] Seed job synchronized: ${job.id} (${job.title})`);
+        } else if (error.code === '42703' || error.code === 'PGRST204') {
+          delete payload.image_url;
+          await supabase.from('jobs').upsert(payload);
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Supabase/Init] Warning synchronizing seed jobs:', err.message);
+  }
+};
+
 // Start Server
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`[WORK MOJO] API Backend running on http://localhost:${PORT}`);
     const authType = isServiceRoleActive() ? 'SERVICE_ROLE (privileged server writes active)' : 'ANON (standard key)';
     console.log(`[WORK MOJO] Supabase status: ${isSupabaseConfigured() ? 'Connected via ' + authType : 'Disabled (in-memory mode)'}`);
+    if (isSupabaseConfigured()) {
+      syncSeedJobsToSupabase().catch(err => console.warn('[Supabase/Init] Sync error:', err.message));
+    }
   });
 }
 

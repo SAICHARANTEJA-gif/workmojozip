@@ -30,4 +30,24 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
 });
 
+export const STORAGE_BUCKET = 'workmojo-media';
 
+export const ensureMediaBucketExists = async (): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const exists = Array.isArray(buckets) && buckets.some(b => b.name === STORAGE_BUCKET);
+    if (!exists) {
+      const { error } = await supabase.storage.createBucket(STORAGE_BUCKET, { public: true });
+      if (error) {
+        console.warn('[Supabase/Storage] Bucket creation notice:', error.message);
+        return false;
+      }
+      console.log(`[Supabase/Storage] Created public bucket "${STORAGE_BUCKET}" successfully.`);
+    }
+    return true;
+  } catch (err: any) {
+    console.warn('[Supabase/Storage] Warning checking storage buckets:', err.message);
+    return false;
+  }
+};
