@@ -156,6 +156,9 @@ export class GeminiLiveClient {
         break;
 
       case 'audio_chunk':
+        if (this.state === 'INTERRUPTED') {
+          return;
+        }
         if (msg.pcm24k) {
           this.playback.queuePcm24k(msg.pcm24k);
         }
@@ -264,3 +267,4 @@ export class GeminiLiveClient {
     this.setState('IDLE');
   }
 }
+

@@ -25,8 +25,8 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
 
   server.on('upgrade', (request, socket, head) => {
     const url = request.url || '';
-    if (url.startsWith('/api/v1/voice/live')) {
-      wss.handleUpgrade(request, socket, head, ws => {
+    if (url.startsWith('/api/v1/voice/live') || url.startsWith('/voice/live')) {
+      wss.handleUpgrade(request, socket, head, (ws: WebSocket) => {
         wss.emit('connection', ws, request);
       });
     }
@@ -247,7 +247,7 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
 
   // Heartbeat ping/pong every 30s to keep alive and detect dead connections
   const interval = setInterval(() => {
-    wss.clients.forEach(ws => {
+    wss.clients.forEach((ws: WebSocket) => {
       const extWs = ws as WebSocket & { isAlive?: boolean };
       if (extWs.isAlive === false) {
         return ws.terminate();

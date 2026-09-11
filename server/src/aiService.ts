@@ -141,10 +141,10 @@ export function extractCategory(text: string): { category: string; labelEn: stri
   if (q.includes('plumb') || q.includes('ప్లంబ') || q.includes('प्लंबर') || q.includes('பிளம்ப')) {
     return { category: 'Plumbing', labelEn: 'Plumber', labelTe: 'ప్లంబర్', labelHi: 'प्लंबर', labelTa: 'பிளம்பர்' };
   }
-  if (q.includes('electr') || q.includes('ఎలక్ట్రీ') || q.includes('इलेक्ट्री') || q.includes('மின்சார')) {
+  if (q.includes('electr') || q.includes('ఎలక్ట్రీ') || q.includes('इलेक्ट्री') || q.includes('மின்சார') || q.includes('எலக்ட்ரீ')) {
     return { category: 'Electrical Work', labelEn: 'Electrician', labelTe: 'ఎలక్ట్రీషియన్', labelHi: 'इलेक्ट्रीशियन', labelTa: 'எலக்ட்ரீஷியன்' };
   }
-  if (q.includes('paint') || q.includes('పెయింట') || q.includes('पेंटर') || q.includes('வண்ண')) {
+  if (q.includes('paint') || q.includes('పెయింట') || q.includes('पेंटर') || q.includes('வண்ண') || q.includes('பெயிண்ட')) {
     return { category: 'Painting', labelEn: 'Painter', labelTe: 'పెయింటర్', labelHi: 'पेंटर', labelTa: 'பெயிண்டர்' };
   }
   if (q.includes('carpent') || q.includes('వడ్రంగి') || q.includes('బడాయి') || q.includes('बढ़ई') || q.includes('தச்சர்')) {
@@ -424,9 +424,12 @@ export function classifyIntentAndExtractEntities(
   if (
     q.includes('who applied') || q.includes('application status') || q.includes('my application') ||
     q.includes('any applicants') || q.includes('view applicants') || q.includes('who applied to my job') ||
-    q.includes('ఎవరు దరఖాస్తు చేశారు') || q.includes('దరఖాస్తు స్థితి') ||
-    q.includes('किसने आवेदन किया') || q.includes('आवेदन की स्थिति') ||
-    q.includes('விண்ணப்ப நிலை') || q.includes('யார் விண்ணப்பித்தனர்')
+    q.includes('show applicants') || q.includes('show my applicants') || q.includes('my applicants') ||
+    q.includes('see applicants') || q.includes('check applicants') || q.includes('open applicants') ||
+    (q.includes('applicant') && !q.includes('compare')) ||
+    q.includes('ఎవరు దరఖాస్తు చేశారు') || q.includes('దరఖాస్తు స్థితి') || q.includes('దరఖాస్తుదారులు') ||
+    q.includes('किसने आवेदन किया') || q.includes('आवेदन की स्थिति') || q.includes('आवेदक') ||
+    q.includes('விண்ணப்ப நிலை') || q.includes('யார் விண்ணப்பித்தனர்') || q.includes('விண்ணப்பதாரர்கள்')
   ) {
     return { intent: 'APPLICATION_STATUS', entities, updatedDraft: draft };
   }
