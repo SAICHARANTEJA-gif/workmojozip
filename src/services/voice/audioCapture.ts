@@ -9,11 +9,16 @@ export class AudioCapture {
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private processorNode: ScriptProcessorNode | null = null;
   private isCapturing: boolean = false;
+  private currentRms: number = 0;
 
   /**
    * Starts capturing microphone audio and streams 16kHz PCM Base64 chunks via callback.
+   * Also computes real-time RMS for Voice Activity Detection (VAD) and audio visualization.
    */
-  public async start(onAudioChunk: (pcm16kBase64: string) => void): Promise<void> {
+  public async start(
+    onAudioChunk: (pcm16kBase64: string, rms: number) => void,
+    onVolumeChange?: (rms: number, normalizedVolume: number) => void
+  ): Promise<void> {
     if (this.isCapturing) return;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -48,12 +53,26 @@ export class AudioCapture {
         if (!this.isCapturing) return;
 
         const inputChannelData = e.inputBuffer.getChannelData(0);
+
+        // Calculate Root Mean Square (RMS) for energy / VAD detection
+        let sumSquares = 0;
+        for (let i = 0; i < inputChannelData.length; i++) {
+          const sample = inputChannelData[i];
+          sumSquares += sample * sample;
+        }
+        const rms = Math.sqrt(sumSquares / inputChannelData.length);
+        this.currentRms = rms;
+
+        // Normalized 0.0 - 1.0 volume metric for live UI visualizers
+        const normalizedVolume = Math.min(1, Math.max(0, (rms - 0.01) / 0.15));
+        onVolumeChange?.(rms, normalizedVolume);
+
         const resampledData = this.resampleTo16k(inputChannelData, inputSampleRate, targetSampleRate);
         const pcm16 = this.floatTo16BitPCM(resampledData);
 
         if (pcm16.length > 0) {
           const base64 = this.arrayBufferToBase64(pcm16.buffer);
-          onAudioChunk(base64);
+          onAudioChunk(base64, rms);
         }
       };
 
@@ -160,5 +179,9 @@ export class AudioCapture {
 
   public get capturing(): boolean {
     return this.isCapturing;
+  }
+
+  public get rms(): number {
+    return this.currentRms;
   }
 }

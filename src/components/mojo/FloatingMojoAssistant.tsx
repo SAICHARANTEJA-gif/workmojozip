@@ -73,6 +73,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
   const [voiceName, setVoiceName] = useState<string | undefined>(undefined);
   const [isLangSelectorOpen, setIsLangSelectorOpen] = useState<boolean>(false);
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
+  const [liveVolume, setLiveVolume] = useState<number>(0);
   const liveClientRef = useRef<GeminiLiveClient | null>(null);
 
   const [conversationState, setConversationState] = useState<{
@@ -156,13 +157,19 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
       speechService.stopSpeaking();
       setSpeakingMessageId(null);
     }
-  }, [language, activeRole]);
+
+    // Sync live voice language dynamically without reconnecting
+    if (liveClientRef.current && voiceState !== 'IDLE') {
+      liveClientRef.current.updateLanguage(language);
+    }
+  }, [language, activeRole, voiceState]);
 
   // Disconnect live voice if modal closes
   useEffect(() => {
     if (!isOpen && liveClientRef.current) {
       liveClientRef.current.disconnect();
       setVoiceState('IDLE');
+      setLiveVolume(0);
     }
   }, [isOpen]);
 
@@ -684,6 +691,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
     if (voiceState !== 'IDLE') {
       liveClientRef.current?.disconnect();
       setVoiceState('IDLE');
+      setLiveVolume(0);
       return;
     }
 
@@ -693,6 +701,12 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
         liveClientRef.current = new GeminiLiveClient({
           onStateChange: state => {
             setVoiceState(state);
+            if (state === 'IDLE') {
+              setLiveVolume(0);
+            }
+          },
+          onVolumeChange: volume => {
+            setLiveVolume(volume);
           },
           onTranscript: (sender, text) => {
             if (!text || !text.trim()) return;
@@ -737,6 +751,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
           onError: errMsg => {
             triggerVoiceNotice(errMsg);
             setVoiceState('IDLE');
+            setLiveVolume(0);
           },
         });
       }
@@ -746,6 +761,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
       console.error('[MOJO VOICE] Toggle failed:', err);
       triggerVoiceNotice(err.message || 'Could not start voice session');
       setVoiceState('IDLE');
+      setLiveVolume(0);
     }
   };
 
@@ -1004,21 +1020,25 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
             {/* Real-time Gemini Live Voice Bar */}
             {voiceState !== 'IDLE' && (
               <div
-                className={`px-4 py-2.5 border-t flex items-center justify-between text-xs transition-colors ${
-                  voiceState === 'LISTENING'
-                    ? 'bg-rose-50 border-rose-200 text-rose-800'
+                className={`px-3.5 py-2.5 border-t flex items-center justify-between text-xs transition-colors ${
+                  voiceState === 'USER_SPEAKING'
+                    ? 'bg-rose-50 border-rose-300 text-rose-900'
+                    : voiceState === 'LISTENING'
+                    ? 'bg-blue-50 border-blue-200 text-blue-900'
+                    : voiceState === 'THINKING'
+                    ? 'bg-amber-50 border-amber-200 text-amber-900'
                     : voiceState === 'SPEAKING'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                     : voiceState === 'INTERRUPTED'
-                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    ? 'bg-amber-50 border-amber-200 text-amber-900'
                     : 'bg-blue-50 border-blue-200 text-blue-800'
                 }`}
               >
-                <div className="flex items-center gap-2 font-medium">
+                <div className="flex items-center gap-2 font-medium overflow-hidden">
                   {voiceState === 'CONNECTING' && (
                     <>
                       <Loader2 size={14} className="animate-spin text-blue-600 shrink-0" />
-                      <span>
+                      <span className="truncate">
                         {language === 'te'
                           ? 'జెమిని లైవ్ వాయిస్‌కి కనెక్ట్ అవుతోంది...'
                           : language === 'hi'
@@ -1030,35 +1050,68 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                     </>
                   )}
 
-                  {voiceState === 'LISTENING' && (
+                  {voiceState === 'USER_SPEAKING' && (
                     <>
-                      <span className="relative flex h-2.5 w-2.5">
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
                       </span>
-                      <span className="font-bold">
+                      <span className="font-bold text-rose-900 truncate">
+                        {language === 'te'
+                          ? 'వింటున్నాము... మాట్లాడండి'
+                          : language === 'hi'
+                          ? 'सुन रहे हैं... बोलिए'
+                          : language === 'ta'
+                          ? 'கேட்கிறது... பேசுங்கள்'
+                          : 'Listening... (You are speaking)'}
+                      </span>
+                      {/* Live Audio Visualizer Equalizer */}
+                      <div className="flex items-center gap-0.5 ml-1 shrink-0">
+                        <span
+                          className="w-1 bg-rose-500 rounded-full transition-all duration-75"
+                          style={{ height: `${Math.max(5, Math.min(20, liveVolume * 22))}px` }}
+                        ></span>
+                        <span
+                          className="w-1 bg-rose-600 rounded-full transition-all duration-75"
+                          style={{ height: `${Math.max(8, Math.min(24, liveVolume * 30))}px` }}
+                        ></span>
+                        <span
+                          className="w-1 bg-rose-500 rounded-full transition-all duration-75"
+                          style={{ height: `${Math.max(5, Math.min(20, liveVolume * 20))}px` }}
+                        ></span>
+                      </div>
+                    </>
+                  )}
+
+                  {voiceState === 'LISTENING' && (
+                    <>
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+                      </span>
+                      <span className="font-bold text-blue-900 truncate">
                         {language === 'te'
                           ? 'మోజో వింటోంది... మాట్లాడండి'
                           : language === 'hi'
                           ? 'मोजो सुन रहा है... बोलिए'
                           : language === 'ta'
                           ? 'மோஜோ கேட்கிறது... பேசுங்கள்'
-                          : 'Mojo is listening... Speak now'}
+                          : 'Mojo is listening... Speak anytime'}
                       </span>
-                      <span className="text-[10px] text-rose-600 font-normal hidden sm:inline">
-                        (Interrupt anytime)
+                      <span className="text-[10px] text-blue-600 font-normal hidden sm:inline shrink-0">
+                        (Hands-free)
                       </span>
                     </>
                   )}
 
                   {voiceState === 'THINKING' && (
                     <>
-                      <div className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]"></span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]"></span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-bounce"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-bounce [animation-delay:0.4s]"></span>
                       </div>
-                      <span className="font-bold">
+                      <span className="font-bold text-amber-900 truncate">
                         {language === 'te'
                           ? 'మోజో ఆలోచిస్తోంది...'
                           : language === 'hi'
@@ -1073,16 +1126,21 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                   {voiceState === 'SPEAKING' && (
                     <>
                       <Volume2 size={14} className="text-emerald-600 animate-pulse shrink-0" />
-                      <span className="font-bold text-emerald-900">
+                      <span className="font-bold text-emerald-900 truncate">
                         {language === 'te'
                           ? 'మోజో మాట్లాడుతోంది...'
                           : language === 'hi'
                           ? 'मोजो बोल रहा है...'
                           : language === 'ta'
-                          ? 'மோஜோ பேசுகிறார்...'
+                          ? 'మోஜோ பேசுகிறார்...'
                           : 'Mojo is speaking...'}
                       </span>
-                      <span className="text-[10px] text-emerald-700 font-normal hidden sm:inline">
+                      <div className="flex items-center gap-0.5 ml-1 shrink-0">
+                        <span className="w-1 bg-emerald-500 rounded-full animate-pulse h-3"></span>
+                        <span className="w-1 bg-emerald-600 rounded-full animate-pulse h-4 [animation-delay:0.15s]"></span>
+                        <span className="w-1 bg-emerald-500 rounded-full animate-pulse h-2.5 [animation-delay:0.3s]"></span>
+                      </div>
+                      <span className="text-[10px] text-emerald-700 font-normal hidden sm:inline shrink-0">
                         (Speak to barge in)
                       </span>
                     </>
@@ -1090,17 +1148,17 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
 
                   {voiceState === 'INTERRUPTED' && (
                     <>
-                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                      <span className="font-bold text-amber-900">Interrupted — listening...</span>
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0"></span>
+                      <span className="font-bold text-amber-900 truncate">Interrupted — listening...</span>
                     </>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {voiceState === 'SPEAKING' && (
                     <button
                       onClick={() => liveClientRef.current?.interrupt()}
-                      className="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 px-2 py-0.5 rounded-md bg-emerald-100 transition-colors shadow-2xs"
+                      className="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 px-2 py-0.5 rounded-md bg-emerald-100 hover:bg-emerald-200 transition-colors shadow-2xs"
                       title="Interrupt Mojo speech"
                     >
                       Interrupt
@@ -1110,6 +1168,7 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                     onClick={() => {
                       liveClientRef.current?.disconnect();
                       setVoiceState('IDLE');
+                      setLiveVolume(0);
                     }}
                     className="text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded-md bg-slate-200/70 hover:bg-slate-200 transition-colors"
                   >
@@ -1129,12 +1188,14 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                     : `Stop Live Voice (${voiceState})`
                 }
                 className={`p-2.5 rounded-xl transition-all shadow-xs relative ${
-                  voiceState === 'LISTENING'
-                    ? 'bg-rose-600 text-white animate-pulse'
+                  voiceState === 'USER_SPEAKING'
+                    ? 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-300'
+                    : voiceState === 'LISTENING'
+                    ? 'bg-blue-600 text-white ring-2 ring-blue-300 animate-pulse'
                     : voiceState === 'SPEAKING'
                     ? 'bg-emerald-600 text-white animate-bounce'
                     : voiceState === 'CONNECTING' || voiceState === 'THINKING'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-amber-500 text-white'
                     : 'bg-[#FFFBEB] border border-[#FDE68A] text-[#F5A900] hover:bg-[#F5A900] hover:text-[#111827] active:scale-95'
                 }`}
                 title={`Gemini Live Voice (${langConfig.nativeName}) - State: ${voiceState}`}
@@ -1154,11 +1215,21 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                 onChange={e => setInputText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                 placeholder={
-                  voiceState === 'LISTENING'
+                  voiceState === 'USER_SPEAKING'
+                    ? (language === 'te' ? 'వింటున్నాము... మాట్లాడండి' :
+                       language === 'hi' ? 'सुन रहे हैं... बोलिए' :
+                       language === 'ta' ? 'கேட்கிறது... பேசுங்கள்' :
+                       'Listening... you are speaking')
+                    : voiceState === 'LISTENING'
                     ? (language === 'te' ? 'వినబడుతోంది... మాట్లాడండి' :
                        language === 'hi' ? 'सुन रहा हूँ... बोलिए' :
                        language === 'ta' ? 'கேட்கிறது... பேசுங்கள்' :
-                       'Listening... speak now')
+                       'Mojo is listening... speak anytime')
+                    : voiceState === 'THINKING'
+                    ? (language === 'te' ? 'మోజో ఆలోచిస్తోంది...' :
+                       language === 'hi' ? 'मोजो सोच रहा है...' :
+                       language === 'ta' ? 'మోజో சிந்திக்கிறார்...' :
+                       'Mojo is thinking...')
                     : voiceState === 'SPEAKING'
                     ? (language === 'te' ? 'మోజో మాట్లాడుతోంది...' :
                        language === 'hi' ? 'मोजो बोल रहा है...' :

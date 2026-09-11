@@ -249,9 +249,131 @@ async function runTests() {
     );
 
     // -------------------------------------------------------------------------
-    // Test 8: Clean Session Termination
+    // Test 8: Continuous 10-Turn Hands-Free Multi-Turn Conversation
     // -------------------------------------------------------------------------
-    console.log('\n--- Test 8: Clean Session Termination ---');
+    console.log('\n--- Test 8: Continuous 10-Turn Hands-Free Multi-Turn Conversation ---');
+
+    // Reset session with fresh English conversation state over the SAME connection
+    ws.send(
+      JSON.stringify({
+        type: 'init',
+        language: 'en',
+        role: 'customer',
+        conversationState: { jobDraft: {} },
+      })
+    );
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const multiTurns = [
+      {
+        turn: 1,
+        input: 'I need 5 electricians tomorrow in Madhapur',
+        expectedIntent: 'WORKER_COUNT',
+        validate: action => action.entities?.workersRequired === 5,
+        desc: 'Turn 1: Initial request sets workers=5',
+      },
+      {
+        turn: 2,
+        input: 'Change it to 8',
+        expectedIntent: 'WORKER_COUNT',
+        validate: action => action.entities?.workersRequired === 8,
+        desc: 'Turn 2: Incremental update workers=8 (preserves previous category)',
+      },
+      {
+        turn: 3,
+        input: 'Actually make it 12 workers',
+        expectedIntent: 'WORKER_COUNT',
+        validate: action => action.entities?.workersRequired === 12,
+        desc: 'Turn 3: Incremental update workers=12',
+      },
+      {
+        turn: 4,
+        input: 'Location is Hitec City',
+        expectedIntent: 'JOB_LOCATION',
+        validate: action => !!action.action,
+        desc: 'Turn 4: Location update preserves workers=12',
+      },
+      {
+        turn: 5,
+        input: 'Set wage to 850 rupees per day',
+        expectedIntent: 'WAGE_INFO',
+        validate: action => !!action.action,
+        desc: 'Turn 5: Wage update',
+      },
+      {
+        turn: 6,
+        input: 'What is the standard wage for electricians?',
+        expectedIntent: 'WAGE_INFO',
+        validate: action => !!action.intent,
+        desc: 'Turn 6: Question answered without losing draft',
+      },
+      {
+        turn: 7,
+        input: 'Show my applicants',
+        expectedIntent: 'APPLICATION_STATUS',
+        validate: action => action.action?.type === 'OPEN_APPLICANTS',
+        desc: 'Turn 7: Navigates to applicant review',
+      },
+      {
+        turn: 8,
+        input: 'Find me a plumber',
+        expectedIntent: 'WORKER_SEARCH',
+        validate: action => action.action?.type === 'OPEN_WORKER_SEARCH',
+        desc: 'Turn 8: Worker search navigation',
+      },
+      {
+        turn: 9,
+        input: 'How do I post a job?',
+        expectedIntent: 'JOB_POSTING_HELP',
+        validate: action => !!action.action,
+        desc: 'Turn 9: Job posting guidance',
+      },
+      {
+        turn: 10,
+        input: 'I need 20 helpers for event tomorrow',
+        expectedIntent: 'WORKER_COUNT',
+        validate: action => action.entities?.workersRequired === 20,
+        desc: 'Turn 10: Final high worker count=20',
+      },
+    ];
+
+    for (const t of multiTurns) {
+      receivedMessages.length = 0;
+      ws.send(JSON.stringify({ type: 'text', text: t.input }));
+
+      let actionPayload = null;
+      const turnStart = Date.now();
+      while (Date.now() - turnStart < 2500) {
+        actionPayload = receivedMessages.find(m => m.type === 'intent_action');
+        if (actionPayload) break;
+        await new Promise(resolve => setTimeout(resolve, 80));
+      }
+
+      assert(actionPayload !== null, `${t.desc} - received intent_action`);
+      assert(t.validate(actionPayload), `${t.desc} - validated successfully`);
+      assert(ws.readyState === WebSocket.OPEN, `Session remains continuously OPEN after Turn ${t.turn}`);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 9: Dynamic Session Language and Draft Updates
+    // -------------------------------------------------------------------------
+    console.log('\n--- Test 9: Dynamic Session Updates (Language & Draft) ---');
+
+    receivedMessages.length = 0;
+    ws.send(JSON.stringify({ type: 'change_language', language: 'te' }));
+    await new Promise(resolve => setTimeout(resolve, 150));
+    const langMsg = receivedMessages.find(m => m.type === 'language_changed');
+    assert(langMsg?.language === 'te', 'Dynamically changed session language to Telugu');
+
+    ws.send(JSON.stringify({ type: 'update_draft', draft: { workersRequired: 15, wage: 900 } }));
+    await new Promise(resolve => setTimeout(resolve, 150));
+    const draftMsg = receivedMessages.find(m => m.type === 'draft_updated');
+    assert(draftMsg?.jobDraft?.workersRequired === 15, 'Dynamically synchronized draft state to backend');
+
+    // -------------------------------------------------------------------------
+    // Test 10: Clean Session Termination
+    // -------------------------------------------------------------------------
+    console.log('\n--- Test 10: Clean Session Termination ---');
 
     ws.send(JSON.stringify({ type: 'close' }));
     ws.close(1000, 'Normal closure');

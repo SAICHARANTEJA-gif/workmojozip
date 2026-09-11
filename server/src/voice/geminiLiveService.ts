@@ -159,7 +159,15 @@ CRITICAL RULES FOR VOICE:
       return;
     }
 
-    // 3. Audio & Text Chunks from Model Turn
+    // 3. Real-time User Speech Transcription (if provided by Gemini Live)
+    if (serverContent.inputTranscription && serverContent.inputTranscription.text) {
+      const userText = serverContent.inputTranscription.text.trim();
+      if (userText) {
+        this.emit('transcript', 'user', userText);
+      }
+    }
+
+    // 4. Audio & Text Chunks from Model Turn
     if (serverContent.modelTurn && Array.isArray(serverContent.modelTurn.parts)) {
       for (const part of serverContent.modelTurn.parts) {
         // Native PCM audio output (24kHz Mono 16-bit PCM in Base64)
@@ -174,7 +182,7 @@ CRITICAL RULES FOR VOICE:
       }
     }
 
-    // 4. Turn Completion
+    // 5. Turn Completion
     if (serverContent.turnComplete) {
       this.emit('turn_complete');
     }

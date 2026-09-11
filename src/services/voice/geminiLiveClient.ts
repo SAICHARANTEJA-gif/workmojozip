@@ -12,6 +12,7 @@ export type VoiceState =
   | 'IDLE'
   | 'CONNECTING'
   | 'LISTENING'
+  | 'USER_SPEAKING'
   | 'THINKING'
   | 'SPEAKING'
   | 'INTERRUPTED'
@@ -26,6 +27,7 @@ export interface VoiceEventCallbacks {
     action?: any;
     conversationState?: any;
   }) => void;
+  onVolumeChange?: (volume: number, rms: number) => void;
   onError?: (errorMessage: string) => void;
 }
 
@@ -41,14 +43,26 @@ export class GeminiLiveClient {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 2;
 
+  // VAD & Turn Detection Parameters
+  private lastSpeechTime: number = 0;
+  private consecutiveBargeInFrames: number = 0;
+  private readonly SPEECH_RMS_THRESHOLD = 0.018;
+  private readonly BARGE_IN_RMS_THRESHOLD = 0.055;
+  private readonly TRAILING_SILENCE_MS = 1300;
+
   constructor(callbacks: VoiceEventCallbacks = {}) {
     this.callbacks = callbacks;
     this.capture = new AudioCapture();
     this.playback = new AudioPlayback(isPlaying => {
-      if (isPlaying && this.state !== 'SPEAKING') {
-        this.setState('SPEAKING');
-      } else if (!isPlaying && this.state === 'SPEAKING') {
-        this.setState('LISTENING');
+      if (isPlaying) {
+        if (this.state !== 'SPEAKING') {
+          this.setState('SPEAKING');
+        }
+      } else {
+        // Mojo finished speaking: deterministically transition back to continuous LISTENING!
+        if (this.state === 'SPEAKING' || this.state === 'THINKING') {
+          this.setState('LISTENING');
+        }
       }
     });
   }
@@ -76,13 +90,13 @@ export class GeminiLiveClient {
       wsBase = `${proto}//${window.location.host}/api/v1`;
     }
 
-    // Strip trailing slash if present
     const cleanBase = wsBase.endsWith('/') ? wsBase.slice(0, -1) : wsBase;
     return `${cleanBase}/voice/live`;
   }
 
   /**
-   * Starts a real-time voice session: requests mic permission, connects WebSocket, starts streaming.
+   * Starts a real-time continuous voice session: requests mic permission,
+   * connects WebSocket, and enters continuous listening loop.
    */
   public async connect(
     language: SupportedLanguage = 'en',
@@ -99,10 +113,15 @@ export class GeminiLiveClient {
     this.setState('CONNECTING');
 
     try {
-      // 1. Initialize microphone capture first so permission is confirmed
-      await this.capture.start(pcm16kBase64 => {
-        this.sendAudioChunk(pcm16kBase64);
-      });
+      // 1. Initialize microphone capture first
+      await this.capture.start(
+        (pcm16kBase64, rms) => {
+          this.handleAudioFrame(pcm16kBase64, rms);
+        },
+        (rms, normalizedVolume) => {
+          this.callbacks.onVolumeChange?.(normalizedVolume, rms);
+        }
+      );
 
       // 2. Open WebSocket connection to WorkMojo backend
       const wsUrl = this.getWebSocketUrl();
@@ -161,6 +180,76 @@ export class GeminiLiveClient {
     }
   }
 
+  /**
+   * Processes each captured 16kHz PCM audio frame with acoustic echo suppression and VAD
+   */
+  private handleAudioFrame(pcm16kBase64: string, rms: number): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const now = Date.now();
+
+    // 1. Acoustic Echo Suppression & Barge-in during Mojo SPEAKING
+    if (this.state === 'SPEAKING') {
+      if (rms >= this.BARGE_IN_RMS_THRESHOLD) {
+        this.consecutiveBargeInFrames++;
+        if (this.consecutiveBargeInFrames >= 2) {
+          // Real human voice detected over speaker output -> Barge in!
+          console.log('[MOJO VOICE] User barge-in detected by client VAD');
+          this.playback.flush();
+          this.ws.send(JSON.stringify({ type: 'interrupt' }));
+          this.setState('USER_SPEAKING');
+          this.lastSpeechTime = now;
+          this.consecutiveBargeInFrames = 0;
+          this.sendAudioChunk(pcm16kBase64);
+        }
+      } else {
+        this.consecutiveBargeInFrames = 0;
+        // Suppress audio chunk to prevent Gemini Live from hearing its own echo
+      }
+      return;
+    }
+
+    this.consecutiveBargeInFrames = 0;
+
+    // 2. State handling for LISTENING, USER_SPEAKING, THINKING
+    if (this.state === 'LISTENING') {
+      if (rms >= this.SPEECH_RMS_THRESHOLD) {
+        this.setState('USER_SPEAKING');
+        this.lastSpeechTime = now;
+      }
+      this.sendAudioChunk(pcm16kBase64);
+      return;
+    }
+
+    if (this.state === 'USER_SPEAKING') {
+      if (rms >= this.SPEECH_RMS_THRESHOLD) {
+        this.lastSpeechTime = now;
+      } else {
+        // Check trailing silence window
+        if (now - this.lastSpeechTime > this.TRAILING_SILENCE_MS) {
+          this.setState('THINKING');
+        }
+      }
+      this.sendAudioChunk(pcm16kBase64);
+      return;
+    }
+
+    if (this.state === 'THINKING') {
+      if (rms >= this.SPEECH_RMS_THRESHOLD) {
+        // User resumed speaking before model replied
+        this.setState('USER_SPEAKING');
+        this.lastSpeechTime = now;
+      }
+      this.sendAudioChunk(pcm16kBase64);
+      return;
+    }
+
+    // Default: stream audio
+    this.sendAudioChunk(pcm16kBase64);
+  }
+
   private handleServerMessage(msg: any): void {
     switch (msg.type) {
       case 'session_ready':
@@ -174,18 +263,21 @@ export class GeminiLiveClient {
         }
         if (msg.pcm24k) {
           this.playback.queuePcm24k(msg.pcm24k);
+          if (this.state !== 'SPEAKING') {
+            this.setState('SPEAKING');
+          }
         }
         break;
 
       case 'interrupted':
-        console.log('[MOJO VOICE] Barge-in triggered by server: flushing audio playback');
+        console.log('[MOJO VOICE] Barge-in acknowledged by server: flushing audio playback');
         this.playback.flush();
         this.setState('INTERRUPTED');
         setTimeout(() => {
           if (this.state === 'INTERRUPTED') {
             this.setState('LISTENING');
           }
-        }, 100);
+        }, 80);
         break;
 
       case 'transcript':
@@ -196,11 +288,16 @@ export class GeminiLiveClient {
 
       case 'intent_action':
         if (msg.intent) {
+          if (msg.conversationState) {
+            this.conversationState = msg.conversationState;
+          }
           this.callbacks.onIntentAction?.(msg);
         }
         break;
 
       case 'turn_complete':
+        // If playback has completed, deterministically return to continuous LISTENING.
+        // If still playing, AudioPlayback's onended will transition to LISTENING when finished.
         if (!this.playback.playing) {
           this.setState('LISTENING');
         }
@@ -249,6 +346,37 @@ export class GeminiLiveClient {
     }
   }
 
+  public updateLanguage(language: SupportedLanguage): void {
+    this.language = language;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(
+          JSON.stringify({
+            type: 'change_language',
+            language,
+          })
+        );
+      } catch (err) {
+        console.warn('[MOJO VOICE] Error sending language update:', err);
+      }
+    }
+  }
+
+  public updateDraft(draft: any): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(
+          JSON.stringify({
+            type: 'update_draft',
+            draft,
+          })
+        );
+      } catch (err) {
+        console.warn('[MOJO VOICE] Error sending draft update:', err);
+      }
+    }
+  }
+
   public interrupt(): void {
     this.playback.flush();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -263,6 +391,9 @@ export class GeminiLiveClient {
     this.disconnect();
   }
 
+  /**
+   * Explicitly closes voice session (only on user click, modal close, or fatal error)
+   */
   public disconnect(): void {
     this.capture.stop();
     this.playback.stop();

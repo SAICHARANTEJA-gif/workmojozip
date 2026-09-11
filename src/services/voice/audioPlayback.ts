@@ -8,6 +8,7 @@ export class AudioPlayback {
   private nextPlayTime: number = 0;
   private activeSources: AudioBufferSourceNode[] = [];
   private isPlaying: boolean = false;
+  private endTimeout: ReturnType<typeof setTimeout> | null = null;
   private onPlaybackStateChange?: (isPlaying: boolean) => void;
 
   constructor(onPlaybackStateChange?: (isPlaying: boolean) => void) {
@@ -71,9 +72,24 @@ export class AudioPlayback {
           this.activeSources.splice(idx, 1);
         }
 
-        if (this.activeSources.length === 0 && ctx.currentTime >= this.nextPlayTime - 0.05) {
-          this.isPlaying = false;
-          this.onPlaybackStateChange?.(false);
+        if (this.activeSources.length === 0) {
+          if (this.endTimeout) {
+            clearTimeout(this.endTimeout);
+            this.endTimeout = null;
+          }
+
+          const remainingMs = Math.max(0, (this.nextPlayTime - ctx.currentTime) * 1000);
+          if (remainingMs <= 30) {
+            this.isPlaying = false;
+            this.onPlaybackStateChange?.(false);
+          } else {
+            this.endTimeout = setTimeout(() => {
+              if (this.activeSources.length === 0 && this.isPlaying) {
+                this.isPlaying = false;
+                this.onPlaybackStateChange?.(false);
+              }
+            }, remainingMs + 10);
+          }
         }
       };
     } catch (err) {
@@ -86,6 +102,11 @@ export class AudioPlayback {
    * Immediately stops all currently playing audio sources and empties the playback queue.
    */
   public flush(): void {
+    if (this.endTimeout) {
+      clearTimeout(this.endTimeout);
+      this.endTimeout = null;
+    }
+
     for (const source of this.activeSources) {
       try {
         source.stop(0);

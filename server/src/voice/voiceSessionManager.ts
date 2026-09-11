@@ -16,7 +16,8 @@ interface ClientSession {
   language: SupportedLanguage;
   role: 'customer' | 'worker';
   conversationState: ConversationState;
-  accumulatedTurnText: string;
+  accumulatedUserSpeech: string;
+  accumulatedModelSpeech: string;
   isAlive: boolean;
 }
 
@@ -41,7 +42,8 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
       language: 'en',
       role: 'customer',
       conversationState: { jobDraft: {} },
-      accumulatedTurnText: '',
+      accumulatedUserSpeech: '',
+      accumulatedModelSpeech: '',
       isAlive: true,
     };
 
@@ -127,7 +129,11 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
             });
 
             gemini.on('transcript', (sender: 'user' | 'mojo', text: string) => {
-              session.accumulatedTurnText += ' ' + text;
+              if (sender === 'user') {
+                session.accumulatedUserSpeech += ' ' + text;
+              } else {
+                session.accumulatedModelSpeech += ' ' + text;
+              }
               sendToClient(ws, {
                 type: 'transcript',
                 sender,
@@ -137,19 +143,23 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
 
             gemini.on('interrupted', () => {
               console.log('[MOJO VOICE] Dispatching interrupted signal to client');
-              session.accumulatedTurnText = '';
+              session.accumulatedUserSpeech = '';
+              session.accumulatedModelSpeech = '';
               sendToClient(ws, {
                 type: 'interrupted',
               });
             });
 
             gemini.on('turn_complete', () => {
-              // When turn is completed, route the accumulated text into WorkMojo's 23-intent classifier
-              const fullSpeech = session.accumulatedTurnText.trim();
-              session.accumulatedTurnText = '';
+              // When turn is completed, route speech into WorkMojo's 23-intent classifier
+              const userSpeech = session.accumulatedUserSpeech.trim();
+              const modelSpeech = session.accumulatedModelSpeech.trim();
+              session.accumulatedUserSpeech = '';
+              session.accumulatedModelSpeech = '';
 
-              if (fullSpeech) {
-                routeSpeechToIntent(session, fullSpeech, ws);
+              const textToClassify = userSpeech || modelSpeech;
+              if (textToClassify) {
+                routeSpeechToIntent(session, textToClassify, ws);
               }
 
               sendToClient(ws, {
@@ -201,6 +211,33 @@ export function setupVoiceWebSocketServer(server: http.Server): WebSocketServer 
             }
             if (msg.text) {
               routeSpeechToIntent(session, msg.text, ws);
+            }
+            break;
+          }
+
+          case 'change_language': {
+            if (msg.language) {
+              session.language = msg.language as SupportedLanguage;
+              console.log('[MOJO VOICE] Session language updated dynamically to:', session.language);
+              sendToClient(ws, {
+                type: 'language_changed',
+                language: session.language,
+              });
+            }
+            break;
+          }
+
+          case 'update_draft': {
+            if (msg.draft) {
+              session.conversationState.jobDraft = {
+                ...session.conversationState.jobDraft,
+                ...msg.draft,
+              };
+              console.log('[MOJO VOICE] Updated draft in session:', session.conversationState.jobDraft);
+              sendToClient(ws, {
+                type: 'draft_updated',
+                jobDraft: session.conversationState.jobDraft,
+              });
             }
             break;
           }
