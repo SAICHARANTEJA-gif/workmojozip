@@ -20,8 +20,10 @@ import {
   Play,
   Trash2,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { GeminiLiveClient, VoiceState } from '../../services/voice/geminiLiveClient';
 
 interface ChatMessage {
   id: string;
@@ -70,6 +72,9 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
   const [voiceAvailable, setVoiceAvailable] = useState<boolean>(true);
   const [voiceName, setVoiceName] = useState<string | undefined>(undefined);
   const [isLangSelectorOpen, setIsLangSelectorOpen] = useState<boolean>(false);
+  const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
+  const liveClientRef = useRef<GeminiLiveClient | null>(null);
+
   const [conversationState, setConversationState] = useState<{
     lastIntent?: string;
     jobDraft?: {
@@ -153,9 +158,18 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
     }
   }, [language, activeRole]);
 
-  // Clean up speech and timers on unmount
+  // Disconnect live voice if modal closes
+  useEffect(() => {
+    if (!isOpen && liveClientRef.current) {
+      liveClientRef.current.disconnect();
+      setVoiceState('IDLE');
+    }
+  }, [isOpen]);
+
+  // Clean up speech, live client, and timers on unmount
   useEffect(() => {
     return () => {
+      liveClientRef.current?.disconnect();
       speechService.stopSpeaking();
       speechService.stopListening();
       if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
@@ -402,7 +416,119 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
     }
   };
 
+  const resolveAction = (action?: any, currentDraft?: any): { actionText?: string; onAction?: () => void } => {
+    if (!action) return {};
+    let actionText: string | undefined = action.label;
+    let onAction: (() => void) | undefined;
+
+    if (action.type === 'CHANGE_LANGUAGE') {
+      if (action.language) {
+        setLanguage(action.language);
+      }
+      actionText = actionText || (
+        language === 'te' ? 'భాషను మార్చండి' :
+        language === 'hi' ? 'भाषा बदलें' :
+        language === 'ta' ? 'மொழியை மாற்றுங்கள்' :
+        'Change Language'
+      );
+      onAction = () => {
+        setIsLangSelectorOpen(true);
+      };
+    } else if (action.type === 'OPEN_POST_JOB' || action.type === 'UPDATE_JOB_DRAFT') {
+      const draftToUse = action.jobDraft || currentDraft || conversationState.jobDraft;
+      actionText = actionText || (action.type === 'OPEN_POST_JOB' ? 'Post Job Now' : 'Continue Job Post');
+      onAction = () => {
+        if (onOpenPostJob) {
+          onOpenPostJob(draftToUse);
+        } else {
+          setActiveScreen('post_job');
+        }
+        setIsOpen(false);
+      };
+    } else if (action.type === 'OPEN_WORKER_SEARCH') {
+      const cat = action.filterCategory || 'All';
+      actionText = actionText || `View ${cat} Workers`;
+      onAction = () => {
+        if (onOpenDirectoryWithCategory) {
+          onOpenDirectoryWithCategory(cat);
+        } else {
+          setActiveScreen('directory');
+        }
+        setIsOpen(false);
+      };
+    } else if (action.type === 'OPEN_APPLICANTS' || action.type === 'CANCEL_JOB') {
+      const targetJobId = action.jobId || jobs[0]?.id;
+      actionText = actionText || (action.type === 'CANCEL_JOB' ? 'Job Options' : 'Review Applicants');
+      onAction = () => {
+        if (onOpenApplicants) {
+          onOpenApplicants(targetJobId);
+        } else {
+          setActiveScreen('applicants');
+        }
+        setIsOpen(false);
+      };
+    } else if (action.type === 'AUTO_SELECT_WORKERS') {
+      const targetJobId = action.jobId || jobs[0]?.id;
+      actionText = actionText || 'Auto-Select Best Workers';
+      onAction = () => {
+        if (targetJobId) {
+          autoSelectWorkersForJob(targetJobId);
+        }
+        if (onOpenApplicants) {
+          onOpenApplicants(targetJobId);
+        } else {
+          setActiveScreen('applicants');
+        }
+        setIsOpen(false);
+      };
+    } else if (action.type === 'view_workers') {
+      const cat = (action as any).category || action.filterCategory || 'All';
+      actionText = actionText || 'View Skilled Workers';
+      onAction = () => {
+        if (onOpenDirectoryWithCategory) {
+          onOpenDirectoryWithCategory(cat);
+        } else {
+          setActiveScreen('directory');
+        }
+        setIsOpen(false);
+      };
+    } else if (action.type === 'filter_category' && action.filterCategory) {
+      const cat = action.filterCategory;
+      actionText = actionText || `View ${cat} Gigs`;
+      onAction = () => {
+        setFilters(prev => ({ ...prev, selectedCategories: [cat as any] }));
+        setActiveScreen('jobs');
+        setIsOpen(false);
+      };
+    } else if (action.type === 'filter_min_wage') {
+      const minWage = action.minWage || 800;
+      actionText = actionText || `View ₹${minWage}+ Gigs`;
+      onAction = () => {
+        setFilters(prev => ({ ...prev, minWage }));
+        setActiveScreen('jobs');
+        setIsOpen(false);
+      };
+    } else if (action.type === 'navigate' && action.target) {
+      const targetScreen = action.target;
+      actionText = actionText || `Open ${targetScreen}`;
+      onAction = () => {
+        if (targetScreen === 'directory' && onOpenDirectoryWithCategory) {
+          onOpenDirectoryWithCategory('All');
+        } else {
+          setActiveScreen(targetScreen);
+        }
+        setIsOpen(false);
+      };
+    }
+
+    return { actionText, onAction };
+  };
+
   const handleClearChat = () => {
+    if (liveClientRef.current && voiceState !== 'IDLE') {
+      liveClientRef.current.disconnect();
+      setVoiceState('IDLE');
+    }
     setConversationState({ jobDraft: {} });
     const cfg = getLanguageConfig(language);
     const greeting = activeRole === 'worker' ? cfg.greeting.worker : cfg.greeting.customer;
@@ -452,110 +578,13 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
           setConversationState(res.conversationState);
         }
 
-        let actionText: string | undefined = res.action?.label;
-        let onAction: (() => void) | undefined;
-
         if (res.action?.type === 'CHANGE_LANGUAGE') {
           if (res.action?.language) {
             setLanguage(res.action.language);
           }
-          actionText = actionText || (
-            language === 'te' ? 'భాషను మార్చండి' :
-            language === 'hi' ? 'भाषा बदलें' :
-            language === 'ta' ? 'மொழியை மாற்றுங்கள்' :
-            'Change Language'
-          );
-          onAction = () => {
-            setIsLangSelectorOpen(true);
-          };
         }
 
-        if (res.action?.type === 'OPEN_POST_JOB' || res.action?.type === 'UPDATE_JOB_DRAFT') {
-          const draftToUse = res.action?.jobDraft || conversationState.jobDraft;
-          actionText = actionText || (res.action?.type === 'OPEN_POST_JOB' ? 'Post Job Now' : 'Continue Job Post');
-          onAction = () => {
-            if (onOpenPostJob) {
-              onOpenPostJob(draftToUse);
-            } else {
-              setActiveScreen('post_job');
-            }
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'OPEN_WORKER_SEARCH') {
-          const cat = res.action.filterCategory || 'All';
-          actionText = actionText || `View ${cat} Workers`;
-          onAction = () => {
-            if (onOpenDirectoryWithCategory) {
-              onOpenDirectoryWithCategory(cat);
-            } else {
-              setActiveScreen('directory');
-            }
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'OPEN_APPLICANTS' || res.action?.type === 'CANCEL_JOB') {
-          const targetJobId = res.action?.jobId || jobs[0]?.id;
-          actionText = actionText || (res.action?.type === 'CANCEL_JOB' ? 'Job Options' : 'Review Applicants');
-          onAction = () => {
-            if (onOpenApplicants) {
-              onOpenApplicants(targetJobId);
-            } else {
-              setActiveScreen('applicants');
-            }
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'AUTO_SELECT_WORKERS') {
-          const targetJobId = res.action?.jobId || jobs[0]?.id;
-          actionText = actionText || 'Auto-Select Best Workers';
-          onAction = () => {
-            if (targetJobId) {
-              autoSelectWorkersForJob(targetJobId);
-            }
-            if (onOpenApplicants) {
-              onOpenApplicants(targetJobId);
-            } else {
-              setActiveScreen('applicants');
-            }
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'view_workers') {
-          const cat = (res.action as any).category || res.action.filterCategory || 'All';
-          actionText = actionText || 'View Skilled Workers';
-          onAction = () => {
-            if (onOpenDirectoryWithCategory) {
-              onOpenDirectoryWithCategory(cat);
-            } else {
-              setActiveScreen('directory');
-            }
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'filter_category' && res.action?.filterCategory) {
-          const cat = res.action.filterCategory;
-          actionText = actionText || `View ${cat} Gigs`;
-          onAction = () => {
-            setFilters(prev => ({ ...prev, selectedCategories: [cat as any] }));
-            setActiveScreen('jobs');
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'filter_min_wage') {
-          const minWage = res.action.minWage || 800;
-          actionText = actionText || `View ₹${minWage}+ Gigs`;
-          onAction = () => {
-            setFilters(prev => ({ ...prev, minWage }));
-            setActiveScreen('jobs');
-            setIsOpen(false);
-          };
-        } else if (res.action?.type === 'navigate' && res.action?.target) {
-          const targetScreen = res.action.target;
-          actionText = actionText || `Open ${targetScreen}`;
-          onAction = () => {
-            if (targetScreen === 'directory' && onOpenDirectoryWithCategory) {
-              onOpenDirectoryWithCategory('All');
-            } else {
-              setActiveScreen(targetScreen);
-            }
-            setIsOpen(false);
-          };
-        }
+        const { actionText, onAction } = resolveAction(res.action, res.conversationState?.jobDraft);
 
         const newMsgId = 'mojo-' + Date.now();
         const mojoMsg: ChatMessage = {
@@ -642,35 +671,81 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
     }
   };
 
-  const toggleVoiceListening = () => {
-    if (isListening) {
-      speechService.stopListening();
-      setIsListening(false);
-    } else {
-      setSpeechError(null);
-      setIsListening(true);
+  const toggleLiveVoice = async () => {
+    // If speaking via browser TTS, stop it
+    if (speechService.isSpeaking()) {
+      speechService.stopSpeaking();
+      setSpeakingMessageId(null);
+    }
+    // If legacy speech listening is active, stop it
+    speechService.stopListening();
+    setIsListening(false);
 
-      speechService.startListening(
-        {
-          onStart: () => {
-            setIsListening(true);
+    if (voiceState !== 'IDLE') {
+      liveClientRef.current?.disconnect();
+      setVoiceState('IDLE');
+      return;
+    }
+
+    setSpeechError(null);
+    try {
+      if (!liveClientRef.current) {
+        liveClientRef.current = new GeminiLiveClient({
+          onStateChange: state => {
+            setVoiceState(state);
           },
-          onResult: transcript => {
-            setIsListening(false);
-            if (transcript && transcript.trim()) {
-              handleSendMessage(transcript.trim());
+          onTranscript: (sender, text) => {
+            if (!text || !text.trim()) return;
+            const newMsgId = `voice-${sender}-${Date.now()}`;
+            setMessages(prev => [
+              ...prev,
+              {
+                id: newMsgId,
+                sender,
+                text,
+                timestamp: 'Just now',
+                lang: language,
+              },
+            ]);
+          },
+          onIntentAction: payload => {
+            if (payload.conversationState) {
+              setConversationState(payload.conversationState);
+            }
+            if (payload.action) {
+              const { actionText, onAction } = resolveAction(
+                payload.action,
+                payload.conversationState?.jobDraft
+              );
+              if (actionText && onAction) {
+                setMessages(prev => {
+                  const lastIdx = prev.map(m => m.sender).lastIndexOf('mojo');
+                  if (lastIdx !== -1) {
+                    const updated = [...prev];
+                    updated[lastIdx] = {
+                      ...updated[lastIdx],
+                      actionText,
+                      onAction,
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+              }
             }
           },
-          onError: (errMsg, _errCode) => {
-            setIsListening(false);
+          onError: errMsg => {
             triggerVoiceNotice(errMsg);
+            setVoiceState('IDLE');
           },
-          onEnd: () => {
-            setIsListening(false);
-          },
-        },
-        language
-      );
+        });
+      }
+
+      await liveClientRef.current.connect(language, activeRole, conversationState);
+    } catch (err: any) {
+      console.error('[MOJO VOICE] Toggle failed:', err);
+      triggerVoiceNotice(err.message || 'Could not start voice session');
+      setVoiceState('IDLE');
     }
   };
 
@@ -926,40 +1001,151 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
               ))}
             </div>
 
-            {/* Voice Listening Active Wave Bar */}
-            {isListening && (
-              <div className="px-4 py-2 bg-rose-50 border-t border-rose-200 flex items-center justify-between text-xs text-rose-700 animate-pulse">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
-                  </span>
-                  <span className="font-bold">{langConfig.placeholder.listening}</span>
+            {/* Real-time Gemini Live Voice Bar */}
+            {voiceState !== 'IDLE' && (
+              <div
+                className={`px-4 py-2.5 border-t flex items-center justify-between text-xs transition-colors ${
+                  voiceState === 'LISTENING'
+                    ? 'bg-rose-50 border-rose-200 text-rose-800'
+                    : voiceState === 'SPEAKING'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : voiceState === 'INTERRUPTED'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-blue-50 border-blue-200 text-blue-800'
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium">
+                  {voiceState === 'CONNECTING' && (
+                    <>
+                      <Loader2 size={14} className="animate-spin text-blue-600 shrink-0" />
+                      <span>
+                        {language === 'te'
+                          ? 'జెమిని లైవ్ వాయిస్‌కి కనెక్ట్ అవుతోంది...'
+                          : language === 'hi'
+                          ? 'जेमिनी लाइव वॉयस से जुड़ रहे हैं...'
+                          : language === 'ta'
+                          ? 'ஜெமினி லைவ் வாய்ஸ் உடன் இணைகிறது...'
+                          : 'Connecting to Gemini Live Voice...'}
+                      </span>
+                    </>
+                  )}
+
+                  {voiceState === 'LISTENING' && (
+                    <>
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
+                      </span>
+                      <span className="font-bold">
+                        {language === 'te'
+                          ? 'మోజో వింటోంది... మాట్లాడండి'
+                          : language === 'hi'
+                          ? 'मोजो सुन रहा है... बोलिए'
+                          : language === 'ta'
+                          ? 'மோஜோ கேட்கிறது... பேசுங்கள்'
+                          : 'Mojo is listening... Speak now'}
+                      </span>
+                      <span className="text-[10px] text-rose-600 font-normal hidden sm:inline">
+                        (Interrupt anytime)
+                      </span>
+                    </>
+                  )}
+
+                  {voiceState === 'THINKING' && (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]"></span>
+                      </div>
+                      <span className="font-bold">
+                        {language === 'te'
+                          ? 'మోజో ఆలోచిస్తోంది...'
+                          : language === 'hi'
+                          ? 'मोजो सोच रहा है...'
+                          : language === 'ta'
+                          ? 'மோஜோ சிந்திக்கிறார்...'
+                          : 'Mojo is thinking...'}
+                      </span>
+                    </>
+                  )}
+
+                  {voiceState === 'SPEAKING' && (
+                    <>
+                      <Volume2 size={14} className="text-emerald-600 animate-pulse shrink-0" />
+                      <span className="font-bold text-emerald-900">
+                        {language === 'te'
+                          ? 'మోజో మాట్లాడుతోంది...'
+                          : language === 'hi'
+                          ? 'मोजो बोल रहा है...'
+                          : language === 'ta'
+                          ? 'மோஜோ பேசுகிறார்...'
+                          : 'Mojo is speaking...'}
+                      </span>
+                      <span className="text-[10px] text-emerald-700 font-normal hidden sm:inline">
+                        (Speak to barge in)
+                      </span>
+                    </>
+                  )}
+
+                  {voiceState === 'INTERRUPTED' && (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                      <span className="font-bold text-amber-900">Interrupted — listening...</span>
+                    </>
+                  )}
                 </div>
-                <button
-                  onClick={() => {
-                    speechService.stopListening();
-                    setIsListening(false);
-                  }}
-                  className="text-[11px] font-bold text-rose-700 hover:text-rose-900 px-2 py-0.5 rounded-md bg-rose-100"
-                >
-                  Cancel
-                </button>
+
+                <div className="flex items-center gap-1.5">
+                  {voiceState === 'SPEAKING' && (
+                    <button
+                      onClick={() => liveClientRef.current?.interrupt()}
+                      className="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 px-2 py-0.5 rounded-md bg-emerald-100 transition-colors shadow-2xs"
+                      title="Interrupt Mojo speech"
+                    >
+                      Interrupt
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      liveClientRef.current?.disconnect();
+                      setVoiceState('IDLE');
+                    }}
+                    className="text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded-md bg-slate-200/70 hover:bg-slate-200 transition-colors"
+                  >
+                    End Voice
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Input Bar */}
             <div className="p-3 bg-white border-t border-[#E2E8F0] flex items-center gap-2">
               <button
-                onClick={toggleVoiceListening}
-                className={`p-2.5 rounded-xl transition-all shadow-xs ${
-                  isListening
+                onClick={toggleLiveVoice}
+                aria-label={
+                  voiceState === 'IDLE'
+                    ? `Start Live Voice (${langConfig.nativeName})`
+                    : `Stop Live Voice (${voiceState})`
+                }
+                className={`p-2.5 rounded-xl transition-all shadow-xs relative ${
+                  voiceState === 'LISTENING'
                     ? 'bg-rose-600 text-white animate-pulse'
+                    : voiceState === 'SPEAKING'
+                    ? 'bg-emerald-600 text-white animate-bounce'
+                    : voiceState === 'CONNECTING' || voiceState === 'THINKING'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-[#FFFBEB] border border-[#FDE68A] text-[#F5A900] hover:bg-[#F5A900] hover:text-[#111827] active:scale-95'
                 }`}
-                title={`Voice Input (${langConfig.nativeName})`}
+                title={`Gemini Live Voice (${langConfig.nativeName}) - State: ${voiceState}`}
               >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                {voiceState === 'CONNECTING' ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : voiceState !== 'IDLE' ? (
+                  <MicOff size={18} />
+                ) : (
+                  <Mic size={18} />
+                )}
               </button>
 
               <input
@@ -967,7 +1153,19 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                placeholder={isListening ? langConfig.placeholder.listening : langConfig.placeholder.idle}
+                placeholder={
+                  voiceState === 'LISTENING'
+                    ? (language === 'te' ? 'వినబడుతోంది... మాట్లాడండి' :
+                       language === 'hi' ? 'सुन रहा हूँ... बोलिए' :
+                       language === 'ta' ? 'கேட்கிறது... பேசுங்கள்' :
+                       'Listening... speak now')
+                    : voiceState === 'SPEAKING'
+                    ? (language === 'te' ? 'మోజో మాట్లాడుతోంది...' :
+                       language === 'hi' ? 'मोजो बोल रहा है...' :
+                       language === 'ta' ? 'மோஜோ பேசுகிறார்...' :
+                       'Mojo is speaking...')
+                    : langConfig.placeholder.idle
+                }
                 className="flex-1 bg-[#F7F9FC] border border-[#E2E8F0] text-[#111827] placeholder-[#94A3B8] rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#EFF6FF]"
               />
 

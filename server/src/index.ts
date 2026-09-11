@@ -1,3 +1,4 @@
+import http from 'http';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,6 +7,7 @@ import { isSupabaseConfigured, isServiceRoleActive, supabase, STORAGE_BUCKET, en
 import { processAiChat } from './aiService';
 import { predictWorkerJobMatch, rankWorkersForJob, getMLDiagnostics } from './ml/mlMatchingService';
 import { requestOtp, verifyOtp, normalizePhoneNumber } from './services/otpService';
+import { setupVoiceWebSocketServer } from './voice/voiceSessionManager';
 
 dotenv.config();
 
@@ -2123,10 +2125,14 @@ export const syncSeedJobsToSupabase = async () => {
   }
 };
 
+const server = http.createServer(app);
+setupVoiceWebSocketServer(server);
+
 // Start Server
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`[WORK MOJO] API Backend running on http://localhost:${PORT}`);
+    console.log(`[WORK MOJO] Voice WebSocket active at ws://localhost:${PORT}/api/v1/voice/live`);
     const authType = isServiceRoleActive() ? 'SERVICE_ROLE (privileged server writes active)' : 'ANON (standard key)';
     console.log(`[WORK MOJO] Supabase status: ${isSupabaseConfigured() ? 'Connected via ' + authType : 'Disabled (in-memory mode)'}`);
     if (isSupabaseConfigured()) {
@@ -2136,4 +2142,4 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 export default app;
-export { app };
+export { app, server };

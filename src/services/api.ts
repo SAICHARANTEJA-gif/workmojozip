@@ -533,4 +533,6 @@ export const api = {
       return { success: false, mode: 'offline_fallback' };
     }
   },
+
+  getBaseUrl: () => API_BASE_URL,
 };
