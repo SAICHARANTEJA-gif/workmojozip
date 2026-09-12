@@ -5,6 +5,7 @@ export type MojoIntent =
   | 'GREETING'
   | 'JOB_POSTING_START'
   | 'JOB_POSTING_HELP'
+  | 'JOB_PUBLISH'
   | 'JOB_TITLE'
   | 'JOB_CATEGORY'
   | 'JOB_DESCRIPTION'
@@ -402,7 +403,24 @@ export function classifyIntentAndExtractEntities(
     return { intent: 'LANGUAGE_CHANGE', entities, updatedDraft: draft };
   }
 
-  // 2. Incremental / Direct Worker Count (e.g. "Actually change that to eight", "Change it to 8", "5 workers", "three electricians", "need 10 helpers")
+  // 2. Job Publishing Intent (Takes precedence over general count words like 'कर दो')
+  // E.g. "publish it", "publish job", "publish the job", "post it now", "go ahead and publish", "publish this", "confirm and post", "post it", "submit job"
+  const isJobPublish =
+    q.includes('publish it') || q.includes('publish the job') || q.includes('publish job') ||
+    q.includes('post it now') || q.includes('go ahead and publish') || q.includes('publish this') ||
+    q.includes('confirm and post') || q.includes('post it') || q.includes('submit job') ||
+    q.includes('publish now') || q.includes('post this job') ||
+    q === 'publish' || q === 'post' ||
+    q.includes('పబ్లిష్ చేయండి') || q.includes('పబ్లిష్ చెయ్') || q.includes('పోస్ట్ చెయ్') ||
+    q.includes('పని పబ్లిష్') || q.includes('ఇప్పుడే పోస్ట్ చేయండి') ||
+    q.includes('पब्लिश करें') || q.includes('पब्लिश कर दो') || q.includes('अभी पोस्ट करें') || q.includes('पोस्ट कर दो') ||
+    q.includes('வெளியிடுங்கள்') || q.includes('பதிவிடுங்கள்') || q.includes('இப்போதே பதிவிடுங்கள்') || q.includes('வேலை வெளியிடுங்கள்');
+
+  if (isJobPublish) {
+    return { intent: 'JOB_PUBLISH', entities, updatedDraft: draft };
+  }
+
+  // 3. Incremental / Direct Worker Count (e.g. "Actually change that to eight", "Change it to 8", "5 workers", "three electricians", "need 10 helpers")
   const isExplicitChangeCount =
     /(?:change(?:\s+(?:it|that|the\s+count|count))?\s+to|make\s+(?:it|that)|update\s+(?:it|that)?\s*to|set(?:\s+(?:it|that))?\s+to)\s*(\d+|[a-z\u0C00-\u0C7F\u0900-\u097F\u0B80-\u0BFF]+)/i.test(q) ||
     q.includes('మార్చండి') || q.includes('कर दो') || q.includes('மாற்றுங்கள்');
@@ -799,6 +817,51 @@ export function generateIntentResponse(
           target: 'directory',
           filterCategory: cat,
           label: `View ${cat} Workers`,
+        },
+      };
+    }
+
+    case 'JOB_PUBLISH': {
+      if (lang === 'te') {
+        return {
+          reply: 'మీ జాబ్ డ్రాఫ్ట్ వర్క్ మోజోలో పబ్లిష్ చేయబడుతోంది! సమీప వర్కర్లకు మ్యాచ్ నోటిఫికేషన్లు వెళ్తున్నాయి.',
+          action: {
+            type: 'PUBLISH_JOB',
+            target: 'jobs',
+            jobDraft: draft,
+            label: 'పని పబ్లిష్ చేయండి',
+          },
+        };
+      }
+      if (lang === 'hi') {
+        return {
+          reply: 'आपका काम वर्क मोजो पर तुरंत पब्लिश किया जा रहा है! सत्यापित कामगारों को रियल-टाइम नोटिफिकेशन भेजा जा रहा है।',
+          action: {
+            type: 'PUBLISH_JOB',
+            target: 'jobs',
+            jobDraft: draft,
+            label: 'काम पब्लिश करें',
+          },
+        };
+      }
+      if (lang === 'ta') {
+        return {
+          reply: 'உங்கள் வேலை உடனடியாக வெளியிடப்படுகிறது! தகுதியான தொழிலாளர்களுக்கு அறிவிப்புகள் அனுப்பப்படுகின்றன.',
+          action: {
+            type: 'PUBLISH_JOB',
+            target: 'jobs',
+            jobDraft: draft,
+            label: 'வேலை வெளியிடுங்கள்',
+          },
+        };
+      }
+      return {
+        reply: 'Publishing your job draft to WorkMojo now! Verified nearby workers will receive real-time notifications.',
+        action: {
+          type: 'PUBLISH_JOB',
+          target: 'jobs',
+          jobDraft: draft,
+          label: 'Publish Job Now',
         },
       };
     }
@@ -1392,6 +1455,7 @@ USER ROLE: "${role === 'customer' ? 'Employer/Customer' : 'Worker'}"
 ${ctx.activeScreen ? `ACTIVE SCREEN: "${ctx.activeScreen}"` : ''}
 
 CRITICAL BEHAVIOR RULES:
+- If Intent is "JOB_PUBLISH", confirm warmly that the job draft is being posted immediately to WorkMojo and nearby verified workers will be notified.
 - If Intent is "WORKER_SELECTION", DO NOT reply as if the user is posting a new job. Guide them on reviewing applicants, comparing AI match scores, and auto-selecting best candidates.
 - If Intent is "WORKER_COUNT", acknowledge the exact number of workers requested (${entities.workersRequired || draft.workersRequired || 'requested count'}).
 - If Intent is "WORKER_SEARCH", offer to view skilled workers in the directory.

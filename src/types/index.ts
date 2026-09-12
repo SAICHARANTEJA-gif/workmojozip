@@ -42,6 +42,7 @@ export type WorkCategory =
 
 export type JobStatus =
   | 'Draft'
+  | 'Open'
   | 'Posted'
   | 'Applied'
   | 'Waiting for Approval'

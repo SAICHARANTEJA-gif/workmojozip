@@ -916,15 +916,12 @@ app.get('/api/v1/jobs', async (req: Request, res: Response) => {
       }
     }
 
-    // STRICT DEDUPLICATION: Map by ID and content signature to guarantee no job is returned multiple times
+    // STRICT DEDUPLICATION: Map by ID only so multiple legitimate jobs with the same trade/area are preserved
     const uniqueMap = new Map<string, any>();
-    const seenSignatures = new Set<string>();
     for (const job of combinedJobs) {
-      const sig = `${job.title}_${job.category}_${job.wage}_${job.startTime}_${job.approximateArea}`;
-      if (!uniqueMap.has(job.id) && !seenSignatures.has(sig)) {
+      if (!uniqueMap.has(job.id)) {
         job.image = job.image || getCategoryDefaultImage(job.category);
         uniqueMap.set(job.id, job);
-        seenSignatures.add(sig);
       }
     }
     const resultJobs = Array.from(uniqueMap.values());
@@ -943,18 +940,19 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
   const jobPayload = req.body;
   const jobId = String(jobPayload.id || `job-${Date.now()}`);
 
-  // IDEMPOTENCY CHECK: Check if an identical job already exists to prevent duplicate creation
-  const existingJob = db.jobs.find(
-    j =>
-      j.id === jobId ||
-      (j.title.trim().toLowerCase() === String(jobPayload.title || '').trim().toLowerCase() &&
-        j.category === jobPayload.category &&
-        Number(j.wage) === Number(jobPayload.wage) &&
-        j.startTime === jobPayload.startTime &&
-        (j.customerId === jobPayload.customerId || j.employerId === jobPayload.customerId))
-  );
+  // IDEMPOTENCY CHECK: Only prevent genuine duplicate submissions of the exact SAME client ID
+  // Multiple legitimate jobs can have the same title, category, or wage
+  const existingJob = db.jobs.find(j => j.id === jobId);
 
   const jobImage = jobPayload.image || jobPayload.imageUrl || getCategoryDefaultImage(jobPayload.category);
+
+  // Normalize status for Supabase CHECK constraint ('Open', 'Filled', 'Ongoing', 'Finished', 'Cancelled', 'CANCELLED')
+  let normalizedStatus = 'Open';
+  if (jobPayload.status === 'Filled') normalizedStatus = 'Filled';
+  else if (jobPayload.status === 'Ongoing') normalizedStatus = 'Ongoing';
+  else if (jobPayload.status === 'Finished') normalizedStatus = 'Finished';
+  else if (jobPayload.status === 'Cancelled' || jobPayload.status === 'CANCELLED') normalizedStatus = 'Cancelled';
+  else normalizedStatus = 'Open'; // 'Posted', 'Open', undefined -> 'Open'
 
   const targetJob = existingJob || {
     id: jobId,
@@ -964,7 +962,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
     applicants: jobPayload.applicants || [],
     confirmedWorkerIds: jobPayload.confirmedWorkerIds || [],
     waitingList: jobPayload.waitingList || [],
-    status: jobPayload.status || 'Posted',
+    status: normalizedStatus,
     createdAt: jobPayload.createdAt || new Date().toISOString(),
     updatedAt: jobPayload.updatedAt || new Date().toISOString(),
   };
@@ -977,10 +975,9 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
       const sbPayload: any = {
         id: targetJob.id,
         employer_id: String(targetJob.customerId || targetJob.employerId || 'cust-kumar'),
-        title: targetJob.title,
+        title: String(targetJob.title || 'Gig Job').trim(),
         description: targetJob.description || '',
-        category: targetJob.category,
-        image_url: targetJob.image || jobImage,
+        category: targetJob.category || 'Other',
         wage: Number(targetJob.wage) || 500,
         start_time: targetJob.startTime || '09:00 AM',
         duration: targetJob.duration || '8 hours',
@@ -993,7 +990,7 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
         landmark: targetJob.exactLocation?.landmark || targetJob.landmark || '',
         exact_lat: Number(targetJob.exactLocation?.lat) || 12.934,
         exact_lng: Number(targetJob.exactLocation?.lng) || 77.625,
-        status: targetJob.status || 'Open',
+        status: normalizedStatus,
         recurring: targetJob.recurring || 'none',
       };
 
@@ -1004,35 +1001,39 @@ app.post('/api/v1/jobs', async (req: Request, res: Response) => {
       if (targetJob.businessName) sbPayload.business_name = targetJob.businessName;
       if (targetJob.selectionMode) sbPayload.selection_mode = targetJob.selectionMode;
 
-      const { error } = await supabase.from('jobs').upsert(sbPayload);
+      // Note: Only include image_url if a custom non-default image was supplied
+      if (targetJob.image && targetJob.image !== getCategoryDefaultImage(targetJob.category)) {
+        sbPayload.image_url = targetJob.image;
+      }
+
+      console.log('[JOB PUBLISH] Attempting Supabase upsert for job:', targetJob.id);
+      let { data: insertedRow, error } = await supabase
+        .from('jobs')
+        .upsert(sbPayload)
+        .select()
+        .single();
+
       if (error) {
-        supabaseError = `${error.code}: ${error.message}`;
-        console.error('[Supabase] Job upsert error:', error.message, error.details || error.hint);
-        // If unknown column error (e.g. metadata columns before migration), retry with base columns
-        if (error.code === '42703' || error.code === 'PGRST204' || String(error.message).includes('Could not find')) {
-          delete sbPayload.customer_name;
-          delete sbPayload.customer_photo;
-          delete sbPayload.customer_rating;
-          delete sbPayload.customer_kyc;
-          delete sbPayload.business_name;
-          delete sbPayload.selection_mode;
+        // If image_url does not exist on live table (42703 / PGRST204), remove ONLY image_url and retry without losing profile metadata!
+        if ((error.code === '42703' || error.code === 'PGRST204' || String(error.message).includes('image_url')) && sbPayload.image_url) {
+          console.warn('[JOB PUBLISH] image_url column not present in schema, retrying without image_url while preserving all employer metadata...');
           delete sbPayload.image_url;
-          const retry = await supabase.from('jobs').upsert(sbPayload);
-          if (!retry.error) {
-            supabasePersisted = true;
-            supabaseError = null;
-            console.log('[Supabase] Job persisted with core columns:', targetJob.id);
-          } else {
-            supabaseError = `${retry.error.code}: ${retry.error.message}`;
-          }
+          const retry = await supabase.from('jobs').upsert(sbPayload).select().single();
+          insertedRow = retry.data;
+          error = retry.error;
         }
+      }
+
+      if (error) {
+        console.error('[JOB PUBLISH] Supabase insert failed:', error.message, error.details || error.hint);
+        supabaseError = `${error.code}: ${error.message}`;
       } else {
         supabasePersisted = true;
-        console.log('[Supabase] Job successfully persisted:', targetJob.id);
+        console.log('[JOB PUBLISH] Supabase insert succeeded:', targetJob.id);
       }
     } catch (sbErr: any) {
       supabaseError = sbErr.message;
-      console.error('[Supabase] Exception persisting job:', sbErr.message);
+      console.error('[JOB PUBLISH] Exception persisting job to Supabase:', sbErr.message);
     }
   }
 

@@ -58,6 +58,8 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
     autoSelectWorkersForJob,
     language,
     setLanguage,
+    createJob,
+    refreshJobs,
   } = useApp();
 
   const langConfig = getLanguageConfig(language);
@@ -479,6 +481,99 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
       onAction = () => {
         setIsLangSelectorOpen(true);
       };
+    } else if (action.type === 'PUBLISH_JOB') {
+      const draftToPublish = action.jobDraft || currentDraft || conversationState.jobDraft || {};
+      actionText = actionText || (
+        language === 'te' ? 'పని పబ్లిష్ చేయండి' :
+        language === 'hi' ? 'काम पब्लिश करें' :
+        language === 'ta' ? 'வேலை வெளியிடுங்கள்' :
+        'Publish Job Now'
+      );
+      onAction = async () => {
+        try {
+          const defaultCategory = (draftToPublish.category as any) || 'Loading/Unloading';
+          const defaultWorkers = Number(draftToPublish.workersRequired) || 1;
+          const defaultWage = Number(draftToPublish.wage) || 800;
+          const defaultTitle = draftToPublish.title || `${defaultCategory} Work`;
+          const defaultArea = draftToPublish.location || 'Koramangala, Bangalore';
+
+          const published = await createJob({
+            customerId: user.id,
+            customerName: user.name,
+            customerPhoto: user.profilePhoto,
+            customerRating: user.rating,
+            customerKyc: user.kycStatus === 'verified',
+            businessName: `${user.name}'s Service Request`,
+            title: defaultTitle,
+            category: defaultCategory,
+            description: draftToPublish.description || `Mojo voice-created request for ${defaultWorkers} ${defaultCategory} worker(s).`,
+            image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+            wage: defaultWage,
+            startTime: draftToPublish.startTime || '09:00 AM',
+            endTime: draftToPublish.endTime || '06:00 PM',
+            duration: '8 hours',
+            urgency: 'Today',
+            approximateArea: defaultArea,
+            approximateDistanceKm: 2.1,
+            exactLocation: {
+              approximateArea: defaultArea,
+              exactAddress: draftToPublish.location || 'Bengaluru Central',
+              lat: 12.934,
+              lng: 77.625,
+            },
+            workersRequired: defaultWorkers,
+            selectionMode: draftToPublish.selectionMode || 'manual',
+            status: 'Open',
+            recurring: 'none',
+          });
+
+          // Reset draft on success
+          setConversationState(prev => ({ ...prev, jobDraft: {} }));
+          try {
+            refreshJobs?.();
+          } catch {}
+
+          const successMsg: ChatMessage = {
+            id: 'mojo-' + Date.now(),
+            sender: 'mojo',
+            text: language === 'te'
+              ? `✓ "${published.title}" పని విజయవంతంగా పబ్లిష్ చేయబడింది! సమీప వర్కర్లకు మ్యాచ్ నోటిఫికేషన్లు వెళ్లాయి.`
+              : language === 'hi'
+              ? `✓ "${published.title}" काम सफलतापूर्वक पब्लिश हो गया है! कामगारों को नोटिफिकेशन भेजे जा रहे हैं।`
+              : language === 'ta'
+              ? `✓ "${published.title}" வேலை வெற்றிகரமாக வெளியிடப்பட்டது! தொழிலாளர்களுக்கு அறிவிப்புகள் அனுப்பப்பட்டுள்ளன.`
+              : `✓ Job "${published.title}" published successfully! Verified nearby workers are being notified.`,
+            actionText: language === 'te' ? 'అభ్యర్థులను చూడండి' : language === 'hi' ? 'आवेदक देखें' : 'View Applicants',
+            onAction: () => {
+              if (onOpenApplicants) onOpenApplicants(published.id);
+              else setActiveScreen('applicants');
+              setIsOpen(false);
+            },
+            timestamp: 'Just now',
+            lang: language,
+          };
+          setMessages(prev => [...prev, successMsg]);
+        } catch (pubErr: any) {
+          console.error('[Mojo Assistant] Voice publish failed:', pubErr);
+          const failMsg: ChatMessage = {
+            id: 'mojo-' + Date.now(),
+            sender: 'mojo',
+            text: language === 'te'
+              ? `పని పబ్లిష్ చేయడం విఫలమైంది: ${pubErr?.message || 'దయచేసి మళ్ళీ ప్రయత్నించండి'}. మీ డ్రాఫ్ట్ భద్రంగా ఉంది.`
+              : language === 'hi'
+              ? `काम पब्लिश करने में विफल: ${pubErr?.message || 'कृपया पुन: प्रयास करें'}। आपका ड्राफ्ट सुरक्षित है।`
+              : language === 'ta'
+              ? `வேலை வெளியீடு தோல்வியடைந்தது: ${pubErr?.message || 'மீண்டும் முயற்சிக்கவும்'}. வரைவு பாதுகாக்கப்பட்டுள்ளது.`
+              : `Failed to publish job: ${pubErr?.message || 'Please try again'}. Your draft has been preserved.`,
+            actionText: 'Retry Publish',
+            onAction,
+            timestamp: 'Just now',
+            lang: language,
+            isError: true,
+          };
+          setMessages(prev => [...prev, failMsg]);
+        }
+      };
     } else if (action.type === 'OPEN_POST_JOB' || action.type === 'UPDATE_JOB_DRAFT') {
       const draftToUse = action.jobDraft || currentDraft || conversationState.jobDraft;
       actionText = actionText || (action.type === 'OPEN_POST_JOB' ? 'Post Job Now' : 'Continue Job Post');
@@ -637,6 +732,9 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
         }
 
         const { actionText, onAction } = resolveAction(res.action, res.conversationState?.jobDraft);
+        if (res.action?.type === 'PUBLISH_JOB' && onAction) {
+          onAction();
+        }
 
         const newMsgId = 'mojo-' + Date.now();
         const mojoMsg: ChatMessage = {
@@ -776,6 +874,9 @@ export const FloatingMojoAssistant: React.FC<FloatingMojoAssistantProps> = ({
                 payload.action,
                 payload.conversationState?.jobDraft
               );
+              if (payload.action?.type === 'PUBLISH_JOB' && onAction) {
+                onAction();
+              }
               if (actionText && onAction) {
                 setMessages(prev => {
                   const lastIdx = prev.map(m => m.sender).lastIndexOf('mojo');

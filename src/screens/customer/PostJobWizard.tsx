@@ -47,9 +47,10 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
   onJobCreated,
   initialDraft,
 }) => {
-  const { user, createJob, language, t } = useApp();
+  const { user, createJob, language, t, refreshJobs } = useApp();
 
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const totalSteps = 8;
 
   // Form State
@@ -178,6 +179,7 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
   const handlePostSubmit = async () => {
     if (isSubmitting || isPostedSuccess) return;
     setIsSubmitting(true);
+    setPublishError(null);
     try {
       const job = await createJob({
         customerId: user.id,
@@ -206,17 +208,25 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
         },
         workersRequired: workersNeeded,
         selectionMode,
-        status: 'Posted',
+        status: 'Open',
         recurring,
       });
 
       setCreatedJobRecord(job);
       setIsPostedSuccess(true);
       try {
+        refreshJobs();
+      } catch {
+        // ignore
+      }
+      try {
         confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
       } catch {
         // ignore
       }
+    } catch (err: any) {
+      console.error('[PostJobWizard] Publishing failed:', err);
+      setPublishError(err?.message || 'Failed to publish job. Please verify your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -794,6 +804,16 @@ export const PostJobWizard: React.FC<PostJobWizardProps> = ({
           {currentStep === 9 && (
             <div className="space-y-3">
               <h4 className="font-black text-lg text-[#111827]">{t.stepReview}</h4>
+
+              {publishError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
+                  <ShieldAlert size={18} className="text-red-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-bold">Publishing Failed</p>
+                    <p className="text-[11px] text-red-600 mt-0.5">{publishError}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-xs">
                 <img src={selectedImage} alt={title} className="w-full h-32 object-cover" />

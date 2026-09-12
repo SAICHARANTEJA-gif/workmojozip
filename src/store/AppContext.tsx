@@ -1022,7 +1022,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           confirmedWorkerIds: updatedConfirmed,
           workersConfirmed: count,
           applicants: updatedApplicants,
-          status: (isFull ? 'Filled' : 'Posted') as JobStatus,
+          status: (isFull ? 'Filled' : 'Open') as JobStatus,
           updatedAt: new Date().toISOString(),
         };
       });
@@ -1105,7 +1105,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         const newCount = newConfirmed.length;
-        const newStatus: JobStatus = (newCount >= job.workersRequired ? 'Filled' : 'Posted') as JobStatus;
+        const newStatus: JobStatus = (newCount >= job.workersRequired ? 'Filled' : 'Open') as JobStatus;
 
         return {
           ...job,
@@ -1138,43 +1138,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const createJob = async (
     jobData: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicants' | 'confirmedWorkerIds' | 'waitingList' | 'workersConfirmed'>
   ): Promise<Job> => {
-    // Check if an identical job already exists to prevent duplicate submissions
-    const existing = jobs.find(
-      j =>
-        (j.customerId === jobData.customerId || j.customerName === jobData.customerName) &&
-        j.title.trim().toLowerCase() === jobData.title.trim().toLowerCase() &&
-        j.category === jobData.category &&
-        j.wage === jobData.wage &&
-        j.startTime === jobData.startTime
-    );
-
-    if (existing) {
-      return existing;
-    }
-
+    const newJobId = 'job-' + Date.now();
     const newJob: Job = {
       ...jobData,
-      id: 'job-' + Date.now(),
+      id: newJobId,
       applicants: [],
       confirmedWorkerIds: [],
       waitingList: [],
       workersConfirmed: 0,
-      status: 'Posted',
+      status: 'Open',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    console.log('[JOB PUBLISH] Initiating job publish in AppContext:', newJob.id, {
+      title: newJob.title,
+      category: newJob.category,
+      wage: newJob.wage,
+      workersRequired: newJob.workersRequired,
+      status: newJob.status,
+    });
+
+    // Optimistic local update: ensure only deduplicated by exact ID
     setJobs(prev => {
       const map = new Map<string, Job>();
-      // Put newJob first
       map.set(newJob.id, newJob);
       for (const j of prev) {
         if (!map.has(j.id)) {
-          const sig = `${j.customerId || j.customerName}_${j.title.trim().toLowerCase()}_${j.wage}_${j.startTime}_${j.category}`;
-          const newSig = `${newJob.customerId || newJob.customerName}_${newJob.title.trim().toLowerCase()}_${newJob.wage}_${newJob.startTime}_${newJob.category}`;
-          if (sig !== newSig) {
-            map.set(j.id, j);
-          }
+          map.set(j.id, j);
         }
       }
       return Array.from(map.values());
@@ -1194,17 +1185,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Sync newly created job to backend API (and Supabase if configured)
     try {
+      console.log('[JOB PUBLISH] Submitting job payload to backend API:', newJob.id);
       const res = await api.postJob(newJob);
       if (res && res.success && res.job) {
+        console.log('[JOB PUBLISH] Backend confirmed job creation:', res.job.id, 'persistedToSupabase:', res.persistedToSupabase);
         setJobs(prev => prev.map(j => (j.id === newJob.id ? { ...j, ...res.job } : j)));
         return { ...newJob, ...res.job };
       } else if (res && !res.success) {
-        console.error('[JobSync] Server rejected job creation:', res.error);
+        console.error('[JOB PUBLISH] Backend rejected job creation:', res.error);
         setJobs(prev => prev.filter(j => j.id !== newJob.id));
         throw new Error(res.error || 'Failed to persist job to database.');
       }
     } catch (err: any) {
-      console.warn('[JobSync] Error syncing job to backend:', err.message);
+      console.error('[JOB PUBLISH] Error syncing job to backend:', err.message);
       setJobs(prev => prev.filter(j => j.id !== newJob.id));
       throw err;
     }
@@ -1278,7 +1271,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       },
       workersRequired: 1,
       selectionMode: 'manual',
-      status: 'Posted',
+      status: 'Open',
       recurring: 'none',
     });
 
